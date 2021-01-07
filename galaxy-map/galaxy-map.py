@@ -111,7 +111,7 @@ def barycentric_to_galactocentric(Xb, Yb, Zb, R0=_RSUN, Zsun=_ZSUN, roll=_ROLL):
 
 def main():
     # Specifying database file name
-    filename = "hii_v2_20201203.db"
+    filename = "data/hii_v2_20201203.db"
 
     # Database in parent directory of this script (call dirname twice)
     db = join(dirname(dirname(abspath(__file__))), filename)
