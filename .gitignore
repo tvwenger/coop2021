@@ -128,9 +128,11 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# Large database file
+# Large database file & instructions
 data/hii_v2_20201203.db
+data/schema_v2_20201203.txt
 
 # Images
 .jpg
 .png
+
