@@ -129,4 +129,4 @@ dmypy.json
 .pyre/
 
 # Large database file
-.hii_v2_20201203.db
+data/hii_v2_20201203.db
