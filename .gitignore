@@ -130,3 +130,7 @@ dmypy.json
 
 # Large database file
 data/hii_v2_20201203.db
+
+# Images
+.jpg
+.png
