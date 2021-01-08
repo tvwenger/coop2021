@@ -133,6 +133,6 @@ data/hii_v2_20201203.db
 data/schema_v2_20201203.txt
 
 # Images
-.jpg
-.png
+*.jpg
+*.png
 
