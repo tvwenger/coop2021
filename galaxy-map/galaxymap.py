@@ -112,7 +112,7 @@ def barycentric_to_galactocentric(Xb, Yb, Zb, R0=_RSUN, Zsun=_ZSUN, roll=_ROLL):
 
 def main():
     # Specifying database file name
-    filename = Path("hii_v2_20201203.db")
+    filename = Path("data/hii_v2_20201203.db")
 
     # Database in parent directory of this script (call .parent twice)
     db = Path(__file__).parent.parent / filename
@@ -170,7 +170,10 @@ def main():
     ax.set_ylabel("y (kpc)")
     ax.set_aspect("equal")
     fig.savefig(
-        Path(__file__).parent / "galaxy-map.jpg", format="jpg", dpi=300, bbox_inches="tight",
+        Path(__file__).parent / "galaxy-map.jpg",
+        format="jpg",
+        dpi=300,
+        bbox_inches="tight",
     )
     plt.show()
 
