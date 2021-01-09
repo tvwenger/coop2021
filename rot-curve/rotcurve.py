@@ -58,7 +58,7 @@ def urc(R, a2, a3, R0=8.15):
     TODO: finish docstring
     """
 
-    lam = np.sqrt(a3 / 1.5)
+    lam = (a3 / 1.5) * (a3 / 1.5) * (a3 / 1.5) * (a3 / 1.5) * (a3 / 1.5)
     Ropt = a2 * R0
     rho = R / Ropt
 
@@ -169,16 +169,17 @@ def main():
     eqmux2 = eqmux * (u.mas / u.yr)
     eqmuy2 = eqmuy * (u.mas / u.yr)
     vlsr2 = vlsr * (u.km / u.s)
-    icrs = acoord.ICRS(
+    lsr = acoord.LSR(
         ra=ra * u.deg,
         dec=dec * u.deg,
         distance=gdist * u.kpc,
         pm_ra_cosdec=eqmux2,
         pm_dec=eqmuy2,
         radial_velocity=vlsr2,
+        v_bary=(10.6, 10.7, 7.6),  # in km/s
     )
     # _GAL_SUN_V = 247 * (u.km / u.s)
-    galactocentric = icrs.transform_to(
+    galactocentric = lsr.transform_to(
         acoord.Galactocentric(
             galcen_distance=8.15 * u.kpc, z_sun=5.5 * u.kpc, roll=0 * u.deg
         )
@@ -187,9 +188,9 @@ def main():
     gcen_vx = galactocentric.v_x.value
     gcen_vy = galactocentric.v_y.value
     gcen_vz = galactocentric.v_z.value
-    
+
     Vcens = np.sqrt(gcen_vx * gcen_vx + gcen_vy * gcen_vy + gcen_vz * gcen_vz)
-    
+
     # _MAS_TO_RAD = 4.84813681109536e-06  # pi/180/3600
     # _PER_YR_TO_PER_SEC = 3.1709791983764586e-08  # 1/365/24/3600
     # Vcens = (
