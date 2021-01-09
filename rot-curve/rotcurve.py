@@ -1,11 +1,20 @@
+import sys
 from pathlib import Path
+
+# Want to add galaxymap.py as package:
+# Make a $PATH to coop2021 (twice parent folder of this file)
+_SCRIPT_DIR = str(Path.cwd() / Path(__file__).parent.parent)
+# Add coop2021 to $PATH
+sys.path.append(_SCRIPT_DIR)
+
 import sqlite3
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 import astropy.units as u
 import astropy.coordinates as acoord
-from galaxy_map import galaxymap as gm  # Remember to add coop2021 to $PYTHONPATH
+from galaxy_map import galaxymap as gm  # Remember to add coop2021 to $PATH
+
 # import transform_wenger as trans
 
 
