@@ -1,12 +1,12 @@
 from pathlib import Path
+import sqlite3
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-import sqlite3
 import astropy.units as u
 import astropy.coordinates as acoord
 from galaxy_map import galaxymap as gm  # Remember to add coop2021 to $PYTHONPATH
-import transform_wenger as trans
+# import transform_wenger as trans
 
 
 def create_connection(db_file):
