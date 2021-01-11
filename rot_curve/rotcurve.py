@@ -14,8 +14,17 @@ import pandas as pd
 import astropy.units as u
 import astropy.coordinates as acoord
 from galaxy_map import galaxymap as gm  # Remember to add coop2021 to $PATH
+import transform_wenger as trans
 
-# import transform_wenger as trans
+# Define constants
+_DEG_TO_RAD = 0.01745329251  # pi/180
+_AU_PER_YR_TO_KM_PER_S = 4.743717361
+_RSUN = 8.15  # kpc (Reid et al. 2019)
+_ZSUN = 5.5  # pc (Reid et al. 2019)
+_ROLL = 0  # deg (Anderson et al. 2019)
+_LSR_X = 10.6  # km/s (Reid et al. 2019)
+_LSR_Y = 10.7  # km/s (Reid et al. 2019)
+_LSR_Z = 7.6  # km/s (Reid et al. 2019)
 
 
 def create_connection(db_file):
@@ -88,29 +97,87 @@ def urc(R, a2, a3, R0=8.15):
     return v1 * np.sqrt(v2 + v3)
 
 
-# def gal_to_bar_vel(glong, glat, dist, gmul, gmub):
-#     """
-#     Convert Galactic velocities to a barycentric (heliocentric)
-#     Cartesian frame
+def gal_to_bar_vel(glon, glat, dist, vlsr, gmul, gmub):
+    """
+    Convert Galactic velocities to a barycentric (heliocentric)
+    Cartesian frame
 
-#     Inputs:
-#       glon : Array of scalars (mas/yr)
-#         Galactic longitudinal velocity
-#       glat : Array of scalars (mas/yr)
-#         Galactic latitudinal velocity
-#       dist : Array of scalars (kpc)
-#         Distance
+    Inputs:
+      glon : Array of scalars (deg)
+        Galactic longitude
+      glat : Array of scalars (deg)
+        Galactic latitude
+      dist : Array of scalars (kpc)
+        Distance
+      vlsr : radial velocity (km/s)
+        Radial velocity relative to local standard of rest (i.e. vlsr)
+      gmul : Array of scalars (mas/yr)
+        Galactic longitudinal velocity
+      gmub : Array of scalars (mas/yr)
+        Galactic latitudinal velocity
 
-#     Returns: Vxb, Vyb, Vzb
-#       Xb, Yb, Zb : Arrays of scalars (km/s)
-#         Barycentric Cartesian velocities
-#     """
+    Returns: Vxb, Vyb, Vzb
+      Ub, Vb, Wb : Arrays of scalars (km/s)
+        Barycentric Cartesian velocities (i.e. vel_x, vel_y, vel_z)
+    """
 
-#     Xb = dist * np.cos(glat * _DEG_TO_RAD) * np.cos(glong * _DEG_TO_RAD)
-#     Yb = dist * np.cos(glat * _DEG_TO_RAD) * np.sin(glong * _DEG_TO_RAD)
-#     Zb = dist * np.sin(glat * _DEG_TO_RAD)
+    # Calculate total velocity (km/s)
+    v_transverse = np.sqrt(gmul * gmul + gmub * gmub) * dist * _AU_PER_YR_TO_KM_PER_S
+    v_tot = np.sqrt(v_transverse * v_transverse + vlsr * vlsr)
 
-#     return Xb, Yb, Zb
+    Ub = v_tot * np.cos(glat * _DEG_TO_RAD) * np.cos(glon * _DEG_TO_RAD)
+    Vb = v_tot * np.cos(glat * _DEG_TO_RAD) * np.sin(glon * _DEG_TO_RAD)
+    Wb = v_tot * np.sin(glat * _DEG_TO_RAD)
+
+    return Ub, Vb, Wb
+
+
+def bar_to_gcen_vel(Ub, Vb, Wb, R0=_RSUN, Zsun=_ZSUN, roll=_ROLL):
+    """
+    Convert barycentric Cartesian velocities to the Galactocentric
+    Cartesian frame
+
+    Inputs:
+      Ub, Vb, Wb : Arrays of scalars (kpc)
+        Barycentric Cartesian velocities (i.e. vel_x, vel_y, vel_z)
+      R0 : scalar (kpc)
+        Galactocentric radius of the Sun
+      Zsun : scalar (pc)
+        Height of the Sun above the Galactic midplane
+      roll : scalar (deg)
+        Angle between Galactic plane and b=0
+
+    Returns: vel_xg, vel_yg, vel_zg
+      vel_xg, vel_yg, vel_zg : Arrays of scalars (kpc)
+        Galactocentric Cartesian velocities
+    """
+
+    # Tilt of b=0 relative to Galactic plane
+    tilt = np.arcsin(0.001 * Zsun / R0)
+    #
+    # Roll CCW about the barycentric X-axis so that the Y-Z plane
+    # is aligned with the Y-Z plane of the Galactocentric frame
+    #
+    roll_rad = roll * _DEG_TO_RAD
+    Ub1 = np.copy(Ub)
+    Vb1 = np.cos(roll_rad) * Vb - np.sin(roll_rad) * Wb
+    Wb1 = np.sin(roll_rad) * Vb + np.cos(roll_rad) * Wb
+    #
+    # Translate to the Galactic Center
+    #
+    Ub1 -= R0
+    #
+    # Tilt to correct for Sun's height above midplane
+    #
+    # ?: Maybe difference due to diff convention? x, y --> y, -x
+    vel_xg = np.cos(tilt) * Ub1 + np.sin(tilt) * Wb1 + _LSR_X
+    vel_yg = Vb1 + _LSR_Y
+    vel_zg = -np.sin(tilt) * Ub1 + np.cos(tilt) * Wb1 + _LSR_Z
+    # vel_xg = np.cos(tilt) * Ub1 + np.sin(tilt) * Wb1
+    # vel_yg = Vb1
+    # vel_zg = -np.sin(tilt) * Ub1 + np.cos(tilt) * Wb1
+
+    return vel_xg, vel_yg, vel_zg
 
 
 def main():
@@ -138,26 +205,6 @@ def main():
     eqmuy = vels["muy"]  # mas/y (equatorial frame)
     vlsr = vels["vlsr"]  # km/s
 
-    ############################# USING ASTROPY #############################
-    # # Change data into SkyCoord object
-    # galactic = acoord.SkyCoord(
-    #     l=glon, b=glat, distance=gdist, frame="galactic", unit=["deg", "deg", "kpc"]
-    # )
-    # # print(galactic)
-
-    # # Transform from galactic to galactocentric coordinates
-    # # NOTE: astropy uses RHR instead of LHR for galactocentric coords
-    # galactocentric = galactic.transform_to(
-    #     acoord.Galactocentric(
-    #         galcen_distance=8.15 * u.kpc, z_sun=5.5 * u.kpc, roll=0 * u.deg
-    #     )
-    # )
-    # # print(galactocentric)
-    # gcen_x = galactocentric.y  # left-hand convention
-    # gcen_y = -galactocentric.x  # left-hand convention
-    # # gcen_z = galactocentric.z   # not needed for this plot
-    ##########################################################################
-
     # Transform from galactic to galactocentric Cartesian coordinates
     bary_x, bary_y, bary_z = gm.galactic_to_barycentric(glon, glat, gdist)
     gcen_x, gcen_y, gcen_z = gm.barycentric_to_galactocentric(bary_x, bary_y, bary_z)
@@ -166,49 +213,56 @@ def main():
     # gcen_x, gcen_y = gcen_y, -gcen_x
 
     # # Calculate distance from galactic centre
-    Rcens = np.sqrt(gcen_x * gcen_x + gcen_y * gcen_y + gcen_z * gcen_z)  # kpc\
+    Rcens = np.sqrt(gcen_x * gcen_x + gcen_y * gcen_y + gcen_z * gcen_z)  # kpc
 
     # Transform equatorial proper motions to galactic frame
-    # NOTE: glon2, glat2 unnecessary. TODO: make own function
-    # glon2, glat2, gmul, gmub = trans.eq_to_gal(ra, dec, eqmux, eqmuy)
+    ############################## USING ASTROPY ##############################
+    # eqmux2 = eqmux * (u.mas / u.yr)
+    # eqmuy2 = eqmuy * (u.mas / u.yr)
+    # vlsr2 = vlsr * (u.km / u.s)
+    # _LSR_VEL = (10.6, 10.7, 7.6) * (u.km / u.s) # type =
+    #                                             # 'astropy.units.quantity.Quantity'
 
-    # gvl = gdist * gmul
-    # gvb = gdist * gmub
-    # # c = acoord.SkyCoord(l = glon2*u.deg, b = glat2*u.deg, distance = gdist * u.kpc, pm_l_cosb=gmul *u.mas/u.yr, pm_b=gmub*u.mas/u.yr, frame="galactic")
-    eqmux2 = eqmux * (u.mas / u.yr)
-    eqmuy2 = eqmuy * (u.mas / u.yr)
-    vlsr2 = vlsr * (u.km / u.s)
-    lsr = acoord.LSR(
-        ra=ra * u.deg,
-        dec=dec * u.deg,
-        distance=gdist * u.kpc,
-        pm_ra_cosdec=eqmux2,
-        pm_dec=eqmuy2,
-        radial_velocity=vlsr2,
-        v_bary=(10.6, 10.7, 7.6),  # in km/s
-    )
-    # _GAL_SUN_V = 247 * (u.km / u.s)
-    galactocentric = lsr.transform_to(
-        acoord.Galactocentric(
-            galcen_distance=8.15 * u.kpc, z_sun=5.5 * u.kpc, roll=0 * u.deg
-        )
-    )
-    # # c.transform_to(acoord.Galactocentric)
-    gcen_vx = galactocentric.v_x.value
-    gcen_vy = galactocentric.v_y.value
-    gcen_vz = galactocentric.v_z.value
-
-    Vcens = np.sqrt(gcen_vx * gcen_vx + gcen_vy * gcen_vy + gcen_vz * gcen_vz)
-
-    # _MAS_TO_RAD = 4.84813681109536e-06  # pi/180/3600
-    # _PER_YR_TO_PER_SEC = 3.1709791983764586e-08  # 1/365/24/3600
-    # Vcens = (
-    #     np.sqrt(gmul * gmul + gmub * gmub) * _MAS_TO_RAD * Rcens * _PER_YR_TO_PER_SEC
-    #     + vlsr
+    # # v_bary gives different results if you plug in _LSR_VEL vs. direct tuple
+    # lsr = acoord.LSR(
+    #     ra=ra * u.deg,
+    #     dec=dec * u.deg,
+    #     distance=gdist * u.kpc,
+    #     pm_ra_cosdec=eqmux2,
+    #     pm_dec=eqmuy2,
+    #     radial_velocity=vlsr2,
+    #     v_bary=(10.6, 10.7, 7.6),  # km/s
     # )
 
-    # # Calculate circular rotation speed
-    # # Vcens = urc(Rcens, 0.96, 1.62)  # !INCORRECT. Must calculate Vcens from database
+    # # _GAL_SUN_V = 247 * (u.km / u.s)
+    # galactocentric = lsr.transform_to(
+    #     acoord.Galactocentric(
+    #         galcen_distance=8.15 * u.kpc,
+    #         z_sun=5.5 * u.kpc,
+    #         roll=0 * u.deg,
+    #         # galcen_v_sun=_LSR_VEL,
+    #     )
+    # )
+
+    # gcen_vx = galactocentric.v_x.value
+    # gcen_vy = galactocentric.v_y.value
+    # gcen_vz = galactocentric.v_z.value
+    ##########################################################################
+
+    ####################### ATTEMPT WITH OWN FUNCTIONS  ######################
+    # NOTE: glon2, glat2 unnecessary
+    # TODO: make own equatorial to galactic velocity function
+    glon2, glat2, gmul, gmub = trans.eq_to_gal(ra, dec, eqmux, eqmuy)
+
+    U, V, W = gal_to_bar_vel(glon, glat, gdist, vlsr, gmul, gmub)
+    gcen_vx, gcen_vy, gcen_vz = bar_to_gcen_vel(U, V, W)
+    # Result looks like astropy lsr.transform_to() with galcen_v_sun = (10.6, 10.7, 7.6)
+    ##########################################################################
+
+    # Calculate circular rotation speed
+    # ?: Maybe no gcen_vz component?
+    Vcens = np.sqrt(gcen_vx * gcen_vx + gcen_vy * gcen_vy + gcen_vz * gcen_vz)
+    # Vcens = np.sqrt(gcen_vx * gcen_vx + gcen_vy * gcen_vy)
 
     # Create and plot dashed line for rotation curve
     fig, ax = plt.subplots()
