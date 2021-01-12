@@ -1,7 +1,6 @@
 import unittest
 
 import numpy as np
-import astropy.coordinates as acoord
 from astropy.coordinates import GalacticLSR, Galactocentric, Galactic
 import astropy.units as u
 from astropy.coordinates import CartesianDifferential as cd
@@ -10,6 +9,7 @@ from astropy.coordinates import CartesianDifferential as cd
 import rotcurve as rc
 
 # Allowed differences for passing tests
+_POSITION = 0.001  # 1 m
 _VELOCITY = 0.001  # 1 m/s
 
 # Constants
@@ -224,6 +224,124 @@ class TestGalaxyMap(unittest.TestCase):
             self.assertAlmostEqual(g_vx, gcen_vx, delta=_VELOCITY)
             self.assertAlmostEqual(g_vy, gcen_vy, delta=_VELOCITY)
             self.assertAlmostEqual(g_vz, gcen_vz, delta=_VELOCITY)
+
+    def test_gcen_cart_to_gcen_cyl_single(self):
+        """
+        Test single galactocentric Cartesian position & velocity to
+        galactocentric cylindrical frame transformation
+        
+        NOTE: azimuth measured from +y-axis & increases CW (i.e. like a clock); [0, 360)
+        Also, astropy fails when object is on z-axis (but my function doesn't!)
+        """
+
+        Xc = -4.2  # kpc
+        Yc = 5.83  # kpc
+        Zc = 6.34  # kpc
+        Vxc = 12.5  # km/s
+        Vyc = 3.14  # km/s
+        Vzc = -0.24  # km/s
+        
+        # # Object on z-axis (astropy will fail with nan)
+        # Xc = 0 # kpc
+        # Yc = 0  # kpc
+        # Zc = 6.34  # kpc
+        # Vxc = 12.5  # km/s
+        # Vyc = 3.14  # km/s
+        # Vzc = -0.24  # km/s
+        
+        rho, azimuth, z, v_rad, v_circ, v_vert = rc.gcen_cart_to_gcen_cyl(
+            Xc, Yc, Zc, Vxc, Vyc, Vzc
+        )
+
+        cyl = Galactocentric(
+            x=Xc * u.kpc,
+            y=Yc * u.kpc,
+            z=Zc * u.kpc,
+            v_x=Vxc * (u.km / u.s),
+            v_y=Vyc * (u.km / u.s),
+            v_z=Vzc * (u.km / u.s),
+            galcen_distance=8.15 * u.kpc,
+            z_sun=5.5 * u.pc,
+            roll=0 * u.deg,
+            galcen_v_sun=_GAL_V_SUN,
+        ).cylindrical
+        rho_a = cyl.rho.value  # kpc
+        azimuth_a = (90 - cyl.phi.value) % 360  # deg & ensures angle is in [0,360)
+        z_a = cyl.z.value  # kpc
+        v_rad_a = cyl.differentials["s"].d_rho.value  # km/s
+        v_circ_a = cyl.differentials["s"].d_phi.value * cyl.rho.value  # km/s
+        v_vert_a = cyl.differentials["s"].d_z.value  # km/s
+
+        # print("My method:", rho, azimuth, z, v_rad, v_circ, v_vert)
+        # print("astropy pos:", rho_a, azimuth_a, z_a, v_rad_a, v_circ_a, v_vert_a)
+
+        self.assertAlmostEqual(rho, rho_a, delta=_POSITION)
+        self.assertAlmostEqual(azimuth, azimuth_a, delta=_POSITION)
+        self.assertAlmostEqual(z, z_a, delta=_POSITION)
+        self.assertAlmostEqual(v_rad, v_rad_a, delta=_VELOCITY)
+        self.assertAlmostEqual(v_circ, v_circ_a, delta=_VELOCITY)
+        self.assertAlmostEqual(v_vert, v_vert_a, delta=_VELOCITY)
+
+    def test_gcen_cart_to_gcen_cyl_multi(self):
+        """
+        Test multiple galactocentric Cartesian position & velocity to
+        galactocentric cylindrical frame transformations
+        
+        NOTE: azimuth measured from +y-axis & increases CW (i.e. like a clock); [0, 360)
+        Also, astropy fails when object is on z-axis (but my function doesn't!)
+        """
+
+        Xcs = np.array([0.22, 2.4, 3.2, 12.5, -8.1, -0.32, -6.541, -1, 0, -1])  # kpc
+        Ycs = np.array([2.1, 12.2, -5.25, -0.3, 1.87, 0.55, -6.2, -3.33, 1, 0])  # kpc
+        Zcs = np.array([4.5, -0.43, 6.34, -8.1, 5.21, -0.2, 0.847, -5.84, 1, -4]) # kpc
+        Vxcs = np.array([12.5, 11, -0.2, 51, 84.2, 0, -54, 8, 12, -4]) # km/s
+        Vycs = np.array([3.14, 5, -2.0, 0.12, 0.22, 1.58, -24, 2, 0, -3]) # km/s
+        Vzcs = np.array([-0.24, 15, 22, -5.2, -0.2, 0.4, 0.74, 0.9, 1.24, 55.1])  # km/s
+        
+        # # Last object in array on z-axis (astropy will fail with nan)
+        # Xcs = np.array([0.22, 2.4, 3.2, 12.5, -8.1, -0.32, -6.541, -1, 0, -0])  # kpc
+        # Ycs = np.array([2.1, 12.2, -5.25, -0.3, 1.87, 0.55, -6.2, -3.33, 1, 0])  # kpc
+        # Zcs = np.array([4.5, -0.43, 6.34, -8.1, 5.21, -0.2, 0.847, -5.84, 1, -4]) # kpc
+        # Vxcs = np.array([12.5, 11, -0.2, 51, 84.2, 0, -54, 8, 12, -4]) # km/s
+        # Vycs = np.array([3.14, 5, -2.0, 0.12, 0.22, 1.58, -24, 2, 0, -3]) # km/s
+        # Vzcs = np.array([-0.24, 15, 22, -5.2, -0.2, 0.4, 0.74, 0.9, 1.24, 55.1])  # km/s
+
+        rhos, azimuths, zs, v_rads, v_circs, v_verts = rc.gcen_cart_to_gcen_cyl(
+            Xcs, Ycs, Zcs, Vxcs, Vycs, Vzcs
+        )
+
+        cyls = Galactocentric(
+            x=Xcs * u.kpc,
+            y=Ycs * u.kpc,
+            z=Zcs * u.kpc,
+            v_x=Vxcs * (u.km / u.s),
+            v_y=Vycs * (u.km / u.s),
+            v_z=Vzcs * (u.km / u.s),
+            galcen_distance=8.15 * u.kpc,
+            z_sun=5.5 * u.pc,
+            roll=0 * u.deg,
+            galcen_v_sun=_GAL_V_SUN,
+        ).cylindrical
+        rhos_a = cyls.rho.value  # kpc
+        azimuths_a = (90 - cyls.phi.value) % 360  # deg & ensures angle is in [0,360)
+        zs_a = cyls.z.value  # kpc
+        v_rads_a = cyls.differentials["s"].d_rho.value  # km/s
+        v_circs_a = cyls.differentials["s"].d_phi.value * cyls.rho.value  # km/s
+        v_verts_a = cyls.differentials["s"].d_z.value  # km/s
+
+        for (
+            rho, azimuth, z, v_rad, v_circ, v_vert,
+            rho_a, azimuth_a, z_a, v_rad_a,v_circ_a, v_vert_a
+        ) in zip(
+            rhos, azimuths, zs, v_rads, v_circs, v_verts,
+            rhos_a, azimuths_a, zs_a, v_rads_a, v_circs_a, v_verts_a
+        ):
+            self.assertAlmostEqual(rho, rho_a, delta=_POSITION)
+            self.assertAlmostEqual(azimuth, azimuth_a, delta=_POSITION)
+            self.assertAlmostEqual(z, z_a, delta=_POSITION)
+            self.assertAlmostEqual(v_rad, v_rad_a, delta=_VELOCITY)
+            self.assertAlmostEqual(v_circ, v_circ_a, delta=_VELOCITY)
+            self.assertAlmostEqual(v_vert, v_vert_a, delta=_VELOCITY)
 
 
 if __name__ == "__main__":
