@@ -1,8 +1,6 @@
 import sys
 from pathlib import Path
 
-from astropy.coordinates.builtin_frames.lsr import lsr_to_icrs
-
 # Want to add galaxymap.py as package:
 # Make a $PATH to coop2021 (twice parent folder of this file)
 _SCRIPT_DIR = str(Path.cwd() / Path(__file__).parent.parent)
@@ -19,9 +17,7 @@ from galaxy_map import galaxymap as gm  # Remember to add coop2021 to $PATH
 import transform_wenger as trans
 from astropy.coordinates import CartesianDifferential as cd
 
-# Define constants
-_DEG_TO_RAD = 0.01745329251  # pi/180
-_AU_PER_YR_TO_KM_PER_S = 4.740470463533348  # from astropy (uses tropical year)
+# User-defined constants
 _RSUN = 8.15  # kpc (Reid et al. 2019)
 _ZSUN = 5.5  # pc (Reid et al. 2019)
 _ROLL = 0  # deg (Anderson et al. 2019)
@@ -34,6 +30,12 @@ _THETA_0 = 236  # km/s (Reid et al. 2019)
 _USTD = 10.27
 _VSTD = 15.32
 _WSTD = 7.74
+
+# Useful constants
+_DEG_TO_RAD = 0.017453292519943295  # pi/180
+_RAD_TO_DEG = 57.29577951308232  # 180/pi (Don't forget to %360 after)
+_AU_PER_YR_TO_KM_PER_S = 4.740470463533348  # from astropy (uses tropical year)
+_KPC_TO_KM = 3.085677581e16
 
 
 def create_connection(db_file):
@@ -193,30 +195,65 @@ def bar_to_gcen_vel(Ub, Vb, Wb, R0=_RSUN, Zsun=_ZSUN, roll=_ROLL):
     return vel_xg, vel_yg, vel_zg
 
 
-def gcen_cart_to_cgen_cyl(x_pc, y_pc, z_pc, vx, vy, vz):
+def gcen_cart_to_gcen_cyl(x_kpc, y_kpc, z_kpc, vx, vy, vz):
     """
     Convert galactocentric Cartesian velocities to the
     galactocentric cylindrical velocities
+    
+                +z +y
+                 | /
+                 |/
+    Sun -x ------+------ +x
+                /|
+               / |
 
     Inputs:
-      x_pc, y_pc, z_pc : Arrays of scalars (kpc)
+      x_kpc, y_kpc, z_kpc : Arrays of scalars (kpc)
         Galactocentric Cartesian positions
       vx, vy, vz : Arrays of scalars (km/s)
         Galactocentric Cartesian velocities
 
-    Returns: perp_distance, azimuth, height, v_radial, v_theta
-    TODO: Finish docstring & function
+    Returns: perp_distance, azimuth, height, v_radial, v_theta, v_vertical
+      perp_distance : Array of scalars (kpc)
+        Radial distance perpendicular to z-axis
+      azimuth : Array of scalars (deg)
+        Azimuthal angle; positive CW from +y-axis like a clock (left-hand convention!)
+      height : Array of scalars (kpc)
+        Height above xy-plane (i.e. z_kpc)
+      v_radial : Array of scalars (km/s)
+        Radial velocity; positive away from z-axis
+      v_tangent : Array of scalars (km/s)
+        Tangential velocity; positive CW (left-hand convention!)
+      v_vertical : Array of scalars (km/s)
+        Velocity perp. to xy-plane; positive if pointing above xy-plane (i.e. vz)
     """
 
-    y = np.copy(y_pc) * 3.085677581e16  # km
-    x = np.copy(x_pc) * 3.085677581e16  # km
-    height = np.copy(z_pc) * 3.085677581e16  # km
+    y = np.copy(y_kpc) * _KPC_TO_KM  # km
+    x = np.copy(x_kpc) * _KPC_TO_KM  # km
 
-    perp_distance = np.sqrt(x * x + y * y)  # km
-    azimuth = np.arctan2(y, -x)  # rad
+    perp_distance = np.sqrt(x_kpc * x_kpc + y_kpc * y_kpc)  # kpc
+    perp_distance_km = np.sqrt(x * x + y * y)  # km
+    # azimuth = (np.arctan2(-y, x) * _RAD_TO_DEG + 90) % 360  # deg in [0,360). Method 1
+    azimuth = (90 - np.arctan2(y, x) * _RAD_TO_DEG) % 360  # deg in [0,360). Method 2
+    #
+    # **Check if any object is on z-axis (i.e. object's x_kpc & y_kpc both zero)**
+    #
+    arr = np.array([x_kpc, y_kpc])  # array with x_kpc in 0th row, y_kpc in 1st row
+    if np.any(np.all(arr == 0, axis=0)):  # at least 1 object is on z_axis
+        # Ensure vx & vy are arrays
+        vx = np.atleast_1d(vx)
+        vy = np.atleast_1d(vy)
+        # Initialize arrays to store values
+        v_radial = np.zeros(len(vx))
+        v_tangent = np.zeros(len(vx))  # km/s; will remain empty
+        for i in range(len(vx)):
+            # **all velocity in xy-plane is radial velocity**
+            v_radial[i] = np.sqrt(vx[i] * vx[i] + vy[i] * vy[i])  # km/s
+    else:  # no object is on z-axis (no division by zero)
+        v_radial = (x * vx + y * vy) / np.sqrt(x * x + y * y)  # km/s
+        v_tangent = (x * vy - y * vx) / (x * x + y * y) * perp_distance_km  # km/s
 
-    v_theta = abs((x * vy - y * vx) / (x * x + y * y) * perp_distance)  # km/s
-    return v_theta
+    return perp_distance, azimuth, z_kpc, v_radial, v_tangent, vz
 
 
 def vlsr_to_vbary(vlsr, glon, glat):
@@ -319,8 +356,15 @@ def main():
     gcen_vx, gcen_vy, gcen_vz = bar_to_gcen_vel(U, V, W)
     ##########################################################################
 
-    # Calculate circular rotation speed
-    Vcircular = gcen_cart_to_cgen_cyl(gcen_x, gcen_y, gcen_z, gcen_vx, gcen_vy, gcen_vz)
+    # Calculate circular rotation speed by converting to cylindrical frame
+    (
+        perp_distance,
+        azimuth,
+        height,
+        v_radial,
+        v_circular,
+        v_vertical,
+    ) = gcen_cart_to_gcen_cyl(gcen_x, gcen_y, gcen_z, gcen_vx, gcen_vy, gcen_vz)
 
     # Create and plot dashed line for rotation curve
     fig, ax = plt.subplots()
@@ -329,7 +373,7 @@ def main():
     ax.plot(Rvals, Vvals, "r-.", linewidth=0.5)
 
     # Plot data
-    ax.plot(Rcens, Vcircular, "o", markersize=2)
+    ax.plot(Rcens, abs(v_circular), "o", markersize=2)
     ax.set_xlim(0, 17)
     ax.set_ylim(0, 300)
 
