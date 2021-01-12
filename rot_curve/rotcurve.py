@@ -135,7 +135,7 @@ def gal_to_bar_vel(glon, glat, dist, vbary, gmul, gmub):
     # NOTE: (Ub, Vb, Wb) "omits" Sun's LSR velocity (implicitly included)
     # (This will be included in galactocentric transform)
 
-    # Adopt method used by Jo Bovy (2019). Eqns (62) & (64)
+    # Adopt method used by Jo Bovy (2019). Inverse of eqns (62) & (64)
     # https://github.com/jobovy/stellarkinematics/blob/master/stellarkinematics.pdf
     l = glon * _DEG_TO_RAD
     b = glat * _DEG_TO_RAD
@@ -245,10 +245,17 @@ def gcen_cart_to_gcen_cyl(x_kpc, y_kpc, z_kpc, vx, vy, vz):
         vy = np.atleast_1d(vy)
         # Initialize arrays to store values
         v_radial = np.zeros(len(vx))
-        v_tangent = np.zeros(len(vx))  # km/s; will remain empty
+        v_tangent = np.zeros(len(vx))
         for i in range(len(vx)):
-            # **all velocity in xy-plane is radial velocity**
-            v_radial[i] = np.sqrt(vx[i] * vx[i] + vy[i] * vy[i])  # km/s
+            if x[i] == 0 and y[i] == 0:  # this object is on z-axis
+                # **all velocity in xy-plane is radial velocity**
+                v_radial[i] = np.sqrt(vx[i] * vx[i] + vy[i] * vy[i])  # km/s
+            else:  # this object is not on z-axis
+                v_radial[i] = ((x[i] * vx[i] + y[i] * vy[i])
+                               / np.sqrt(x[i] * x[i] + y[i] * y[i]))  # km/s
+                v_tangent[i] = ((x[i] * vy[i] - y[i] * vx[i])
+                                / (x[i] * x[i] + y[i] * y[i])
+                                * perp_distance_km[i])  # km/s
     else:  # no object is on z-axis (no division by zero)
         v_radial = (x * vx + y * vy) / np.sqrt(x * x + y * y)  # km/s
         v_tangent = (x * vy - y * vx) / (x * x + y * y) * perp_distance_km  # km/s
