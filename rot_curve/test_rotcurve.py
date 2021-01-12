@@ -241,7 +241,8 @@ class TestGalaxyMap(unittest.TestCase):
         Vyc = 3.14  # km/s
         Vzc = -0.24  # km/s
         
-        # # Object on z-axis (astropy will fail with nan)
+        # # Object on z-axis
+        # # (astropy will fail with v_rad_a = 12.5 & v_circ_a = nan on last test)
         # Xc = 0 # kpc
         # Yc = 0  # kpc
         # Zc = 6.34  # kpc
@@ -298,7 +299,8 @@ class TestGalaxyMap(unittest.TestCase):
         Vycs = np.array([3.14, 5, -2.0, 0.12, 0.22, 1.58, -24, 2, 0, -3]) # km/s
         Vzcs = np.array([-0.24, 15, 22, -5.2, -0.2, 0.4, 0.74, 0.9, 1.24, 55.1])  # km/s
         
-        # # Last object in array on z-axis (astropy will fail with nan)
+        # # Last object in array on z-axis
+        # # (astropy will fail with v_rad_a = -4.0 & v_circ_a = nan on last test)
         # Xcs = np.array([0.22, 2.4, 3.2, 12.5, -8.1, -0.32, -6.541, -1, 0, -0])  # kpc
         # Ycs = np.array([2.1, 12.2, -5.25, -0.3, 1.87, 0.55, -6.2, -3.33, 1, 0])  # kpc
         # Zcs = np.array([4.5, -0.43, 6.34, -8.1, 5.21, -0.2, 0.847, -5.84, 1, -4]) # kpc
