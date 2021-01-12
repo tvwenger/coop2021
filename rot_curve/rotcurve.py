@@ -318,27 +318,22 @@ def main():
 
     # Transform equatorial proper motions to galactic frame
     ############################## USING ASTROPY ##############################
-    # eqmux2 = eqmux * (u.mas / u.yr)
-    # eqmuy2 = eqmuy * (u.mas / u.yr)
-    # vlsr2 = vlsr * (u.km / u.s)
-    # _LSR_VEL= cd(10.6, 10.7, 7.6, unit="km/s")
-    # lsr = acoord.LSR(
+    # icrs = acoord.ICRS(
     #     ra=ra * u.deg,
     #     dec=dec * u.deg,
     #     distance=gdist * u.kpc,
-    #     pm_ra_cosdec=eqmux2,
-    #     pm_dec=eqmuy2,
-    #     radial_velocity=vlsr2,
-    #     v_bary=_LSR_VEL,  # km/s
+    #     pm_ra_cosdec=eqmux * (u.mas / u.yr),
+    #     pm_dec=eqmuy * (u.mas / u.yr),
+    #     radial_velocity=vbary * (u.km / u.s),
     # )
 
     # _GAL_V_SUN = cd(10.6, 246.7, 7.6, unit="km/s")
-    # galactocentric = lsr.transform_to(
+    # galactocentric = icrs.transform_to(
     #     acoord.Galactocentric(
     #         galcen_distance=8.15 * u.kpc,
     #         z_sun=5.5 * u.pc,
     #         roll=0 * u.deg,
-    #         galcen_v_sun=_GAL_V_SUN
+    #         galcen_v_sun=_GAL_V_SUN,
     #     )
     # )
 
