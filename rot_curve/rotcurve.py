@@ -1,21 +1,21 @@
 import sys
 from pathlib import Path
 
+import sqlite3
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
+import pandas as pd
+import astropy.units as u
+import astropy.coordinates as acoord
+from astropy.coordinates import CartesianDifferential as cd
+import mytransforms as trans
+
 # Want to add galaxymap.py as package:
 # Make a $PATH to coop2021 (twice parent folder of this file)
 _SCRIPT_DIR = str(Path.cwd() / Path(__file__).parent.parent)
 # Add coop2021 to $PATH
 sys.path.append(_SCRIPT_DIR)
-
-import sqlite3
-import numpy as np
-import matplotlib.pyplot as plt
-import pandas as pd
-import astropy.units as u
-import astropy.coordinates as acoord
-from galaxy_map import galaxymap as gm  # Remember to add coop2021 to $PATH
-import transform_wenger as trans
-from astropy.coordinates import CartesianDifferential as cd
 
 # User-defined constants
 _RSUN = 8.15  # kpc (Reid et al. 2019)
@@ -25,6 +25,10 @@ _LSR_X = 10.6  # km/s (Reid et al. 2019)
 _LSR_Y = 10.7  # km/s (Reid et al. 2019)
 _LSR_Z = 7.6  # km/s (Reid et al. 2019)
 _THETA_0 = 236  # km/s (Reid et al. 2019)
+
+# Universal rotation curve parameters (Persic et al. 1996)
+_A_TWO = 0.96  # (Reid et al. 2019)
+_A_THREE = 1.62  # (Reid et al. 2019)
 
 # IAU definition of the local standard of rest (km/s)
 _USTD = 10.27
@@ -54,12 +58,12 @@ def create_connection(db_file):
 
 def get_coords(conn):
     """
-    Retrieves glong, glat, and plx from database conn
-    Returns DataFrame with glong, glat, and plx
+    Retrieves ra, dec, glong, glat, and plx from database conn
+    Returns DataFrame with ra (deg), dec (deg), glong (deg), glat (deg), and plx (mas)
     """
 
     cur = conn.cursor()
-    cur.execute("SELECT glong, glat, plx FROM Parallax")
+    cur.execute("SELECT ra, dec, glong, glat, plx FROM Parallax")
     coords = pd.DataFrame(cur.fetchall(), columns=[desc[0] for desc in cur.description])
 
     return coords
@@ -67,24 +71,38 @@ def get_coords(conn):
 
 def get_vels(conn):
     """
-    Retrieves ra, dec, x & y proper motions (mux, muy) from J200 equatorial frame,
+    Retrieves x & y proper motions (mux, muy) from J200 equatorial frame,
     and vlsr from database conn
-    
-    Returns DataFrame with ra (deg), dec (deg), mux (mas/yr), muy (mas/yr), vlsr (km/s)
+
+    Returns DataFrame with mux (mas/yr), muy (mas/yr), vlsr (km/s)
     """
 
     cur = conn.cursor()
-    cur.execute("SELECT ra, dec, mux, muy, vlsr FROM Parallax")
+    cur.execute("SELECT mux, muy, vlsr FROM Parallax")
     vels = pd.DataFrame(cur.fetchall(), columns=[desc[0] for desc in cur.description])
 
     return vels
 
 
-def urc(R, a2, a3, R0=8.15):
+def urc(R, a2=_A_TWO, a3=_A_THREE, R0=_RSUN):
     """
     Universal rotation curve from Persic et al. 1996
-    
-    TODO: finish docstring
+
+    Inputs:
+      R : Array of scalars (kpc)
+        Galactocentric radius of object
+        (i.e. perpendicular distance from z-axis in cylindrical coordinates)
+      a2 : Scalar (unitless)
+        Defined as R_opt/R_0 (ratio of optical radius to Galactocentric radius of the Sun)
+      a3 : Scalar (unitless)
+        Defined as 1.5*(L/L*)^0.2
+      R0 : Scalar (kpc)
+        Galactocentric radius of the Sun perp. to z-axis (i.e. in cylindrical coordinates)
+
+    Returns:
+      Theta : Array of scalars (km/s)
+        Circular rotation speed of objects at radius R
+        (i.e. tangential velocity in cylindrical coordinates)
     """
 
     lam = (a3 / 1.5) * (a3 / 1.5) * (a3 / 1.5) * (a3 / 1.5) * (a3 / 1.5)
@@ -105,7 +123,7 @@ def urc(R, a2, a3, R0=8.15):
 
     v3 = 1.6 * np.exp(-0.4 * lam) * rho * rho / (rho * rho + 2.25 * lam ** 0.4)
 
-    return v1 * np.sqrt(v2 + v3)
+    return v1 * np.sqrt(v2 + v3)  # km/s; circular rotation speed at radius R
 
 
 def gal_to_bar_vel(glon, glat, dist, vbary, gmul, gmub):
@@ -195,11 +213,11 @@ def bar_to_gcen_vel(Ub, Vb, Wb, R0=_RSUN, Zsun=_ZSUN, roll=_ROLL):
     return vel_xg, vel_yg, vel_zg
 
 
-def gcen_cart_to_gcen_cyl(x_kpc, y_kpc, z_kpc, vx, vy, vz):
+def get_gcen_cyl_radius_and_circ_velocity(x_kpc, y_kpc, vx, vy):
     """
-    Convert galactocentric Cartesian velocities to the
-    galactocentric cylindrical velocities
-    
+    Convert galactocentric Cartesian velocities to
+    galactocentric cylindrical tangential velocity
+
                 +z +y
                  | /
                  |/
@@ -208,68 +226,55 @@ def gcen_cart_to_gcen_cyl(x_kpc, y_kpc, z_kpc, vx, vy, vz):
                / |
 
     Inputs:
-      x_kpc, y_kpc, z_kpc : Arrays of scalars (kpc)
-        Galactocentric Cartesian positions
-      vx, vy, vz : Arrays of scalars (km/s)
-        Galactocentric Cartesian velocities
+      x_kpc, y_kpc : Arrays of scalars (kpc)
+        Galactocentric x & y Cartesian positions
+      vx, vy : Arrays of scalars (km/s)
+        Galactocentric x & y Cartesian velocities
 
-    Returns: perp_distance, azimuth, height, v_radial, v_theta, v_vertical
+    Returns: perp_distance, v_tangent
       perp_distance : Array of scalars (kpc)
         Radial distance perpendicular to z-axis
-      azimuth : Array of scalars (deg)
-        Azimuthal angle; positive CW from +y-axis like a clock (left-hand convention!)
-      height : Array of scalars (kpc)
-        Height above xy-plane (i.e. z_kpc)
-      v_radial : Array of scalars (km/s)
-        Radial velocity; positive away from z-axis
       v_tangent : Array of scalars (km/s)
         Tangential velocity; positive CW (left-hand convention!)
-      v_vertical : Array of scalars (km/s)
-        Velocity perp. to xy-plane; positive if pointing above xy-plane (i.e. vz)
     """
 
-    y = np.copy(y_kpc) * _KPC_TO_KM  # km
-    x = np.copy(x_kpc) * _KPC_TO_KM  # km
+    y = y_kpc * _KPC_TO_KM  # km
+    x = x_kpc * _KPC_TO_KM  # km
 
     perp_distance = np.sqrt(x_kpc * x_kpc + y_kpc * y_kpc)  # kpc
-    perp_distance_km = np.sqrt(x * x + y * y)  # km
-    # azimuth = (np.arctan2(-y, x) * _RAD_TO_DEG + 90) % 360  # deg in [0,360). Method 1
-    azimuth = (90 - np.arctan2(y, x) * _RAD_TO_DEG) % 360  # deg in [0,360). Method 2
-    #
-    # **Check if any object is on z-axis (i.e. object's x_kpc & y_kpc both zero)**
-    #
-    arr = np.array([x_kpc, y_kpc])  # array with x_kpc in 0th row, y_kpc in 1st row
-    if np.any(np.all(arr == 0, axis=0)):  # at least 1 object is on z_axis
-        # Ensure vx & vy are arrays
-        vx = np.atleast_1d(vx)
-        vy = np.atleast_1d(vy)
-        # Initialize arrays to store values
-        v_radial = np.zeros(len(vx))
-        v_tangent = np.zeros(len(vx))
-        for i in range(len(vx)):
-            if x[i] == 0 and y[i] == 0:  # this object is on z-axis
-                # **all velocity in xy-plane is radial velocity**
-                v_radial[i] = np.sqrt(vx[i] * vx[i] + vy[i] * vy[i])  # km/s
-            else:  # this object is not on z-axis
-                v_radial[i] = (x[i] * vx[i] + y[i] * vy[i]) / perp_distance_km[i]  # km/s
-                v_tangent[i] = (x[i] * vy[i] - y[i] * vx[i]) / perp_distance_km[i]  # km/s
-    else:  # no object is on z-axis (no division by zero)
-        v_radial = (x * vx + y * vy) / perp_distance_km  # km/s
-        v_tangent = (x * vy - y * vx) / perp_distance_km  # km/s
 
-    return perp_distance, azimuth, z_kpc, v_radial, v_tangent, vz
+    # #
+    # # **Check if any object is on z-axis (i.e. object's x_kpc & y_kpc both zero)**
+    # #
+    # arr = np.array([x_kpc, y_kpc])  # array with x_kpc in 0th row, y_kpc in 1st row
+    # if np.any(np.all(arr == 0, axis=0)):  # at least 1 object is on z_axis
+    #     # Ensure vx & vy are arrays
+    #     vx = np.atleast_1d(vx)
+    #     vy = np.atleast_1d(vy)
+    #     # Initialize array (initially zero) to store tangential velocities
+    #     v_tangent = np.zeros(len(vx))
+    #     for i in range(len(vx)):
+    #         if x[i] != 0 and y[i] != 0:  # this object is not on z-axis
+    #             v_tangent[i] = (x[i] * vy[i] - y[i] * vx[i]) / perp_distance_km[i]  # km/s
+    # else:  # no object is on z-axis (no division by zero)
+    #     v_tangent = (y * vx - x * vy) / perp_distance_km  # km/s
+
+    # Assuming no object is on z-axis
+    v_tangent = (y * vx - x * vy) / perp_distance / _KPC_TO_KM  # km/s
+
+    return perp_distance, v_tangent
 
 
 def vlsr_to_vbary(vlsr, glon, glat):
     """
     Converts LSR (radial) velocity to radial velocity in barycentric frame
-    
+
     Inputs:
       vlsr : Array of scalars (km/s)
         Radial velocity relative to local standard of rest
       glon, glat : Array of scalars (deg)
         Galactic longitude and latitude
-    
+
     Returns: vbary
       vbary : Array of scalars (km/s)
         Radial velocity relative to barycentre of Solar System (NOT vlsr)
@@ -295,30 +300,24 @@ def main():
     conn = create_connection(db)
 
     # Get data + put into DataFrame
-    gcoords = get_coords(conn)  # galactic coordinates
+    coords = get_coords(conn)  # galactic coordinates
     vels = get_vels(conn)
     # print(gcoords.to_markdown())
 
     # Slice data into components
-    glon = gcoords["glong"]  # deg
-    glat = gcoords["glat"]  # deg
-    gdist = 1 / gcoords["plx"]  # kpc
-    ra = vels["ra"]  # deg
-    dec = vels["dec"]  # deg
+    r_asc = coords["ra"]  # deg
+    dec = coords["dec"]  # deg
+    glon = coords["glong"]  # deg
+    glat = coords["glat"]  # deg
+    gdist = 1 / coords["plx"]  # kpc
     eqmux = vels["mux"]  # mas/yr (equatorial frame)
     eqmuy = vels["muy"]  # mas/y (equatorial frame)
     vlsr = vels["vlsr"]  # km/s
-    vbary = vlsr_to_vbary(vlsr, glon, glat)
+    vbary = vlsr_to_vbary(vlsr, glon, glat)  # km/s
 
     # Transform from galactic to galactocentric Cartesian coordinates
-    bary_x, bary_y, bary_z = gm.galactic_to_barycentric(glon, glat, gdist)
-    gcen_x, gcen_y, gcen_z = gm.barycentric_to_galactocentric(bary_x, bary_y, bary_z)
-
-    # # Change galactocentric coordinates to left-hand convention
-    # gcen_x, gcen_y = gcen_y, -gcen_x
-
-    # # Calculate distance from galactic centre
-    Rcens = np.sqrt(gcen_x * gcen_x + gcen_y * gcen_y + gcen_z * gcen_z)  # kpc
+    bary_x, bary_y, bary_z = trans.gal_to_bar(glon, glat, gdist)
+    gcen_x, gcen_y, gcen_z = trans.bar_to_gcen(bary_x, bary_y, bary_z)
 
     # Transform equatorial proper motions to galactic frame
     ############################## USING ASTROPY ##############################
@@ -347,39 +346,54 @@ def main():
     ##########################################################################
 
     ####################### ATTEMPT WITH OWN FUNCTIONS  ######################
-    # NOTE: glon2, glat2 unnecessary
-    # TODO: make own equatorial to galactic velocity function
-    glon2, glat2, gmul, gmub = trans.eq_to_gal(ra, dec, eqmux, eqmuy)
+    gmul, gmub = trans.eq_to_gal(r_asc, dec, eqmux, eqmuy, return_pos=False)
 
     U, V, W = gal_to_bar_vel(glon, glat, gdist, vbary, gmul, gmub)
     gcen_vx, gcen_vy, gcen_vz = bar_to_gcen_vel(U, V, W)
     ##########################################################################
 
     # Calculate circular rotation speed by converting to cylindrical frame
-    (
-        perp_distance,
-        azimuth,
-        height,
-        v_radial,
-        v_circular,
-        v_vertical,
-    ) = gcen_cart_to_gcen_cyl(gcen_x, gcen_y, gcen_z, gcen_vx, gcen_vy, gcen_vz)
+    perp_distance, v_circular = get_gcen_cyl_radius_and_circ_velocity(
+        gcen_x, gcen_y, gcen_vx, gcen_vy
+    )
 
     # Create and plot dashed line for rotation curve
     fig, ax = plt.subplots()
-    Rvals = np.linspace(0, 300, 1000)
-    Vvals = urc(Rvals, 0.96, 1.62)
+    Rvals = np.linspace(0, 17, 101)
+    Vvals = urc(Rvals)
     ax.plot(Rvals, Vvals, "r-.", linewidth=0.5)
 
     # Plot data
-    ax.plot(Rcens, abs(v_circular), "o", markersize=2)
-    ax.set_xlim(0, 17)
-    ax.set_ylim(0, 300)
+    ax.plot(perp_distance, v_circular, "o", markersize=2)
 
     # Set title and labels. Then save figure
-    ax.set_title("Galactic Rotation Curve")
+    ax.set_title("Galactic Rotation Curve with Reid et al. Parameters")
     ax.set_xlabel("R (kpc)")
     ax.set_ylabel("$\Theta$ (km $\mathrm{s}^{-1})$")
+    ax.set_xlim(0, 17)
+    ax.set_ylim(0, 300)
+    # Create legend to display current parameter values
+    legend_elements = [
+        Line2D(
+            [0],
+            [0],
+            marker="o",
+            color="w",
+            markerfacecolor="k",
+            markersize=0,
+            label=f"a2 = {_A_TWO}",
+        ),
+        Line2D(
+            [0],
+            [0],
+            marker="o",
+            color="w",
+            markerfacecolor="k",
+            markersize=0,
+            label=f"a3 = {_A_THREE}",
+        ),
+    ]
+    ax.legend(handles=legend_elements, handlelength=0, handletextpad=0)
     fig.savefig(
         Path(__file__).parent / "rot_curve.jpg",
         format="jpg",
