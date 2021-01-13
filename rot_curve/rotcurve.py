@@ -251,14 +251,11 @@ def gcen_cart_to_gcen_cyl(x_kpc, y_kpc, z_kpc, vx, vy, vz):
                 # **all velocity in xy-plane is radial velocity**
                 v_radial[i] = np.sqrt(vx[i] * vx[i] + vy[i] * vy[i])  # km/s
             else:  # this object is not on z-axis
-                v_radial[i] = ((x[i] * vx[i] + y[i] * vy[i])
-                               / np.sqrt(x[i] * x[i] + y[i] * y[i]))  # km/s
-                v_tangent[i] = ((x[i] * vy[i] - y[i] * vx[i])
-                                / (x[i] * x[i] + y[i] * y[i])
-                                * perp_distance_km[i])  # km/s
+                v_radial[i] = (x[i] * vx[i] + y[i] * vy[i]) / perp_distance_km[i]  # km/s
+                v_tangent[i] = (x[i] * vy[i] - y[i] * vx[i]) / perp_distance_km[i]  # km/s
     else:  # no object is on z-axis (no division by zero)
-        v_radial = (x * vx + y * vy) / np.sqrt(x * x + y * y)  # km/s
-        v_tangent = (x * vy - y * vx) / (x * x + y * y) * perp_distance_km  # km/s
+        v_radial = (x * vx + y * vy) / perp_distance_km  # km/s
+        v_tangent = (x * vy - y * vx) / perp_distance_km  # km/s
 
     return perp_distance, azimuth, z_kpc, v_radial, v_tangent, vz
 
