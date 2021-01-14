@@ -229,8 +229,9 @@ class TestGalaxyMap(unittest.TestCase):
         """
         Test single galactocentric Cartesian position & velocity to
         galactocentric cylindrical frame transformation
-        
-        NOTE: azimuth measured from +y-axis & increases CW (i.e. like a clock); [0, 360)
+
+        NOTE: azimuth measured from -x-axis & increases CW; [0, 360).
+        Azimuth & v_tangent follow left-hand convention.
         Also, astropy fails when object is on z-axis (but my function doesn't!)
         """
 
@@ -240,7 +241,7 @@ class TestGalaxyMap(unittest.TestCase):
         Vxc = 12.5  # km/s
         Vyc = 3.14  # km/s
         Vzc = -0.24  # km/s
-        
+
         # # Object on z-axis
         # # (astropy will fail with v_rad_a = 12.5 & v_circ_a = nan on last test)
         # Xc = 0 # kpc
@@ -249,7 +250,7 @@ class TestGalaxyMap(unittest.TestCase):
         # Vxc = 12.5  # km/s
         # Vyc = 3.14  # km/s
         # Vzc = -0.24  # km/s
-        
+
         rho, azimuth, z, v_rad, v_circ, v_vert = rc.gcen_cart_to_gcen_cyl(
             Xc, Yc, Zc, Vxc, Vyc, Vzc
         )
@@ -267,10 +268,10 @@ class TestGalaxyMap(unittest.TestCase):
             galcen_v_sun=_GAL_V_SUN,
         ).cylindrical
         rho_a = cyl.rho.value  # kpc
-        azimuth_a = (90 - cyl.phi.value) % 360  # deg & ensures angle is in [0,360)
+        azimuth_a = (180 - cyl.phi.value) % 360  # deg & ensures angle is in [0,360)
         z_a = cyl.z.value  # kpc
         v_rad_a = cyl.differentials["s"].d_rho.value  # km/s
-        v_circ_a = cyl.differentials["s"].d_phi.value * cyl.rho.value  # km/s
+        v_circ_a = -cyl.differentials["s"].d_phi.value * cyl.rho.value  # km/s
         v_vert_a = cyl.differentials["s"].d_z.value  # km/s
 
         # print("My method:", rho, azimuth, z, v_rad, v_circ, v_vert)
@@ -287,8 +288,9 @@ class TestGalaxyMap(unittest.TestCase):
         """
         Test multiple galactocentric Cartesian position & velocity to
         galactocentric cylindrical frame transformations
-        
-        NOTE: azimuth measured from +y-axis & increases CW (i.e. like a clock); [0, 360)
+
+        NOTE: azimuth measured from -x-axis & increases CW; [0, 360).
+        Azimuth & v_tangent follow left-hand convention.
         Also, astropy fails when object is on z-axis (but my function doesn't!)
         """
 
@@ -298,7 +300,7 @@ class TestGalaxyMap(unittest.TestCase):
         Vxcs = np.array([12.5, 11, -0.2, 51, 84.2, 0, -54, 8, 12, -4]) # km/s
         Vycs = np.array([3.14, 5, -2.0, 0.12, 0.22, 1.58, -24, 2, 0, -3]) # km/s
         Vzcs = np.array([-0.24, 15, 22, -5.2, -0.2, 0.4, 0.74, 0.9, 1.24, 55.1])  # km/s
-        
+
         # # Last object in array on z-axis
         # # (astropy will fail with v_rad_a = -4.0 & v_circ_a = nan on last test)
         # Xcs = np.array([0.22, 2.4, 3.2, 12.5, -8.1, -0.32, -6.541, -1, 0, -0])  # kpc
@@ -325,10 +327,10 @@ class TestGalaxyMap(unittest.TestCase):
             galcen_v_sun=_GAL_V_SUN,
         ).cylindrical
         rhos_a = cyls.rho.value  # kpc
-        azimuths_a = (90 - cyls.phi.value) % 360  # deg & ensures angle is in [0,360)
+        azimuths_a = (180 - cyls.phi.value) % 360  # deg & ensures angle is in [0,360)
         zs_a = cyls.z.value  # kpc
         v_rads_a = cyls.differentials["s"].d_rho.value  # km/s
-        v_circs_a = cyls.differentials["s"].d_phi.value * cyls.rho.value  # km/s
+        v_circs_a = -cyls.differentials["s"].d_phi.value * cyls.rho.value  # km/s
         v_verts_a = cyls.differentials["s"].d_z.value  # km/s
 
         for (
