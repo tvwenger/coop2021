@@ -97,32 +97,6 @@ def main():
     vlsr = vels["vlsr"]  # km/s
     e_vlsr = vels["e_vlsr"]  # km/s
 
-    # # Parallax to distance
-    # gdist, e_gdist = trans.parallax_to_dist(plx, e_plx)  # kpc
-    # # LSR velocity to barycentric velocity
-    # vbary, e_vbary = trans.vlsr_to_vbary(vlsr, glon, glat, e_vlsr)  # km/s
-
-    # # Transform from galactic to galactocentric Cartesian coordinates
-    # bary_x, bary_y, bary_z, e_bary_x, e_bary_y, e_bary_z = trans.gal_to_bar(glon, glat, gdist, e_gdist)
-    # gcen_x, gcen_y, gcen_z, e_gcen_x, e_gcen_y, e_gcen_z = trans.bar_to_gcen(bary_x, bary_y, bary_z, e_bary_x, e_bary_y, e_bary_z)
-
-    # # Transform equatorial proper motions to galactic proper motions
-    # gmul, gmub, e_gmul, e_gmub = trans.eq_to_gal(r_asc, dec, eqmux, eqmuy, e_eqmux, e_eqmuy, return_pos=False)
-
-    # # Transform galactic proper motions to barycentric Cartesian velocities
-    # U, V, W, e_U, e_V, e_W = trans.gal_to_bar_vel(glon, glat, gdist, gmul, gmub, vbary, e_gdist, e_gmul, e_gmub, e_vbary)
-
-    # # Transform barycentric Cartesian velocities to galactocentric Cartesian velocities
-    # gcen_vx, gcen_vy, gcen_vz, e_gcen_vx, e_gcen_vy, e_gcen_vz = trans.bar_to_gcen_vel(U, V, W, e_U, e_V, e_W)
-
-    # # Calculate circular rotation speed by converting to cylindrical frame
-    # radius, v_circ, e_radius, e_v_circ = trans.get_gcen_cyl_radius_and_circ_velocity(
-    #     gcen_x, gcen_y, gcen_vx, gcen_vy, e_gcen_x, e_gcen_y, e_gcen_vx, e_gcen_vy
-    # )
-    
-    # print("No MC: radius", radius[0], "+/-", e_radius[0])
-    # print("No MC: v_circ", v_circ[0], "+/-", e_v_circ[0])
-
     # ########################### MONTE CARLO METHOD (ROW BY ROW) ##########################
     # # Make arrays to store fit parameters
     # _NUM_TRIALS = 50  # number of times to run curve_fit
@@ -262,10 +236,10 @@ def main():
         radius_mc, v_circ_mc = trans.get_gcen_cyl_radius_and_circ_velocity(gcen_x_mc, gcen_y_mc, gcen_vx_mc, gcen_vy_mc)
 
         # Store results
-        radii_mc =  np.mean(radius_mc, axis=1)
-        e_radii_mc = np.std(radius_mc, axis=1)
-        v_circs_mc = np.mean(v_circ_mc, axis=1)
-        e_v_circs_mc = np.std(v_circ_mc, axis=1)
+        radii_mc =  np.mean(radius_mc, axis=1)  # mean of each row (axis=1)
+        e_radii_mc = np.std(radius_mc, axis=1)  # std of each row (axis=1)
+        v_circs_mc = np.mean(v_circ_mc, axis=1)  # mean of each row (axis=1)
+        e_v_circs_mc = np.std(v_circ_mc, axis=1)  # std of each row (axis=1)
 
         # Condition to help clean up data
         condition = e_v_circs_mc < 20  # km/s
@@ -274,7 +248,7 @@ def main():
             lambda r, a2, a3: urc(r, a2, a3, R0=_RSUN),
             radii_mc[condition],
             v_circs_mc[condition],
-            sigma = e_v_circs_mc[condition],
+            sigma=e_v_circs_mc[condition],
             absolute_sigma=True,
             p0=[_A_TWO, _A_THREE],  # inital guesses for a2, a3
             bounds=([0.8, 1.5], [1.1, 1.7]),  # bounds for a2, a3
@@ -303,33 +277,27 @@ def main():
     # Condition to help clean up data
     condition = e_v_circs_mc < 20  # km/s
     # Plot most recent data
-    ax1.errorbar(x=radii_mc[condition], y=v_circs_mc[condition], xerr=e_radii_mc[condition], yerr=e_v_circs_mc[condition], fmt="o", markersize=2, capsize=2)
+    ax1.errorbar(x=radii_mc[condition], y=v_circs_mc[condition],
+                xerr=e_radii_mc[condition], yerr=e_v_circs_mc[condition],
+                fmt="o", markersize=2, capsize=2)
 
     # Set title and labels. Then save figure
     ax1.set_title("Galactic Rotation Curve (MC Least Squares)")
     ax1.set_xlabel("R (kpc)")
-    ax1.set_ylabel("$\Theta$ (km $\mathrm{s}^{-1})$")
+    ax1.set_ylabel(r"$\Theta$ (km $\mathrm{s}^{-1})$")
     ax1.set_xlim(0, 17)
     ax1.set_ylim(0, 300)
     # Create legend to display current parameter values
     legend_elements = [
         Line2D(
-            [0],
-            [0],
-            marker="o",
-            color="w",
-            markerfacecolor="k",
-            markersize=0,
-            label=f"a2 = {round(a2_opt, 3):.3f} $\pm$ {round(e_a2_opt, 3)}",
+            [0], [0],
+            marker="o", color="w", markerfacecolor="k", markersize=0,
+            label=fr"a2 = {round(a2_opt, 3):.3f} $\pm$ {round(e_a2_opt, 3)}",
         ),
         Line2D(
-            [0],
-            [0],
-            marker="o",
-            color="w",
-            markerfacecolor="k",
-            markersize=0,
-            label=f"a3 = {round(a3_opt, 4):.4f} $\pm$ {round(e_a3_opt, 4)}",
+            [0], [0],
+            marker="o", color="w", markerfacecolor="k", markersize=0,
+            label=fr"a3 = {round(a3_opt, 4):.4f} $\pm$ {round(e_a3_opt, 4)}",
         ),
     ]
     ax1.legend(handles=legend_elements, handlelength=0, handletextpad=0)
@@ -348,24 +316,37 @@ def main():
     ax2.set_xlabel("a2 value")
     ax2.set_ylabel("Frequency")
     fig2.savefig(
-    Path(__file__).parent / "a2_MC_histogram.jpg",
-    format="jpg",
-    dpi=300,
-    bbox_inches="tight",
+        Path(__file__).parent / "a2_MC_histogram.jpg",
+        format="jpg",
+        dpi=300,
+        bbox_inches="tight",
     )
     plt.show()
 
     # Plot histogram of a3 parameter values
-    fig2, ax2 = plt.subplots()
-    ax2.hist(a3_vals, bins=20)
-    ax2.set_title(f"a3 parameter values for N={_NUM_TRIALS} trials")
-    ax2.set_xlabel("a3 value")
-    ax2.set_ylabel("Frequency")
-    fig2.savefig(
-    Path(__file__).parent / "a3_MC_histogram.jpg",
-    format="jpg",
-    dpi=300,
-    bbox_inches="tight",
+    fig3, ax3 = plt.subplots()
+    ax3.set_title(f"a3 parameter values for N={_NUM_TRIALS} trials")
+    ax3.hist(a3_vals, bins=20)
+    ax3.set_xlabel("a3 value")
+    ax3.set_ylabel("Frequency")
+    fig3.savefig(
+        Path(__file__).parent / "a3_MC_histogram.jpg",
+        format="jpg",
+        dpi=300,
+        bbox_inches="tight",
+    )
+    plt.show()
+
+    # Make 2D histogram of parameters a2 & a3
+    a2_a3 = np.vstack((a2_vals, a3_vals))  # a2_vals in first row, a3_vals in second row
+    a2_a3 = a2_a3.T  # transpose (now array shape is _NUM_TRIALS rows by 2 columns)
+    fig4 = corner.corner(a2_a3, labels=["a2", "a3"],
+                        quantiles=[0.16,0.5,0.84], show_titles=True)
+    fig4.savefig(
+        Path(__file__).parent / "a2_a3_MC_histogram.jpg",
+        format="jpg",
+        dpi=300,
+        bbox_inches="tight",
     )
     plt.show()
 
