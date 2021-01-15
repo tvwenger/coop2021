@@ -124,7 +124,7 @@ def main():
 
     ################################## MONTE CARLO METHOD ################################
     # Make arrays to store fit parameters
-    _NUM_TRIALS = 50
+    _NUM_TRIALS = 50  # number of times to run curve_fit
     a2_vals = np.zeros(_NUM_TRIALS, float)
     a3_vals = np.zeros(_NUM_TRIALS, float)
     e_a2_vals = np.zeros(_NUM_TRIALS, float)
@@ -136,17 +136,7 @@ def main():
     e_radii_mc = np.zeros(len(plx), float)
     e_v_circs_mc = np.zeros(len(plx), float)
 
-    # # Fit 202 (i.e. len(plx)) times
-    # for trial in range(len(plx)):
-    
-    # Fit 5 times
     for trial in range(_NUM_TRIALS):
-        # Make arrays to store results
-        # radii_mc = np.zeros(len(plx), float)
-        # v_circs_mc = np.zeros(len(plx), float)
-        # e_radii_mc = np.zeros(len(plx), float)
-        # e_v_circs_mc = np.zeros(len(plx), float)
-
         # Iterate through each row
         for row in range(len(plx)):
             # Sample observed parameters 10000 times
