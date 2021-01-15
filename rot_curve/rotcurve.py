@@ -213,6 +213,77 @@ def bar_to_gcen_vel(Ub, Vb, Wb, R0=_RSUN, Zsun=_ZSUN, roll=_ROLL):
     return vel_xg, vel_yg, vel_zg
 
 
+def gcen_cart_to_gcen_cyl(x_kpc, y_kpc, z_kpc, vx, vy, vz):
+    """
+    Convert galactocentric Cartesian positions and velocities to
+    galactocentric cylindrical positions and velocities
+
+                +z +y
+                 | /
+                 |/
+    Sun -x ------+------ +x
+                /|
+               / |
+
+    Inputs:
+      x_kpc, y_kpc, z_kpc : Array of scalars (kpc)
+        Galactocentric Cartesian positions
+      vx, vy, vz : Array of scalars (km/s)
+        Galactocentric Cartesian velocities
+
+    Returns: perp_distance, azimuth, height, v_radial, v_tangent, v_vertical;
+             e_dist, e_azimuth, e_height, e_vrad, e_vtan, e_vvert (optional)
+      perp_distance : Array of scalars (kpc)
+        Radial distance perpendicular to z-axis
+      azimuth : Array of scalars (deg)
+        Azimuthal angle; positive CW from -x-axis (left-hand convention!)
+      height : Array of scalars (kpc)
+        Height above xy-plane (i.e. z_kpc)
+      v_radial : Array of scalars (km/s)
+        Radial velocity; positive away from z-axis
+      v_tangent : Array of scalars (km/s)
+        Tangential velocity; positive CW (left-hand convention!)
+      v_vertical : Array of scalars (km/s)
+        Velocity perp. to xy-plane; positive if pointing above xy-plane (i.e. vz)
+    """
+
+    y = y_kpc * _KPC_TO_KM  # km
+    x = x_kpc * _KPC_TO_KM  # km
+
+    perp_distance = np.sqrt(x_kpc * x_kpc + y_kpc * y_kpc)  # kpc
+    perp_distance_km = perp_distance * _KPC_TO_KM  # km
+
+    azimuth = (np.arctan2(y_kpc, -x_kpc) * _RAD_TO_DEG) % 360  # deg in [0,360)
+
+    # #
+    # # **Check if any object is on z-axis (i.e. object's x_kpc & y_kpc both zero)**
+    # #
+    # arr = np.array([x_kpc, y_kpc])  # array with x_kpc in 0th row, y_kpc in 1st row
+    # if np.any(np.all(arr == 0, axis=0)):  # at least 1 object is on z_axis
+    #     # Ensure vx & vy are arrays
+    #     vx = np.atleast_1d(vx)
+    #     vy = np.atleast_1d(vy)
+    #     # Initialize arrays to store values
+    #     v_radial = np.zeros(len(vx))
+    #     v_tangent = np.zeros(len(vx))
+    #     for i in range(len(vx)):
+    #         if x[i] == 0 and y[i] == 0:  # this object is on z-axis
+    #             # **all velocity in xy-plane is radial velocity**
+    #             v_radial[i] = np.sqrt(vx[i] * vx[i] + vy[i] * vy[i])  # km/s
+    #         else:  # this object is not on z-axis
+    #             v_radial[i] = (x[i] * vx[i] + y[i] * vy[i]) / perp_distance_km[i]  # km/s
+    #             v_tangent[i] = (x[i] * vy[i] - y[i] * vx[i]) / perp_distance_km[i]  # km/s
+    # else:  # no object is on z-axis (no division by zero)
+    #     v_radial = (x * vx + y * vy) / perp_distance_km  # km/s
+    #     v_tangent = (y * vx - x * vy) / perp_distance_km  # km/s
+
+    # Assuming no object is on z-axis
+    v_radial = (x * vx + y * vy) / perp_distance_km  # km/s
+    v_tangent = (y * vx - x * vy) / perp_distance_km  # km/s
+
+    return perp_distance, azimuth, z_kpc, v_radial, v_tangent, vz
+
+
 def get_gcen_cyl_radius_and_circ_velocity(x_kpc, y_kpc, vx, vy):
     """
     Convert galactocentric Cartesian velocities to
