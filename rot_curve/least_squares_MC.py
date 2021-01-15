@@ -7,14 +7,15 @@ from matplotlib.lines import Line2D
 import pandas as pd
 from scipy.optimize import curve_fit
 import corner
-import mytransforms as trans
-from universal_rotcurve import urc
 
-# Want to add galaxymap.py as package:
+# Want to add my own programs as package:
 # Make a $PATH to coop2021 (twice parent folder of this file)
 _SCRIPT_DIR = str(Path.cwd() / Path(__file__).parent.parent)
 # Add coop2021 to $PATH
 sys.path.append(_SCRIPT_DIR)
+
+import mytransforms as trans
+from universal_rotcurve import urc
 
 # Universal rotation curve parameters (Persic et al. 1996)
 _A_TWO = 0.96  # (Reid et al. 2019)
@@ -189,7 +190,7 @@ def main():
             sigma = e_v_circs_mc[condition],
             absolute_sigma=True,
             p0=[_A_TWO, _A_THREE],  # inital guesses for a2, a3
-            bounds=([0.9, 1.5], [1.1, 1.7]),  # bounds for a2, a3
+            bounds=([0.8, 1.5], [1.1, 1.7]),  # bounds for a2, a3
         )
 
         # Store parameter values
