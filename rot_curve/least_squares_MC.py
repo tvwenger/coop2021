@@ -97,88 +97,175 @@ def main():
     vlsr = vels["vlsr"]  # km/s
     e_vlsr = vels["e_vlsr"]  # km/s
 
-    # Parallax to distance
-    gdist, e_gdist = trans.parallax_to_dist(plx, e_plx)  # kpc
-    # LSR velocity to barycentric velocity
-    vbary, e_vbary = trans.vlsr_to_vbary(vlsr, glon, glat, e_vlsr)  # km/s
+    # # Parallax to distance
+    # gdist, e_gdist = trans.parallax_to_dist(plx, e_plx)  # kpc
+    # # LSR velocity to barycentric velocity
+    # vbary, e_vbary = trans.vlsr_to_vbary(vlsr, glon, glat, e_vlsr)  # km/s
 
-    # Transform from galactic to galactocentric Cartesian coordinates
-    bary_x, bary_y, bary_z, e_bary_x, e_bary_y, e_bary_z = trans.gal_to_bar(glon, glat, gdist, e_gdist)
-    gcen_x, gcen_y, gcen_z, e_gcen_x, e_gcen_y, e_gcen_z = trans.bar_to_gcen(bary_x, bary_y, bary_z, e_bary_x, e_bary_y, e_bary_z)
+    # # Transform from galactic to galactocentric Cartesian coordinates
+    # bary_x, bary_y, bary_z, e_bary_x, e_bary_y, e_bary_z = trans.gal_to_bar(glon, glat, gdist, e_gdist)
+    # gcen_x, gcen_y, gcen_z, e_gcen_x, e_gcen_y, e_gcen_z = trans.bar_to_gcen(bary_x, bary_y, bary_z, e_bary_x, e_bary_y, e_bary_z)
 
-    # Transform equatorial proper motions to galactic proper motions
-    gmul, gmub, e_gmul, e_gmub = trans.eq_to_gal(r_asc, dec, eqmux, eqmuy, e_eqmux, e_eqmuy, return_pos=False)
+    # # Transform equatorial proper motions to galactic proper motions
+    # gmul, gmub, e_gmul, e_gmub = trans.eq_to_gal(r_asc, dec, eqmux, eqmuy, e_eqmux, e_eqmuy, return_pos=False)
 
-    # Transform galactic proper motions to barycentric Cartesian velocities
-    U, V, W, e_U, e_V, e_W = trans.gal_to_bar_vel(glon, glat, gdist, gmul, gmub, vbary, e_gdist, e_gmul, e_gmub, e_vbary)
+    # # Transform galactic proper motions to barycentric Cartesian velocities
+    # U, V, W, e_U, e_V, e_W = trans.gal_to_bar_vel(glon, glat, gdist, gmul, gmub, vbary, e_gdist, e_gmul, e_gmub, e_vbary)
 
-    # Transform barycentric Cartesian velocities to galactocentric Cartesian velocities
-    gcen_vx, gcen_vy, gcen_vz, e_gcen_vx, e_gcen_vy, e_gcen_vz = trans.bar_to_gcen_vel(U, V, W, e_U, e_V, e_W)
+    # # Transform barycentric Cartesian velocities to galactocentric Cartesian velocities
+    # gcen_vx, gcen_vy, gcen_vz, e_gcen_vx, e_gcen_vy, e_gcen_vz = trans.bar_to_gcen_vel(U, V, W, e_U, e_V, e_W)
 
-    # Calculate circular rotation speed by converting to cylindrical frame
-    radius, v_circ, e_radius, e_v_circ = trans.get_gcen_cyl_radius_and_circ_velocity(
-        gcen_x, gcen_y, gcen_vx, gcen_vy, e_gcen_x, e_gcen_y, e_gcen_vx, e_gcen_vy
-    )
+    # # Calculate circular rotation speed by converting to cylindrical frame
+    # radius, v_circ, e_radius, e_v_circ = trans.get_gcen_cyl_radius_and_circ_velocity(
+    #     gcen_x, gcen_y, gcen_vx, gcen_vy, e_gcen_x, e_gcen_y, e_gcen_vx, e_gcen_vy
+    # )
     
     # print("No MC: radius", radius[0], "+/-", e_radius[0])
     # print("No MC: v_circ", v_circ[0], "+/-", e_v_circ[0])
 
-    ################################## MONTE CARLO METHOD ################################
-    # Make arrays to store fit parameters
+    # ########################### MONTE CARLO METHOD (ROW BY ROW) ##########################
+    # # Make arrays to store fit parameters
+    # _NUM_TRIALS = 50  # number of times to run curve_fit
+    # a2_vals = np.zeros(_NUM_TRIALS, float)
+    # a3_vals = np.zeros(_NUM_TRIALS, float)
+    # e_a2_vals = np.zeros(_NUM_TRIALS, float)
+    # e_a3_vals = np.zeros(_NUM_TRIALS, float)
+
+    # # Arrays to store results (will be overwritten with each iteration)
+    # radii_mc = np.zeros(len(plx), float)
+    # v_circs_mc = np.zeros(len(plx), float)
+    # e_radii_mc = np.zeros(len(plx), float)
+    # e_v_circs_mc = np.zeros(len(plx), float)
+
+    # for trial in range(_NUM_TRIALS):
+    #     # Iterate through each row
+    #     for row in range(len(plx)):
+    #         # Sample observed parameters 10000 times
+    #         plx_mc = np.random.normal(loc=plx[row], scale=e_plx[row], size=10000)
+    #         eqmux_mc = np.random.normal(loc=eqmux[row], scale=e_eqmux[row], size=10000)
+    #         eqmuy_mc = np.random.normal(loc=eqmuy[row], scale=e_eqmuy[row], size=10000)
+    #         vlsr_mc = np.random.normal(loc=vlsr[row], scale=e_vlsr[row], size=10000)
+
+    #         # Make quantities (those with no uncertainty) same size as MC array
+    #         r_asc_mc = np.full(10000, r_asc[row])
+    #         dec_mc = np.full(10000, dec[row])
+    #         glon_mc = np.full(10000, glon[row])
+    #         glat_mc = np.full(10000, glat[row])
+
+    #         # Parallax to distance
+    #         gdist_mc = trans.parallax_to_dist(plx_mc)
+
+    #         # LSR velocity to barycentric velocity
+    #         vbary_mc = trans.vlsr_to_vbary(vlsr_mc, glon_mc, glat_mc)
+
+    #         # Transform from galactic to galactocentric Cartesian coordinates
+    #         bary_x_mc, bary_y_mc, bary_z_mc = trans.gal_to_bar(glon_mc, glat_mc, gdist_mc)
+    #         gcen_x_mc, gcen_y_mc, gcen_z_mc = trans.bar_to_gcen(bary_x_mc, bary_y_mc, bary_z_mc)
+
+    #         # Transform equatorial proper motions to galactic proper motions
+    #         gmul_mc, gmub_mc = trans.eq_to_gal(r_asc_mc, dec_mc, eqmux_mc, eqmuy_mc, return_pos=False)
+
+    #         # Transform galactic proper motions to barycentric Cartesian velocities
+    #         U_mc, V_mc, W_mc = trans.gal_to_bar_vel(glon_mc, glat_mc, gdist_mc, gmul_mc, gmub_mc, vbary_mc)
+
+    #         # Transform barycentric Cartesian velocities to galactocentric Cartesian velocities
+    #         gcen_vx_mc, gcen_vy_mc, gcen_vz_mc = trans.bar_to_gcen_vel(U_mc, V_mc, W_mc)
+
+    #         # Calculate circular rotation speed by converting to cylindrical frame
+    #         radius_mc, v_circ_mc = trans.get_gcen_cyl_radius_and_circ_velocity(gcen_x_mc, gcen_y_mc, gcen_vx_mc, gcen_vy_mc)
+
+    #         # Store results
+    #         radii_mc[row] =  np.mean(radius_mc)
+    #         e_radii_mc[row] = np.std(radius_mc)
+    #         v_circs_mc[row] = np.mean(v_circ_mc)
+    #         e_v_circs_mc[row] = np.std(v_circ_mc)
+
+    #     # Condition to help clean up data
+    #     condition = e_v_circs_mc < 20  # km/s
+    #     # Fit data to model (with uncertainties in data)
+    #     optimal_params, cov = curve_fit(
+    #         lambda r, a2, a3: urc(r, a2, a3, R0=_RSUN),
+    #         radii_mc[condition],
+    #         v_circs_mc[condition],
+    #         sigma = e_v_circs_mc[condition],
+    #         absolute_sigma=True,
+    #         p0=[_A_TWO, _A_THREE],  # inital guesses for a2, a3
+    #         bounds=([0.8, 1.5], [1.1, 1.7]),  # bounds for a2, a3
+    #     )
+
+    #     # Store parameter values
+    #     a2_vals[trial] = optimal_params[0]
+    #     a3_vals[trial] = optimal_params[1]
+    #     e_a2_vals[trial] = np.sqrt(np.diag(cov))[0]
+    #     e_a3_vals[trial] = np.sqrt(np.diag(cov))[1]
+    # ######################### END MONTE CARLO METHOD (ROW BY ROW) ########################
+
+    ########################### MONTE CARLO METHOD (ENTIRE ARRAY) ########################
     _NUM_TRIALS = 50  # number of times to run curve_fit
+
+    # Make arrays to store fit parameters
     a2_vals = np.zeros(_NUM_TRIALS, float)
     a3_vals = np.zeros(_NUM_TRIALS, float)
     e_a2_vals = np.zeros(_NUM_TRIALS, float)
     e_a3_vals = np.zeros(_NUM_TRIALS, float)
 
-    # Arrays to store results (will be overwritten with each iteration)
-    radii_mc = np.zeros(len(plx), float)
-    v_circs_mc = np.zeros(len(plx), float)
-    e_radii_mc = np.zeros(len(plx), float)
-    e_v_circs_mc = np.zeros(len(plx), float)
+    # Make arrays to store Monte Carlo data (which will be processed all at once)
+    # Arrays will be overwritten with each new trial
+    plx_mc_tot = np.zeros([len(plx), 10000], float)
+    eqmux_mc_tot = np.zeros([len(plx), 10000], float)
+    eqmuy_mc_tot = np.zeros([len(plx), 10000], float)
+    vlsr_mc_tot =  np.zeros([len(plx), 10000], float)
+    r_asc_mc_tot = np.zeros([len(plx), 10000], float)
+    dec_mc_tot = np.zeros([len(plx), 10000], float)
+    glon_mc_tot = np.zeros([len(plx), 10000], float)
+    glat_mc_tot = np.zeros([len(plx), 10000], float)
 
     for trial in range(_NUM_TRIALS):
-        # Iterate through each row
+        # Iterate through each row to populate Monte Carlo data arrays
         for row in range(len(plx)):
             # Sample observed parameters 10000 times
             plx_mc = np.random.normal(loc=plx[row], scale=e_plx[row], size=10000)
             eqmux_mc = np.random.normal(loc=eqmux[row], scale=e_eqmux[row], size=10000)
             eqmuy_mc = np.random.normal(loc=eqmuy[row], scale=e_eqmuy[row], size=10000)
             vlsr_mc = np.random.normal(loc=vlsr[row], scale=e_vlsr[row], size=10000)
+            # Populate arrays
+            plx_mc_tot[row] = plx_mc
+            eqmux_mc_tot[row] = eqmux_mc
+            eqmuy_mc_tot[row] = eqmuy_mc
+            vlsr_mc_tot[row] = vlsr_mc
+            r_asc_mc_tot[row] = np.full(10000, r_asc[row])
+            dec_mc_tot[row] = np.full(10000, dec[row])
+            glon_mc_tot[row] = np.full(10000, glon[row])
+            glat_mc_tot[row] = np.full(10000, glat[row])
 
-            # Make quantities (those with no uncertainty) same size as MC array
-            r_asc_mc = np.full(10000, r_asc[row])
-            dec_mc = np.full(10000, dec[row])
-            glon_mc = np.full(10000, glon[row])
-            glat_mc = np.full(10000, glat[row])
+        # Pass whole Monte Carlo arrays into functions:
+        # Parallax to distance
+        gdist_mc = trans.parallax_to_dist(plx_mc_tot)
 
-            # Parallax to distance
-            gdist_mc = trans.parallax_to_dist(plx_mc)
+        # LSR velocity to barycentric velocity
+        vbary_mc = trans.vlsr_to_vbary(vlsr_mc_tot, glon_mc_tot, glat_mc_tot)
 
-            # LSR velocity to barycentric velocity
-            vbary_mc = trans.vlsr_to_vbary(vlsr_mc, glon_mc, glat_mc)
+        # Transform from galactic to galactocentric Cartesian coordinates
+        bary_x_mc, bary_y_mc, bary_z_mc = trans.gal_to_bar(glon_mc_tot, glat_mc_tot, gdist_mc)
+        gcen_x_mc, gcen_y_mc, gcen_z_mc = trans.bar_to_gcen(bary_x_mc, bary_y_mc, bary_z_mc)
 
-            # Transform from galactic to galactocentric Cartesian coordinates
-            bary_x_mc, bary_y_mc, bary_z_mc = trans.gal_to_bar(glon_mc, glat_mc, gdist_mc)
-            gcen_x_mc, gcen_y_mc, gcen_z_mc = trans.bar_to_gcen(bary_x_mc, bary_y_mc, bary_z_mc)
+        # Transform equatorial proper motions to galactic proper motions
+        gmul_mc, gmub_mc = trans.eq_to_gal(r_asc_mc_tot, dec_mc_tot, eqmux_mc_tot, eqmuy_mc_tot, return_pos=False)
 
-            # Transform equatorial proper motions to galactic proper motions
-            gmul_mc, gmub_mc = trans.eq_to_gal(r_asc_mc, dec_mc, eqmux_mc, eqmuy_mc, return_pos=False)
+        # Transform galactic proper motions to barycentric Cartesian velocities
+        U_mc, V_mc, W_mc = trans.gal_to_bar_vel(glon_mc_tot, glat_mc_tot, gdist_mc, gmul_mc, gmub_mc, vbary_mc)
 
-            # Transform galactic proper motions to barycentric Cartesian velocities
-            U_mc, V_mc, W_mc = trans.gal_to_bar_vel(glon_mc, glat_mc, gdist_mc, gmul_mc, gmub_mc, vbary_mc)
+        # Transform barycentric Cartesian velocities to galactocentric Cartesian velocities
+        gcen_vx_mc, gcen_vy_mc, gcen_vz_mc = trans.bar_to_gcen_vel(U_mc, V_mc, W_mc)
 
-            # Transform barycentric Cartesian velocities to galactocentric Cartesian velocities
-            gcen_vx_mc, gcen_vy_mc, gcen_vz_mc = trans.bar_to_gcen_vel(U_mc, V_mc, W_mc)
+        # Calculate circular rotation speed by converting to cylindrical frame
+        radius_mc, v_circ_mc = trans.get_gcen_cyl_radius_and_circ_velocity(gcen_x_mc, gcen_y_mc, gcen_vx_mc, gcen_vy_mc)
 
-            # Calculate circular rotation speed by converting to cylindrical frame
-            radius_mc, v_circ_mc = trans.get_gcen_cyl_radius_and_circ_velocity(gcen_x_mc, gcen_y_mc, gcen_vx_mc, gcen_vy_mc)
-
-            # Store results
-            radii_mc[row] =  np.mean(radius_mc)
-            e_radii_mc[row] = np.std(radius_mc)
-            v_circs_mc[row] = np.mean(v_circ_mc)
-            e_v_circs_mc[row] = np.std(v_circ_mc)
+        # Store results
+        radii_mc =  np.mean(radius_mc, axis=1)
+        e_radii_mc = np.std(radius_mc, axis=1)
+        v_circs_mc = np.mean(v_circ_mc, axis=1)
+        e_v_circs_mc = np.std(v_circ_mc, axis=1)
 
         # Condition to help clean up data
         condition = e_v_circs_mc < 20  # km/s
@@ -198,7 +285,7 @@ def main():
         a3_vals[trial] = optimal_params[1]
         e_a2_vals[trial] = np.sqrt(np.diag(cov))[0]
         e_a3_vals[trial] = np.sqrt(np.diag(cov))[1]
-    ################################### END MONTE CARLO ##################################
+    ######################## END MONTE CARLO METHOD (ENTIRE ARRAY) #######################
 
     a2_opt = np.mean(a2_vals)
     a3_opt = np.mean(a3_vals)
@@ -261,7 +348,7 @@ def main():
     ax2.set_xlabel("a2 value")
     ax2.set_ylabel("Frequency")
     fig2.savefig(
-    Path(__file__).parent / "a2_histogram.jpg",
+    Path(__file__).parent / "a2_MC_histogram.jpg",
     format="jpg",
     dpi=300,
     bbox_inches="tight",
@@ -275,7 +362,7 @@ def main():
     ax2.set_xlabel("a3 value")
     ax2.set_ylabel("Frequency")
     fig2.savefig(
-    Path(__file__).parent / "a3_histogram.jpg",
+    Path(__file__).parent / "a3_MC_histogram.jpg",
     format="jpg",
     dpi=300,
     bbox_inches="tight",
