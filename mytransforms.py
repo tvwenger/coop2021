@@ -52,7 +52,7 @@ _SIN_DEC_NGP = np.sin(_DEC_NGP * _DEG_TO_RAD)
 _L_NCP = 122.9319185680026
 
 
-def eq_to_gal(ra, dec, mux, muy, return_pos=True):
+def eq_to_gal(ra, dec, mux, muy, e_mux=None, e_muy=None, return_pos=True):
     """
     Convert J2000 equatorial positions and proper motions to the
     Galactic frame.
@@ -68,11 +68,15 @@ def eq_to_gal(ra, dec, mux, muy, return_pos=True):
         RA proper motion with cos(Declination) correction
       muy :: scalar or array of scalars (mas/yr)
         Declination proper motion
+      e_mux :: scalar or array of scalars (mas/yr)
+        Error in RA proper motion with cos(Declination) correction
+      e_muy :: scalar or array of scalars (mas/yr)
+        Error in declination proper motion
       return_pos :: boolean (default True)
-        If True, return galactic longitude and latitude
-        If False, only return galactic proper motions
+        If True, also galactic longitude and latitude
+        If False, only return galactic proper motions (with optional uncertainties)
 
-    Returns: glon, glat, mul, mub
+    Returns: glon, glat, mul, mub; e_mul, e_mub (optional)
       glon :: scalar or array of scalars (deg)
         Galactic longitude
       glat :: scalar or array of scalars (deg)
@@ -81,6 +85,10 @@ def eq_to_gal(ra, dec, mux, muy, return_pos=True):
         Galactic longitude proper motion with cos(Latitude) correction
       mub :: scalar or array of scalars (mas/yr)
         Galactic latitude proper motion
+      e_mul :: scalar or array of scalars (mas/yr)
+        Error in galactic longitude proper motion with cos(Latitude) correction
+      e_mub :: scalar or array of scalars (mas/yr)
+        Error in galactic latitude proper motion
     """
     #
     # Useful constants
@@ -104,9 +112,24 @@ def eq_to_gal(ra, dec, mux, muy, return_pos=True):
     #
     matc1 = _SIN_DEC_NGP * cos_dec - _COS_DEC_NGP * sin_dec * cos_ra_off
     matc2 = _COS_DEC_NGP * sin_ra_off
-    cos_b = np.sqrt(matc1 ** 2.0 + matc2 ** 2.0)
+    cos_b = np.sqrt(matc1 * matc1 + matc2 * matc2)  # Notice cos_b >= 0
     mul = (matc1 * mux + matc2 * muy) / cos_b
     mub = (-matc2 * mux + matc1 * muy) / cos_b
+
+    if e_mux is not None and e_muy is not None:
+        # Storing useful quantities (prevent recalculation)
+        var_mux = e_mux * e_mux
+        var_muy = e_muy * e_muy
+        matc1_sq = matc1 * matc1
+        matc2_sq = matc2 * matc2
+
+        e_mul = np.sqrt(matc1_sq * var_mux + matc2_sq * var_muy) / cos_b  # cos_b >= 0
+        e_mub = np.sqrt(matc2_sq * var_mux + matc1_sq * var_muy) / cos_b  # cos_b >= 0
+
+        return (
+            (glon, glat, mul, mub, e_mul, e_mub) if return_pos
+            else (mul, mub, e_mul, e_mub)
+        )
 
     # Return only specified variables
     return (glon, glat, mul, mub) if return_pos else (mul, mub)
@@ -169,9 +192,9 @@ def gal_to_bar(glon, glat, dist, e_dist=None):
     Zb = dist * sin_glat
 
     if e_dist is not None:
-        e_Xb = e_dist * cos_glat * cos_glon
-        e_Yb = e_dist * cos_glat * sin_glon
-        e_Zb = e_dist * sin_glat
+        e_Xb = abs(e_dist * cos_glat * cos_glon)
+        e_Yb = abs(e_dist * cos_glat * sin_glon)
+        e_Zb = abs(e_dist * sin_glat)
 
         return Xb, Yb, Zb, e_Xb, e_Yb, e_Zb
 
@@ -229,7 +252,7 @@ def bar_to_gcen(
     Yg = Yb1
     Zg = -sin_tilt * Xb1 + cos_tilt * Zb1
 
-    if None not in (e_Xb, e_Yb, e_Zb):
+    if e_Xb is not None and e_Yb is not None and e_Zb is not None:
         # Calculate variance of Xb1, Yb1, Zb1
         var_Xb1 = e_Xb * e_Xb
         var_Yb1 = cos_roll * cos_roll * e_Yb * e_Yb + sin_roll * sin_roll * e_Zb * e_Zb
@@ -245,7 +268,10 @@ def bar_to_gcen(
     return Xg, Yg, Zg
 
 
-def gal_to_bar_vel(glon, glat, dist, vbary, gmul, gmub):
+def gal_to_bar_vel(
+    glon, glat, dist, gmul, gmub, vbary,
+    e_dist=None, e_gmul=None, e_gmub=None, e_vbary=None
+):
     """
     Convert Galactic velocities to a barycentric (heliocentric)
     Cartesian frame
@@ -263,30 +289,67 @@ def gal_to_bar_vel(glon, glat, dist, vbary, gmul, gmub):
         Galactic longitudinal velocity
       gmub : Array of scalars (mas/yr)
         Galactic latitudinal velocity
+      e_dist, e_gmul, e_gmub, e_vbary : Array of scalars, optional
+        Errors in the associated quantities
 
-    Returns: Vxb, Vyb, Vzb
+    Returns: Vxb, Vyb, Vzb; e_Ub, e_Vb, e_Wb (optional)
       Ub, Vb, Wb : Array of scalars (km/s)
         Barycentric Cartesian velocities (i.e. vel_x, vel_y, vel_z)
+      e_Ub, e_Vb, e_Wb : Array of scalars (km/s), optional
+        Errors in the barycentric Cartesian velocities
     """
 
-    # NOTE: (Ub, Vb, Wb) "omits" Sun's LSR velocity (implicitly included)
+    # NOTE: (Ub, Vb, Wb) omits Sun's LSR velocity
     # (This is included in galactocentric transform frunction)
+
+    cos_l = np.cos(glon * _DEG_TO_RAD)
+    cos_b = np.cos(glat * _DEG_TO_RAD)
+    sin_l = np.sin(glon * _DEG_TO_RAD)
+    sin_b = np.sin(glat * _DEG_TO_RAD)
 
     # Adopt method used by Jo Bovy (2019). Inverse of eqns (62) & (64)
     # https://github.com/jobovy/stellarkinematics/blob/master/stellarkinematics.pdf
-    l = glon * _DEG_TO_RAD
-    b = glat * _DEG_TO_RAD
     vl = dist * gmul * _AU_PER_YR_TO_KM_PER_S  # recall gmul has cos(b) correction
     vb = dist * gmub * _AU_PER_YR_TO_KM_PER_S
 
-    Ub = vbary * np.cos(l) * np.cos(b) - vl * np.sin(l) - vb * np.sin(b) * np.cos(l)
-    Vb = vbary * np.sin(l) * np.cos(b) + vl * np.cos(l) - vb * np.sin(b) * np.sin(l)
-    Wb = vbary * np.sin(b) + vb * np.cos(b)
+    Ub = vbary * cos_b * cos_l - vl * sin_l - vb * sin_b * cos_l
+    Vb = vbary * cos_b * sin_l + vl * cos_l - vb * sin_b * sin_l
+    Wb = vbary * sin_b + vb * cos_b
+
+    if e_dist is not None and e_gmul is not None and e_gmub is not None and e_vbary is not None:
+        # Store some useful quantities (prevent recalculation)
+        cos2l = cos_l * cos_l
+        cos2b = cos_b * cos_b
+        sin2b = sin_b * sin_b
+        sin2l = sin_l * sin_l
+        var_vbary = e_vbary * e_vbary
+
+        var_vl = (
+            (gmul * gmul * e_dist * e_dist + dist * dist * e_gmul * e_gmul)
+            * _AU_PER_YR_TO_KM_PER_S * _AU_PER_YR_TO_KM_PER_S
+        )
+        var_vb = (
+            (gmub * gmub * e_dist * e_dist + dist * dist * e_gmub * e_gmub)
+            * _AU_PER_YR_TO_KM_PER_S * _AU_PER_YR_TO_KM_PER_S
+        )
+
+        e_Ub = np.sqrt(
+            cos2b * cos2l * var_vbary + sin2l * var_vl + sin2b * cos2l * var_vb
+        )
+        e_Vb = np.sqrt(
+            cos2b * sin2l * var_vbary + cos2l * var_vl + sin2b * sin2l * var_vb
+        )
+        e_Wb = np.sqrt(sin2b * var_vbary + cos2b * var_vb)
+
+        return Ub, Vb, Wb, e_Ub, e_Vb, e_Wb
 
     return Ub, Vb, Wb
 
 
-def bar_to_gcen_vel(Ub, Vb, Wb, R0=_RSUN, Zsun=_ZSUN, roll=_ROLL):
+def bar_to_gcen_vel(
+    Ub, Vb, Wb, e_Ub=None, e_Vb=None, e_Wb=None,
+    R0=_RSUN, Zsun=_ZSUN, roll=_ROLL
+):
     """
     Convert barycentric Cartesian velocities to the Galactocentric
     Cartesian frame
@@ -294,6 +357,8 @@ def bar_to_gcen_vel(Ub, Vb, Wb, R0=_RSUN, Zsun=_ZSUN, roll=_ROLL):
     Inputs:
       Ub, Vb, Wb : Arrays of scalars (km/s)
         Barycentric Cartesian velocities (i.e. vel_x, vel_y, vel_z)
+      e_Ub, e_Vb, e_Wb : Arrays of scalars (km/s), optional
+        Error in barycentric Cartesian velocities
       R0 : scalar (kpc)
         Galactocentric radius of the Sun
       Zsun : scalar (pc)
@@ -301,27 +366,46 @@ def bar_to_gcen_vel(Ub, Vb, Wb, R0=_RSUN, Zsun=_ZSUN, roll=_ROLL):
       roll : scalar (deg)
         Angle between galactic plane and b=0
 
-    Returns: vel_xg, vel_yg, vel_zg
-      vel_xg, vel_yg, vel_zg : Arrays of scalars (kpc)
+    Returns: vel_xg, vel_yg, vel_zg; e_vel_xg, e_vel_yg, e_vel_zg (optional)
+      vel_xg, vel_yg, vel_zg : Arrays of scalars (km/s)
         Galactocentric Cartesian velocities
+      e_vel_xg, e_vel_yg, e_vel_zg : Arrays of scalars (km/s)
+        Error in galactocentric Cartesian velocities
     """
 
     # Tilt of b=0 relative to galactic plane
     tilt = np.arcsin(0.001 * Zsun / R0)
+    cos_roll = np.cos(roll * _DEG_TO_RAD)
+    sin_roll = np.sin(roll * _DEG_TO_RAD)
+    cos_tilt = np.cos(tilt)
+    sin_tilt = np.sin(tilt)
     #
     # Roll CCW about the barycentric X-axis so that the Y-Z plane
     # is aligned with the Y-Z plane of the galactocentric frame
     #
-    roll_rad = roll * _DEG_TO_RAD
     Ub1 = np.copy(Ub)
-    Vb1 = np.cos(roll_rad) * Vb - np.sin(roll_rad) * Wb
-    Wb1 = np.sin(roll_rad) * Vb + np.cos(roll_rad) * Wb
+    Vb1 = cos_roll * Vb - sin_roll * Wb
+    Wb1 = sin_roll * Vb + cos_roll * Wb
     #
     # Tilt to correct for Sun's height above midplane
     #
-    vel_xg = np.cos(tilt) * Ub1 + np.sin(tilt) * Wb1 + _USUN
+    vel_xg = cos_tilt * Ub1 + sin_tilt * Wb1 + _USUN
     vel_yg = Vb1 + _VSUN + _THETA_0
-    vel_zg = -np.sin(tilt) * Ub1 + np.cos(tilt) * Wb1 + _WSUN
+    vel_zg = -sin_tilt * Ub1 + cos_tilt * Wb1 + _WSUN
+
+    if e_Ub is not None and e_Vb is not None and e_Wb is not None:
+        # Calculate variance of Ub1, Vb1, Wb1
+        var_Ub1 = e_Ub * e_Ub
+        var_Vb1 = cos_roll * cos_roll * e_Vb * e_Vb + sin_roll * sin_roll * e_Wb * e_Wb
+        var_Wb1 = sin_roll * sin_roll * e_Vb * e_Vb + cos_roll * cos_roll * e_Wb * e_Wb
+
+        # Calculate error in vel_xg, vel_yg, vel_zg
+        # NOTE: Did not include uncertainties in _USUN, _VSUN, _W_SUN, or _THETA_0
+        e_vel_xg = np.sqrt(cos_tilt * cos_tilt * var_Ub1 + sin_tilt * sin_tilt * var_Wb1)
+        e_vel_yg = np.sqrt(var_Vb1)
+        e_vel_zg = np.sqrt(sin_tilt * sin_tilt * var_Ub1 + cos_tilt * cos_tilt * var_Wb1)
+
+        return vel_xg, vel_yg, vel_zg, e_vel_xg, e_vel_yg, e_vel_zg
 
     return vel_xg, vel_yg, vel_zg
 
@@ -403,7 +487,7 @@ def gcen_cart_to_gcen_cyl(
     v_radial = (x * vx + y * vy) / perp_distance_km  # km/s
     v_tangent = (y * vx - x * vy) / perp_distance_km  # km/s
 
-    if None not in (e_xkpc, e_ykpc, e_zkpc, e_vx, e_vy, e_vz):
+    if e_xkpc is not None and e_ykpc is not None and e_zkpc is not None and e_vx is not None and e_vy is not None and e_vz is not None:
         # Squared useful quantities (prevent recalculation)
         x_sq = x * x  # km^2
         y_sq = y * y  # km^2
@@ -418,7 +502,7 @@ def gcen_cart_to_gcen_cyl(
         var_dist_km = (x_sq * var_x + y_sq * var_y) / dist_km_sq  # km^2
         e_dist = np.sqrt(var_dist_km) * _KM_TO_KPC  # kpc
 
-        e_azimuth = np.sqrt((y_sq * var_x + x_sq * var_y) / dist_km_sq) * _RAD_TO_DEG
+        e_azimuth = np.sqrt(y_sq * var_x + x_sq * var_y) / dist_km_sq * _RAD_TO_DEG
         e_azimuth %= 360  # deg in [0,360)
 
         e_vrad = (
@@ -432,8 +516,16 @@ def gcen_cart_to_gcen_cyl(
             / perp_distance_km
         )  # km/s
 
-        # TODO: finish e_vtan
-        e_vtan = 1
+        e_vtan = (
+            np.sqrt(
+                vy_sq * var_x
+                + x_sq * var_vy
+                + vx_sq * var_y
+                + y_sq * var_vx
+                + (x * vy - y * vx) * (x * vy - y * vx) * var_dist_km / dist_km_sq
+            )
+            / perp_distance_km
+        )  # km/s
 
         return (perp_distance, azimuth, z_kpc, v_radial, v_tangent, vz,
                 e_dist, e_azimuth, e_zkpc, e_vrad, e_vtan, e_vz)
@@ -441,7 +533,10 @@ def gcen_cart_to_gcen_cyl(
     return perp_distance, azimuth, z_kpc, v_radial, v_tangent, vz
 
 
-def get_gcen_cyl_radius_and_circ_velocity(x_kpc, y_kpc, vx, vy):
+def get_gcen_cyl_radius_and_circ_velocity(
+    x_kpc, y_kpc, vx, vy,
+    e_xkpc=None, e_ykpc=None, e_vx=None, e_vy=None,
+):
     """
     Convert galactocentric Cartesian positions and velocities to
     galactocentric cylindrical distances and tangential velocities
@@ -458,12 +553,20 @@ def get_gcen_cyl_radius_and_circ_velocity(x_kpc, y_kpc, vx, vy):
         Galactocentric x & y Cartesian positions
       vx, vy : Array of scalars (km/s)
         Galactocentric x & y Cartesian velocities
+      e_xkpc, e_ykpc : Array of scalars (kpc), optional
+        Error in x & y galactocentric Cartesian positions
+      e_vx, e_vy : Array of scalars (km/s), optional
+        Error in x & y galactocentric Cartesian velocities
 
-    Returns: perp_distance, v_tangent
+    Returns: perp_distance, v_tangent; e_dist, e_vtan (optional)
       perp_distance : Array of scalars (kpc)
         Radial distance perpendicular to z-axis
       v_tangent : Array of scalars (km/s)
         Tangential velocity; positive CW (left-hand convention!)
+      e_dist : Array of scalars (kpc), optional
+        Error associated with radial distance perpendicular to z-axis
+      e_vtan : Array of scalars (km/s), optional
+        Error associated with tangential velocity
     """
 
     y = y_kpc * _KPC_TO_KM  # km
@@ -490,10 +593,38 @@ def get_gcen_cyl_radius_and_circ_velocity(x_kpc, y_kpc, vx, vy):
     # Assuming no object is on z-axis
     v_tangent = (y * vx - x * vy) / perp_distance / _KPC_TO_KM  # km/s
 
+    if e_xkpc is not None and e_ykpc is not None and e_vx is not None and e_vy is not None:
+        # Squared useful quantities (prevent recalculation)
+        x_sq = x * x  # km^2
+        y_sq = y * y  # km^2
+        var_x = e_xkpc * e_xkpc * _KPC_TO_KM * _KPC_TO_KM  # km^2
+        var_y = e_ykpc * e_ykpc * _KPC_TO_KM * _KPC_TO_KM  # km^2
+        vx_sq = vx * vx  # (km/s)^2
+        vy_sq = vy * vy  # (km/s)^2
+        var_vx = e_vx * e_vx  # (km/s)^2
+        var_vy = e_vy * e_vy  # (km/s)^2
+        dist_km_sq = x_sq + y_sq  # km^2
+
+        var_dist_km = (x_sq * var_x + y_sq * var_y) / dist_km_sq  # km^2
+        e_dist = np.sqrt(var_dist_km) * _KM_TO_KPC  # kpc
+
+        e_vtan = (
+            np.sqrt(
+                vy_sq * var_x
+                + x_sq * var_vy
+                + vx_sq * var_y
+                + y_sq * var_vx
+                + (x * vy - y * vx) * (x * vy - y * vx) * var_dist_km / dist_km_sq
+            )
+            / perp_distance / _KPC_TO_KM
+        )  # km/s
+
+        return perp_distance, v_tangent, e_dist, e_vtan
+
     return perp_distance, v_tangent
 
 
-def vlsr_to_vbary(vlsr, glon, glat):
+def vlsr_to_vbary(vlsr, glon, glat, e_vlsr=None):
     """
     Converts LSR (radial) velocity to radial velocity in barycentric frame
 
@@ -502,10 +633,14 @@ def vlsr_to_vbary(vlsr, glon, glat):
         Radial velocity relative to local standard of rest
       glon, glat : Array of scalars (deg)
         Galactic longitude and latitude
+      e_vlsr : Array of scalars (km/s), optional
+        Error in radial velocity relative to local standard of rest
 
-    Returns: vbary
+    Returns: vbary; e_vbary (optional)
       vbary : Array of scalars (km/s)
         Radial velocity relative to barycentre of Solar System (NOT vlsr)
+      e_vbary : Array of scalars (km/s), optional
+        Error in radial velocity relative to barycentre of Solar System
     """
 
     vbary = (
@@ -514,10 +649,14 @@ def vlsr_to_vbary(vlsr, glon, glat):
         - _VSTD * np.sin(glon * _DEG_TO_RAD) * np.cos(glat * _DEG_TO_RAD)
         - _WSTD * np.sin(glat * _DEG_TO_RAD)
     )
+
+    if e_vlsr is not None:
+        return vbary, e_vlsr
+
     return vbary
 
 
-def vbary_to_vlsr(vbary, glon, glat):
+def vbary_to_vlsr(vbary, glon, glat, e_vbary=None):
     """
     Converts LSR (radial) velocity to radial velocity in barycentric frame
 
@@ -526,10 +665,14 @@ def vbary_to_vlsr(vbary, glon, glat):
         Radial velocity relative to barycentre of Solar System (NOT vlsr)
       glon, glat : Array of scalars (deg)
         Galactic longitude and latitude
+      e_vbary : Array of scalars (km/s), optional
+        Error in radial velocity relative to barycentre of Solar System
 
-    Returns: vbary
+    Returns: vlsr; e_vlsr (optional)
       vlsr : Array of scalars (km/s)
         Radial velocity relative to local standard of rest
+      e_vlsr : Array of scalars (km/s), optional
+        Error in radial velocity relative to local standard of rest
     """
 
     vlsr = (
@@ -539,9 +682,7 @@ def vbary_to_vlsr(vbary, glon, glat):
         + _WSTD * np.sin(glat * _DEG_TO_RAD)
     )
 
+    if e_vbary is not None:
+        return vlsr, e_vbary
+
     return vlsr
-
-
-######################### FUNCTIONS FOR PROPAGATING UNCERTAINTIES ########################
-
-# def
