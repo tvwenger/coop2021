@@ -87,7 +87,7 @@ def main():
     vels = get_vels(conn)  # velocities
     # print(coords.to_markdown())
 
-    # Slice data into components
+    # Slice data into components    
     r_asc = coords["ra"]  # deg
     dec = coords["dec"]  # deg
     glon = coords["glong"]  # deg
@@ -177,9 +177,77 @@ def main():
     #     e_a2_vals[trial] = np.sqrt(np.diag(cov))[0]
     #     e_a3_vals[trial] = np.sqrt(np.diag(cov))[1]
     # ######################### END MONTE CARLO METHOD (ROW BY ROW) ########################
+    
+    # ###################### MONTE CARLO METHOD (ENTIRE ARRAY, ALL DATA) ###################
+    # _NUM_TRIALS = 1000  # number of times (trials) to run curve_fit
 
-    ########################### MONTE CARLO METHOD (ENTIRE ARRAY) ########################
+    # # Make arrays to store fit parameters
+    # a2_vals = np.zeros(_NUM_TRIALS, float)
+    # a3_vals = np.zeros(_NUM_TRIALS, float)
+    # e_a2_vals = np.zeros(_NUM_TRIALS, float)
+    # e_a3_vals = np.zeros(_NUM_TRIALS, float)
+
+    # # # Make 3D arrays for all measurements (NO LONGER NECESSARY)
+    # # # (N.B. length of loc must equal size of final axis)
+    # # # 1st index is random samples, 2nd is each trial, 3rd is each unique source
+    # # # e.g. plx_mc_tot[:,:,0] will return all the samples from every trial
+    # # #      for the first parallax data point
+    # # #
+    # # # To get all samples from the ith variable in the jth trial, use _plx_mc_tot[:,j,i]
+    # # # e.g. Get 1st parallax measurement from the 2nd trial, use: plx_mc_tot[:,1,0]
+    # # plx_mc_tot = np.random.normal(loc=plx, scale=e_plx, size=(_NUM_SAMPLES, _NUM_TRIALS, num_sources))
+    # # eqmux_mc_tot = np.random.normal(loc=eqmux, scale=e_eqmux, size=(_NUM_SAMPLES, _NUM_TRIALS, num_sources))
+    # # eqmuy_mc_tot = np.random.normal(loc=eqmuy, scale=e_eqmuy, size=(_NUM_SAMPLES, _NUM_TRIALS, num_sources))
+    # # vlsr_mc_tot = np.random.normal(loc=vlsr, scale=e_vlsr, size=(_NUM_SAMPLES, _NUM_TRIALS, num_sources))
+
+    # for trial in range(_NUM_TRIALS):
+    #     # Sample measurements
+    #     plx_mc = np.random.normal(loc=plx, scale=e_plx)
+    #     eqmux_mc = np.random.normal(loc=eqmux, scale=e_eqmux)
+    #     eqmuy_mc = np.random.normal(loc=eqmuy, scale=e_eqmuy)
+    #     vlsr_mc = np.random.normal(loc=vlsr, scale=e_vlsr)
+
+    #     # Parallax to distance
+    #     gdist_mc = trans.parallax_to_dist(plx_mc)
+
+    #     # LSR velocity to barycentric velocity
+    #     vbary_mc = trans.vlsr_to_vbary(vlsr_mc, glon, glat)
+
+    #     # Transform from galactic to galactocentric Cartesian coordinates
+    #     bary_x_mc, bary_y_mc, bary_z_mc = trans.gal_to_bar(glon, glat, gdist_mc)
+    #     gcen_x_mc, gcen_y_mc, gcen_z_mc = trans.bar_to_gcen(bary_x_mc, bary_y_mc, bary_z_mc)
+
+    #     # Transform equatorial proper motions to galactic proper motions
+    #     gmul_mc, gmub_mc = trans.eq_to_gal(r_asc, dec, eqmux_mc, eqmuy_mc, return_pos=False)
+
+    #     # Transform galactic proper motions to barycentric Cartesian velocities
+    #     U_mc, V_mc, W_mc = trans.gal_to_bar_vel(glon, glat, gdist_mc, gmul_mc, gmub_mc, vbary_mc)
+
+    #     # Transform barycentric Cartesian velocities to galactocentric Cartesian velocities
+    #     gcen_vx_mc, gcen_vy_mc, gcen_vz_mc = trans.bar_to_gcen_vel(U_mc, V_mc, W_mc)
+
+    #     # Calculate circular rotation speed by converting to cylindrical frame
+    #     radius_mc, v_circ_mc = trans.get_gcen_cyl_radius_and_circ_velocity(gcen_x_mc, gcen_y_mc, gcen_vx_mc, gcen_vy_mc)
+
+    #     # Fit data to model (WITHOUT uncertainties in data)
+    #     optimal_params, cov = curve_fit(
+    #         lambda r, a2, a3: urc(r, a2, a3, R0=_RSUN),
+    #         radius_mc,
+    #         v_circ_mc,
+    #         p0=[_A_TWO, _A_THREE],  # inital guesses for a2, a3
+    #         bounds=([0.5, 1.5], [1.95, 1.7]),  # [lower bound], [upper bound]
+    #     )
+
+    #     # Store parameter values
+    #     a2_vals[trial] = optimal_params[0]
+    #     a3_vals[trial] = optimal_params[1]
+    #     e_a2_vals[trial] = np.sqrt(np.diag(cov))[0]
+    #     e_a3_vals[trial] = np.sqrt(np.diag(cov))[1]
+    # ################### END MONTE CARLO METHOD (ENTIRE ARRAY, ALL DATA) ##################
+
+    ###################### MONTE CARLO METHOD (ENTIRE ARRAY, FILTERED) ###################
     _NUM_TRIALS = 1000  # number of times (trials) to run curve_fit
+    e_plx_arr = np.array(e_plx)  # Prevent "+" not supported warnings
 
     # Make arrays to store fit parameters
     a2_vals = np.zeros(_NUM_TRIALS, float)
@@ -229,11 +297,16 @@ def main():
         # Calculate circular rotation speed by converting to cylindrical frame
         radius_mc, v_circ_mc = trans.get_gcen_cyl_radius_and_circ_velocity(gcen_x_mc, gcen_y_mc, gcen_vx_mc, gcen_vy_mc)
 
+        # Filter data. Casting into an array prevents "+"" not supported warnings
+        bad = (np.array(radius_mc) < 4.0) + (e_plx_arr/plx_mc > 0.2)
+        radius_mc_good = radius_mc[~bad]
+        v_circ_mc_good = v_circ_mc[~bad]
+
         # Fit data to model (WITHOUT uncertainties in data)
         optimal_params, cov = curve_fit(
             lambda r, a2, a3: urc(r, a2, a3, R0=_RSUN),
-            radius_mc,
-            v_circ_mc,
+            radius_mc_good,
+            v_circ_mc_good,
             p0=[_A_TWO, _A_THREE],  # inital guesses for a2, a3
             bounds=([0.5, 1.5], [1.95, 1.7]),  # [lower bound], [upper bound]
         )
@@ -243,12 +316,12 @@ def main():
         a3_vals[trial] = optimal_params[1]
         e_a2_vals[trial] = np.sqrt(np.diag(cov))[0]
         e_a3_vals[trial] = np.sqrt(np.diag(cov))[1]
-    ######################## END MONTE CARLO METHOD (ENTIRE ARRAY) #######################
+    ################### END MONTE CARLO METHOD (ENTIRE ARRAY, FILTERED) ##################
 
-    a2_opt = np.mean(a2_vals)
-    a3_opt = np.mean(a3_vals)
-    e_a2_opt = np.mean(e_a2_vals)
-    e_a3_opt = np.mean(e_a3_vals)
+    a2_opt = np.nanmean(a2_vals)
+    a3_opt = np.nanmean(a3_vals)
+    e_a2_opt = np.nanmean(e_a2_vals)
+    e_a3_opt = np.nanmean(e_a3_vals)
     print(f"a2: {a2_opt} +/- {e_a2_opt}")
     print(f"a3: {a3_opt} +/- {e_a3_opt}")
 
@@ -259,7 +332,7 @@ def main():
     ax1.plot(Rvals, Vvals, "r-.", linewidth=0.5)
 
     # Plot most recent trial
-    ax1.plot(radius_mc, v_circ_mc, "o", markersize=2)
+    ax1.plot(radius_mc_good, v_circ_mc_good, "o", markersize=2)
 
     # Set title and labels. Then save figure
     plt.suptitle("Galactic Rotation Curve with MC Least Squares Fit", y=0.96)
