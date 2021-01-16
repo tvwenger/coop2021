@@ -131,7 +131,10 @@ def main():
 
     ########################### INCLUDING UNCERTAINTIES IN DATA ##########################
     # Clean up data
-    condition = e_v_circ < 20  # km/s
+    condition = e_v_circ < 35  # km/s
+    # condition = np.full(e_v_circ.shape, True)  # include all data
+    
+    print("Number of points included:", radius[condition].shape)
 
     # Fit data to model (with uncertainties in data)
     optimal_params, cov = curve_fit(
@@ -141,7 +144,7 @@ def main():
         sigma = e_v_circ[condition],
         absolute_sigma=True,
         p0=[_A_TWO, _A_THREE],  # inital guesses for a2, a3
-        bounds=([0.9, 1.5], [1.1, 1.7]),  # bounds for a2, a3
+        bounds=([0.5, 1.5], [1.1, 1.7]),  # bounds for a2, a3
     )
     ######################################################################################
     a2_opt = optimal_params[0]
@@ -158,10 +161,14 @@ def main():
     ax.plot(Rvals, Vvals, "r-.", linewidth=0.5)
 
     # Plot data
-    ax.errorbar(x=radius[condition], y=v_circ[condition], xerr=e_radius[condition], yerr=e_v_circ[condition], fmt="o", markersize=2, capsize=2)
+    ax.errorbar(x=radius[condition], y=v_circ[condition],
+                xerr=e_radius[condition], yerr=e_v_circ[condition],
+                fmt="o", markersize=2, capsize=2)
 
     # Set title and labels. Then save figure
-    ax.set_title("Galactic Rotation Curve with Fitted Parameters")
+    plt.suptitle("Galactic Rotation Curve with Least Squares Fit", y=0.96)
+    ax.set_title("(errors derived using uncertainty propagation, ignoring cross terms)",
+                fontsize=8)
     ax.set_xlabel("R (kpc)")
     ax.set_ylabel("$\Theta$ (km $\mathrm{s}^{-1})$")
     ax.set_xlim(0, 17)
