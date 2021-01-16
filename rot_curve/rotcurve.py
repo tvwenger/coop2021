@@ -466,7 +466,7 @@ def main():
     ]
     ax.legend(handles=legend_elements, handlelength=0, handletextpad=0)
     fig.savefig(
-        Path(__file__).parent / "rot_curve.jpg",
+        Path(__file__).parent / "rot_curve_Reid.jpg",
         format="jpg",
         dpi=300,
         bbox_inches="tight",
