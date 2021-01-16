@@ -69,11 +69,15 @@ def get_vels(conn):
 
 
 def main():
-    # Specifying database file name & folder
-    filename = Path("data/hii_v2_20201203.db")
+    # # Specifying database file name & folder
+    # filename = Path("data/hii_v2_20201203.db")
 
-    # Database folder in parent directory of this script (call .parent twice)
-    db = Path(__file__).parent.parent / filename
+    # # Database folder in parent directory of this script (call .parent twice)
+    # db = Path(__file__).parent.parent / filename
+
+    # Specifying absolute file path instead
+    # (allows file to be run in multiple locations as long as database location does not move)
+    db = Path("/home/chengi/Documents/coop2021/data/hii_v2_20201203.db")
 
     # Create database connection to db
     conn = create_connection(db)
@@ -175,7 +179,7 @@ def main():
     # ######################### END MONTE CARLO METHOD (ROW BY ROW) ########################
 
     ########################### MONTE CARLO METHOD (ENTIRE ARRAY) ########################
-    _NUM_TRIALS = 100  # number of times (trials) to run curve_fit
+    _NUM_TRIALS = 1000  # number of times (trials) to run curve_fit
 
     # Make arrays to store fit parameters
     a2_vals = np.zeros(_NUM_TRIALS, float)
@@ -231,7 +235,7 @@ def main():
             radius_mc,
             v_circ_mc,
             p0=[_A_TWO, _A_THREE],  # inital guesses for a2, a3
-            bounds=([0.5, 1.5], [1.1, 1.7]),  # bounds for a2, a3
+            bounds=([0.5, 1.5], [1.95, 1.7]),  # [lower bound], [upper bound]
         )
 
         # Store parameter values
