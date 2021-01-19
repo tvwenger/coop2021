@@ -124,8 +124,8 @@ def main():
     # Create model for fitting
     urc_model = odr.Model(urc_odr)
 
-    # Counter for number of times where ODR stopped due to reachign max iterations
-    num_maxiter = 0
+    # Counter for number of times where ODR stopped due to reaching max iterations
+    num_reach_maxiter = 0
 
     for trial in range(_NUM_TRIALS):
         # Sample measurements
@@ -135,7 +135,7 @@ def main():
         vlsr_mc = np.random.normal(loc=vlsr, scale=e_vlsr)
 
         # Transform raw data into galactocentric cylindrical distance & circular velocity
-        radius_mc, v_circ_mc = trans.raw_data_to_gcen_cyl(
+        radius_mc, v_circ_mc = trans.eq_and_gal_to_gcen_cyl(
             r_asc, dec, plx_mc, glon, glat, eqmux_mc, eqmuy_mc, vlsr_mc
         )
 
@@ -159,7 +159,7 @@ def main():
         # if trial in range(0,10):
         #     my_output.pprint()
         if my_output.stopreason == ["Iteration limit reached"]:
-            num_maxiter += 1
+            num_reach_maxiter += 1
 
         # Store optimal parameters
         a2_vals[trial] = my_output.beta[0]
@@ -176,7 +176,7 @@ def main():
     e_a3_opt = np.std(a3_vals)
     print(f"a2: {a2_opt} +/- {e_a2_opt}")
     print(f"a3: {a3_opt} +/- {e_a3_opt}")
-    print("Number of times ODR stoppped due to reaching max iterations:", num_maxiter)
+    print("Number of times ODR stoppped due to reaching max iterations:", num_reach_maxiter, f" of {_NUM_TRIALS} trials")
     print("N.B. The reason for the nonsensical results is actually because of invalid a2/a3 parameters")
 
     # Create and plot dashed line for rotation curve using optimal parameters

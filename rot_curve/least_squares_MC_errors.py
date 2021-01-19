@@ -118,7 +118,7 @@ def main():
     glat_mc = np.array([glat, ] * _NUM_SAMPLES)  # _NUM_SAMPLES by num_sources
 
     # # Pass whole Monte Carlo arrays into function:    
-    radius_mc, v_circ_mc = trans.raw_data_to_gcen_cyl(
+    radius_mc, v_circ_mc = trans.eq_and_gal_to_gcen_cyl(
         r_asc_mc, dec_mc, plx_mc, glon_mc, glat_mc, eqmux_mc, eqmuy_mc, vlsr_mc
     )
 
