@@ -101,17 +101,17 @@ def main():
     vbary, e_vbary = trans.vlsr_to_vbary(vlsr, glon, glat, e_vlsr)  # km/s
 
     # Transform from galactic to galactocentric Cartesian coordinates
-    bary_x, bary_y, bary_z, e_bary_x, e_bary_y, e_bary_z = trans.gal_to_bar(glon, glat, gdist, e_gdist)
-    gcen_x, gcen_y, gcen_z, e_gcen_x, e_gcen_y, e_gcen_z = trans.bar_to_gcen(bary_x, bary_y, bary_z, e_bary_x, e_bary_y, e_bary_z)
+    bary_x, bary_y, bary_z, e_bary_x, e_bary_y, e_bary_z = trans.gal_to_bary(glon, glat, gdist, e_gdist)
+    gcen_x, gcen_y, gcen_z, e_gcen_x, e_gcen_y, e_gcen_z = trans.bary_to_gcen(bary_x, bary_y, bary_z, e_bary_x, e_bary_y, e_bary_z)
 
     # Transform equatorial proper motions to galactic proper motions
     gmul, gmub, e_gmul, e_gmub = trans.eq_to_gal(r_asc, dec, eqmux, eqmuy, e_eqmux, e_eqmuy, return_pos=False)
 
     # Transform galactic proper motions to barycentric Cartesian velocities
-    U, V, W, e_U, e_V, e_W = trans.gal_to_bar_vel(glon, glat, gdist, gmul, gmub, vbary, e_gdist, e_gmul, e_gmub, e_vbary)
+    U, V, W, e_U, e_V, e_W = trans.gal_to_bary_vel(glon, glat, gdist, gmul, gmub, vbary, e_gdist, e_gmul, e_gmub, e_vbary)
 
     # Transform barycentric Cartesian velocities to galactocentric Cartesian velocities
-    gcen_vx, gcen_vy, gcen_vz, e_gcen_vx, e_gcen_vy, e_gcen_vz = trans.bar_to_gcen_vel(U, V, W, e_U, e_V, e_W)
+    gcen_vx, gcen_vy, gcen_vz, e_gcen_vx, e_gcen_vy, e_gcen_vz = trans.bary_to_gcen_vel(U, V, W, e_U, e_V, e_W)
 
     # Calculate circular rotation speed by converting to cylindrical frame
     radius, v_circ, e_radius, e_v_circ = trans.get_gcen_cyl_radius_and_circ_velocity(

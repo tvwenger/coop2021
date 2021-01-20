@@ -126,7 +126,7 @@ def urc(R, a2=_A_TWO, a3=_A_THREE, R0=_RSUN):
     return v1 * np.sqrt(v2 + v3)  # km/s; circular rotation speed at radius R
 
 
-def gal_to_bar_vel(glon, glat, dist, vbary, gmul, gmub):
+def gal_to_bary_vel(glon, glat, dist, vbary, gmul, gmub):
     """
     Convert Galactic velocities to a barycentric (heliocentric)
     Cartesian frame
@@ -170,7 +170,7 @@ def gal_to_bar_vel(glon, glat, dist, vbary, gmul, gmub):
     return Ub, Vb, Wb
 
 
-def bar_to_gcen_vel(Ub, Vb, Wb, R0=_RSUN, Zsun=_ZSUN, roll=_ROLL):
+def bary_to_gcen_vel(Ub, Vb, Wb, R0=_RSUN, Zsun=_ZSUN, roll=_ROLL):
     """
     Convert barycentric Cartesian velocities to the Galactocentric
     Cartesian frame
@@ -387,8 +387,8 @@ def main():
     vbary = vlsr_to_vbary(vlsr, glon, glat)  # km/s
 
     # Transform from galactic to galactocentric Cartesian coordinates
-    bary_x, bary_y, bary_z = trans.gal_to_bar(glon, glat, gdist)
-    gcen_x, gcen_y, gcen_z = trans.bar_to_gcen(bary_x, bary_y, bary_z)
+    bary_x, bary_y, bary_z = trans.gal_to_bary(glon, glat, gdist)
+    gcen_x, gcen_y, gcen_z = trans.bary_to_gcen(bary_x, bary_y, bary_z)
 
     # Transform equatorial proper motions to galactic frame
     ############################## USING ASTROPY ##############################
@@ -419,8 +419,8 @@ def main():
     ####################### ATTEMPT WITH OWN FUNCTIONS  ######################
     gmul, gmub = trans.eq_to_gal(r_asc, dec, eqmux, eqmuy, return_pos=False)
 
-    U, V, W = gal_to_bar_vel(glon, glat, gdist, vbary, gmul, gmub)
-    gcen_vx, gcen_vy, gcen_vz = bar_to_gcen_vel(U, V, W)
+    U, V, W = gal_to_bary_vel(glon, glat, gdist, vbary, gmul, gmub)
+    gcen_vx, gcen_vy, gcen_vz = bary_to_gcen_vel(U, V, W)
     ##########################################################################
 
     # Calculate circular rotation speed by converting to cylindrical frame

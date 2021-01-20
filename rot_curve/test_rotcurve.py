@@ -18,7 +18,7 @@ _GAL_V_SUN = cd(10.6, 246.7, 7.6, unit="km/s")  # Reid et al. 2019
 
 
 class TestGalaxyMap(unittest.TestCase):
-    def test_gal_to_bar_vel_single(self):
+    def test_gal_to_bary_vel_single(self):
         """
         Test single galactic to barycentric Cartesian velocity conversion.
         """
@@ -30,7 +30,7 @@ class TestGalaxyMap(unittest.TestCase):
         gmub = -0.11  # mas/yr
         vlsr = 9.854  # km/s
 
-        U, V, W = rc.gal_to_bar_vel(glon, glat, dist, vlsr, gmul, gmub)
+        U, V, W = rc.gal_to_bary_vel(glon, glat, dist, vlsr, gmul, gmub)
 
         # No difference in results between Galactic and GalacticLSR frames
         # gal_vel = GalacticLSR(
@@ -66,7 +66,7 @@ class TestGalaxyMap(unittest.TestCase):
         self.assertAlmostEqual(V, vy, delta=_VELOCITY)
         self.assertAlmostEqual(W, vz, delta=_VELOCITY)
 
-    def test_gal_to_bar_vel_multi(self):
+    def test_gal_to_bary_vel_multi(self):
         """
         Test multiple galactic to barycentric Cartesian velocity conversions.
         """
@@ -78,7 +78,7 @@ class TestGalaxyMap(unittest.TestCase):
         gmubs = np.array([0.12, -0.1, 0, 0.58, 5.2, -0.35, 0.51, 0.82])
         vlsrs = np.array([12.2, 0.5, -2, 0.0, 25, 6.25, -17.5, 8.2])
 
-        Us, Vs, Ws = rc.gal_to_bar_vel(glons, glats, dists, vlsrs, gmuls, gmubs)
+        Us, Vs, Ws = rc.gal_to_bary_vel(glons, glats, dists, vlsrs, gmuls, gmubs)
 
         # No difference in results between Galactic and GalacticLSR frames
         gal_vels = Galactic(
@@ -99,7 +99,7 @@ class TestGalaxyMap(unittest.TestCase):
             self.assertAlmostEqual(V, vy, delta=_VELOCITY)
             self.assertAlmostEqual(W, vz, delta=_VELOCITY)
 
-    def test_bar_to_gcen_vel_single(self):
+    def test_bary_to_gcen_vel_single(self):
         """
         Test single barycentric Cartesian to galactocentric
         Cartesian velocity conversion.
@@ -112,7 +112,7 @@ class TestGalaxyMap(unittest.TestCase):
         Vb = -1.25  # km/s
         Wb = -12.42  # km/s
 
-        g_vx, g_vy, g_vz = rc.bar_to_gcen_vel(Ub, Vb, Wb)
+        g_vx, g_vy, g_vz = rc.bary_to_gcen_vel(Ub, Vb, Wb)
 
         # Here, Galactic and GalacticLSR _does_ make a difference
         # gcen_vel = GalacticLSR(
@@ -163,7 +163,7 @@ class TestGalaxyMap(unittest.TestCase):
         self.assertAlmostEqual(g_vy, gcen_vy, delta=_VELOCITY)
         self.assertAlmostEqual(g_vz, gcen_vz, delta=_VELOCITY)
 
-    def test_bar_to_gcen_vel_multi(self):
+    def test_bary_to_gcen_vel_multi(self):
         """
         Test multiple barycentric Cartesian to
         galactocentric Cartesian velocity conversions.
@@ -176,7 +176,7 @@ class TestGalaxyMap(unittest.TestCase):
         Vbs = np.array([-1.25, 0.211, 0, 12, 84.5, -0.214, 18.3, -2])
         Wbs = np.array([-12.42, 11, 2.421, 0, 0.875, -121, 254, 0.961])
 
-        g_vxs, g_vys, g_vzs = rc.bar_to_gcen_vel(Ubs, Vbs, Wbs)
+        g_vxs, g_vys, g_vzs = rc.bary_to_gcen_vel(Ubs, Vbs, Wbs)
 
         # Here, Galactic and GalacticLSR _does_ make a difference
         # gcen_vels = GalacticLSR(
