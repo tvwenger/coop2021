@@ -9,6 +9,9 @@ Utilities for transforming positions and velocities between frames:
 - galactocentric Cartesian
 - galactocentric cylindrical
 
+Also transforms equatorial + galactic frame directly
+into galactocentric cylindrical frame & vice versa.
+
 Isaac Cheng - January 2021
 """
 
@@ -18,6 +21,7 @@ import numpy as np
 _DEG_TO_RAD = 0.017453292519943295  # pi/180
 _RAD_TO_DEG = 57.29577951308232  # 180/pi (Don't forget to % 360 after)
 _AU_PER_YR_TO_KM_PER_S = 4.740470463533348  # from astropy (uses tropical year)
+_KM_PER_S_TO_AU_PER_YR = 0.21094952656969873  # from astropy (uses tropical year)
 _KPC_TO_KM = 3.085677581e16
 _KM_TO_KPC = 3.24077929e-17
 
@@ -44,6 +48,8 @@ _WSTD = 7.74  # km/s
 # J2000 Coordinate conversion constants from astropy
 # Right ascension of North Galactic Pole (deg)
 _RA_NGP = 192.8594812065348
+_COS_RA_NGP = np.cos(_RA_NGP * _DEG_TO_RAD)
+_SIN_RA_NGP = np.sin(_RA_NGP * _DEG_TO_RAD)
 # Declination of North Galactic Pole (deg)
 _DEC_NGP = 27.12825118085622
 _COS_DEC_NGP = np.cos(_DEC_NGP * _DEG_TO_RAD)
@@ -72,7 +78,7 @@ def eq_to_gal(ra, dec, mux, muy, e_mux=None, e_muy=None, return_pos=True):
         Error in RA proper motion with cos(Declination) correction
       e_muy :: scalar or array of scalars (mas/yr)
         Error in declination proper motion
-      return_pos :: boolean (default True)
+      return_pos :: boolean (default True), optional
         If True, also galactic longitude and latitude
         If False, only return galactic proper motions (with optional uncertainties)
 
@@ -135,6 +141,90 @@ def eq_to_gal(ra, dec, mux, muy, e_mux=None, e_muy=None, return_pos=True):
     return (glon, glat, mul, mub) if return_pos else (mul, mub)
 
 
+def gal_to_eq(glon, glat, mul, mub, return_pos=True):
+    """
+    ! DOES NOT WORK
+    Convert Galactic longitudes, latitudes, and proper motions to
+    J2000 equatorial right ascensions, declinations, and proper motions
+
+
+    Inputs: glon, glat, mul, mub; e_mul, e_mub (optional)
+      glon :: scalar or array of scalars (deg)
+        Galactic longitude
+      glat :: scalar or array of scalars (deg)
+        Galactic latitude
+      mul :: scalar or array of scalars (mas/yr)
+        Galactic longitude proper motion with cos(Latitude) correction
+      mub :: scalar or array of scalars (mas/yr)
+        Galactic latitude proper motion
+      return_pos :: boolean (default True), optional
+        If True, also galactic longitude and latitude
+        If False, only return galactic proper motions (with optional uncertainties)
+
+    Returns: ra, dec, mux, muy
+      ra :: scalar or array of scalars (deg)
+        Right ascension
+      dec :: scalar or array of scalars (deg)
+        Declination
+      mux :: scalar or array of scalars (mas/yr)
+        RA proper motion with cos(Declination) correction
+      muy :: scalar or array of scalars (mas/yr)
+        Declination proper motion
+    """
+    # #
+    # # Useful constants
+    # #
+    # cos_dec = np.cos(dec * _DEG_TO_RAD)
+    # sin_dec = np.sin(dec * _DEG_TO_RAD)
+    # cos_ra_off = np.cos((ra - _RA_NGP) * _DEG_TO_RAD)
+    # sin_ra_off = np.sin((ra - _RA_NGP) * _DEG_TO_RAD)
+    # #
+    # # Binney & Merrifield (1998)
+    # #
+    # sin_glat = cos_dec * _COS_DEC_NGP * cos_ra_off + sin_dec * _SIN_DEC_NGP
+    # glat = np.arcsin(sin_glat) * _RAD_TO_DEG
+    # tan_glon_num = cos_dec * sin_ra_off
+    # tan_glon_den = sin_dec * _COS_DEC_NGP - cos_dec * _SIN_DEC_NGP * cos_ra_off
+    # glon = _L_NCP - np.arctan2(tan_glon_num, tan_glon_den) * _RAD_TO_DEG
+    # # get range 0 to 360 degrees
+    # glon = glon % 360.0
+    # #
+    # # Rotation matrix from Poleski (2018)
+    # #
+    # matc1 = _SIN_DEC_NGP * cos_dec - _COS_DEC_NGP * sin_dec * cos_ra_off
+    # matc2 = _COS_DEC_NGP * sin_ra_off
+    # cos_b = np.sqrt(matc1 * matc1 + matc2 * matc2)  # Notice cos_b >= 0
+    # mul = (matc1 * mux + matc2 * muy) / cos_b
+    # mub = (-matc2 * mux + matc1 * muy) / cos_b
+
+    # =======
+    # Jo Bovy (2019), eqn (24)
+    sin_b = np.sin(glat * _DEG_TO_RAD)
+    cos_b = np.cos(glat * _DEG_TO_RAD)
+    sin_l = np.sin(glon * _DEG_TO_RAD)
+    cos_l = np.cos(glon * _DEG_TO_RAD)
+    cbcl = cos_b * cos_l
+    cbsl = cos_b * sin_l
+    sin_dec = _COS_DEC_NGP * _COS_RA_NGP * cbcl - _COS_DEC_NGP * _SIN_RA_NGP * cbsl + _SIN_DEC_NGP * sin_b
+    dec = (np.arcsin(sin_dec) * _RAD_TO_DEG) % 360  # deg in [0,360)
+    cos_ra_off = (sin_b - _SIN_DEC_NGP * sin_dec) / (_COS_DEC_NGP * np.cos(dec * _DEG_TO_RAD))
+    ra = (np.arccos(cos_ra_off) * _RAD_TO_DEG - _RA_NGP) % 360  # deg in [0,360)
+    # Adopt method used by Jo Bovy (2019). Eqns (67) & (68), and inverse of eqn (69)
+    # https://github.com/jobovy/stellarkinematics/blob/master/stellarkinematics.pdf
+    # Useful constants
+    cos_dec = np.cos(dec * _DEG_TO_RAD)
+    sin_ra_off = np.sin((ra - _RA_NGP) * _DEG_TO_RAD)
+    cos_phi = (_SIN_DEC_NGP - sin_dec * sin_b) / (cos_dec * cos_b)
+    sin_phi = sin_ra_off * _COS_DEC_NGP / cos_b
+    # Straightforward rotation matrix
+    mux = cos_phi * mul - sin_phi * mub
+    muy = sin_phi * mul + cos_phi * mub
+    
+
+    # Return only specified variables
+    return (ra, dec, mux, muy) if return_pos else (mux, muy)
+
+
 def parallax_to_dist(parallax, e_parallax=None):
     """
     Calculates distance (kpc) from parallax (mas) with (optional) errors.
@@ -161,10 +251,28 @@ def parallax_to_dist(parallax, e_parallax=None):
     return dist
 
 
-def gal_to_bar(glon, glat, dist, e_dist=None):
+def dist_to_parallax(dist):
     """
-    Convert Galactic coordinates to a barycentric (heliocentric)
-    Cartesian frame
+    Calculates parallax (mas) from distance (kpc).
+
+    Inputs: dist
+      dist : Array of scalars (kpc)
+        The distance to the objects
+
+    Returns: parallax
+      parallax : Array of scalars (mas)
+        The parallax of the objects
+    """
+
+    parallax = 1.0 / dist
+
+    return parallax
+
+
+def gal_to_bary(glon, glat, dist, e_dist=None):
+    """
+    Convert galactic (barycentric spherical) coordinates to
+    barycentric (heliocentric) Cartesian frame
 
     Inputs:
       glon : Array of scalars (deg)
@@ -182,6 +290,7 @@ def gal_to_bar(glon, glat, dist, e_dist=None):
       e_Xb, e_Yb, e_Zb : Arrays of scalars (kpc), optional
         Errors associated with the barycentric Cartesian coordinates
     """
+
     cos_glat = np.cos(glat * _DEG_TO_RAD)
     cos_glon = np.cos(glon * _DEG_TO_RAD)
     sin_glat = np.sin(glat * _DEG_TO_RAD)
@@ -201,7 +310,7 @@ def gal_to_bar(glon, glat, dist, e_dist=None):
     return Xb, Yb, Zb
 
 
-def bar_to_gcen(
+def bary_to_gcen(
     Xb, Yb, Zb, e_Xb=None, e_Yb=None, e_Zb=None, R0=_RSUN, Zsun=_ZSUN, roll=_ROLL
 ):
     """
@@ -268,7 +377,7 @@ def bar_to_gcen(
     return Xg, Yg, Zg
 
 
-def gal_to_bar_vel(
+def gal_to_bary_vel(
     glon, glat, dist, gmul, gmub, vbary,
     e_dist=None, e_gmul=None, e_gmub=None, e_vbary=None
 ):
@@ -292,7 +401,7 @@ def gal_to_bar_vel(
       e_dist, e_gmul, e_gmub, e_vbary : Array of scalars, optional
         Errors in the associated quantities
 
-    Returns: Vxb, Vyb, Vzb; e_Ub, e_Vb, e_Wb (optional)
+    Returns: Ub, Vb, Wb; e_Ub, e_Vb, e_Wb (optional)
       Ub, Vb, Wb : Array of scalars (km/s)
         Barycentric Cartesian velocities (i.e. vel_x, vel_y, vel_z)
       e_Ub, e_Vb, e_Wb : Array of scalars (km/s), optional
@@ -307,7 +416,7 @@ def gal_to_bar_vel(
     sin_l = np.sin(glon * _DEG_TO_RAD)
     sin_b = np.sin(glat * _DEG_TO_RAD)
 
-    # Adopt method used by Jo Bovy (2019). Inverse of eqns (62) & (64)
+    # Adopt method used by Jo Bovy (2019). Inverse of eqns (62) & (64). Aka eqn (61)
     # https://github.com/jobovy/stellarkinematics/blob/master/stellarkinematics.pdf
     vl = dist * gmul * _AU_PER_YR_TO_KM_PER_S  # recall gmul has cos(b) correction
     vb = dist * gmub * _AU_PER_YR_TO_KM_PER_S
@@ -346,9 +455,64 @@ def gal_to_bar_vel(
     return Ub, Vb, Wb
 
 
-def bar_to_gcen_vel(
+def bary_to_gal(Xb, Yb, Zb, Ub=None, Vb=None, Wb=None, return_pos=True):
+    """
+    Convert barycentric Cartesian positions and velocities
+    to galactic (barycentric spherical) frame
+
+    Inputs: Xb, Yb, Zb; Ub, Vb, Wb (optional)
+      Xb, Yb, Zb : Array of scalars (kpc)
+        Barycentric Cartesian positions
+      Ub, Vb, Wb : Array of scalars (km/s), optional
+        Barycentric Cartesian velocities (i.e. vel_x, vel_y, vel_z)
+        NOTE: (Ub, Vb, Wb) should omit Sun's LSR velocity
+      return_pos : boolean (default True), optional
+        If True, also galactic longitude, latitude, and radial distance
+        If False, only return vbary and galactic proper motions
+
+    Returns: glon, glat, dist, gmul, gmub, vbary
+      glon : Array of scalars (deg)
+        Galactic longitude
+      glat : Array of scalars (deg)
+        Galactic latitude
+      dist : Array of scalars (kpc)
+        Distance
+      gmul : Array of scalars (mas/yr)
+        Galactic longitudinal velocity with cos(glat) correction
+      gmub : Array of scalars (mas/yr)
+        Galactic latitudinal velocity
+      vbary : Array of scalars (km/s)
+        Radial velocity relative to barycentre (NOT vlsr)
+    """
+
+    glon = (np.arctan2(Yb, Xb) * _RAD_TO_DEG) % 360  # deg in [0,360)
+    glat = (np.arctan2(Zb, np.sqrt(Xb * Xb + Yb * Yb)) * _RAD_TO_DEG) % 360  # deg in [0,360)
+    dist = np.sqrt(Xb * Xb + Yb * Yb + Zb * Zb)  # kpc
+
+    if Ub is not None and Vb is not None and Wb is not None:
+        # Useful constants
+        cos_l = np.cos(glon * _DEG_TO_RAD)
+        cos_b = np.cos(glat * _DEG_TO_RAD)
+        sin_l = np.sin(glon * _DEG_TO_RAD)
+        sin_b = np.sin(glat * _DEG_TO_RAD)
+
+        # Adopt method used by Jo Bovy (2019). Eqns (62) & (64)
+        # https://github.com/jobovy/stellarkinematics/blob/master/stellarkinematics.pdf
+        vbary = Ub * cos_l * cos_b + Vb * sin_l * cos_b + Wb * sin_b  # km/s
+        vl = Ub * -sin_l + Vb * cos_l  # km/s
+        vb = Ub * -cos_l * sin_b - Vb * sin_l * sin_b + Wb * cos_b  # km/s
+
+        gmul = vl / dist * _KM_PER_S_TO_AU_PER_YR  # mas/yr, with cos(b) correction
+        gmub = vb / dist * _KM_PER_S_TO_AU_PER_YR  # mas/yr
+
+        return (glon, glat, dist, gmul, gmub, vbary) if return_pos else (gmul, gmub, vbary)
+
+    return glon, glat, dist
+
+
+def bary_to_gcen_vel(
     Ub, Vb, Wb, e_Ub=None, e_Vb=None, e_Wb=None,
-    R0=_RSUN, Zsun=_ZSUN, roll=_ROLL
+    R0=_RSUN, Zsun=_ZSUN, roll=_ROLL, Usun=_USUN, Vsun=_VSUN, Wsun=_WSUN, Theta0=_THETA_0
 ):
     """
     Convert barycentric Cartesian velocities to the Galactocentric
@@ -359,12 +523,16 @@ def bar_to_gcen_vel(
         Barycentric Cartesian velocities (i.e. vel_x, vel_y, vel_z)
       e_Ub, e_Vb, e_Wb : Arrays of scalars (km/s), optional
         Error in barycentric Cartesian velocities
-      R0 : scalar (kpc)
+      R0 : Scalar (kpc), optional
         Galactocentric radius of the Sun
-      Zsun : scalar (pc)
+      Zsun : Scalar (pc), optional
         Height of the Sun above the galactic midplane
-      roll : scalar (deg)
+      roll : scalar (deg), optional
         Angle between galactic plane and b=0
+      Usun, Vsun, Wsun : Scalars (km/s), optional
+        Sun's velocity (peculiar motion) relative to the LSR
+      Theta0 : Scalar (km/s), optional
+        Sun's circular rotation speed around galactocentric origin
 
     Returns: vel_xg, vel_yg, vel_zg; e_vel_xg, e_vel_yg, e_vel_zg (optional)
       vel_xg, vel_yg, vel_zg : Arrays of scalars (km/s)
@@ -389,9 +557,9 @@ def bar_to_gcen_vel(
     #
     # Tilt to correct for Sun's height above midplane
     #
-    vel_xg = cos_tilt * Ub1 + sin_tilt * Wb1 + _USUN
-    vel_yg = Vb1 + _VSUN + _THETA_0
-    vel_zg = -sin_tilt * Ub1 + cos_tilt * Wb1 + _WSUN
+    vel_xg = cos_tilt * Ub1 + sin_tilt * Wb1 + Usun
+    vel_yg = Vb1 + Vsun + Theta0
+    vel_zg = -sin_tilt * Ub1 + cos_tilt * Wb1 + Wsun
 
     if e_Ub is not None and e_Vb is not None and e_Wb is not None:
         # Calculate variance of Ub1, Vb1, Wb1
@@ -408,6 +576,83 @@ def bar_to_gcen_vel(
         return vel_xg, vel_yg, vel_zg, e_vel_xg, e_vel_yg, e_vel_zg
 
     return vel_xg, vel_yg, vel_zg
+
+
+def gcen_to_bary(
+    Xg, Yg, Zg, Vxg=None, Vyg=None, Vzg=None, return_pos=True,
+    R0=_RSUN, Zsun=_ZSUN, roll=_ROLL, Usun=_USUN, Vsun=_VSUN, Wsun=_WSUN, Theta0=_THETA_0
+):
+    """
+    Convert galactocentric Cartesian coordinates and velocities
+    to barycentric Cartesian frame
+
+    Inputs:
+      Xg, Yg, Zg : Arrays of scalars (kpc)
+        Galactocentric Cartesian coordinates
+      Vxg, Vyg, Vzg : Arrays of scalars (km/s), optional
+        Galactocentric Cartesian velocities
+      return_pos : boolean (default True), optional
+        If True, also return galactocentric Cartesian coordinates
+        If False, only return galactocentric Cartesian velocities
+      R0 : Scalar (kpc), optional
+        Galactocentric radius of the Sun
+      Zsun : Scalar (pc), optional
+        Height of the Sun above the galactic midplane
+      roll : scalar (deg), optional
+        Angle between galactic plane and b=0
+      Usun, Vsun, Wsun : Scalars (km/s), optional
+        Sun's velocity (peculiar motion) relative to the LSR
+      Theta0 : Scalar (km/s), optional
+        Sun's circular rotation speed around galactocentric origin
+
+    Returns: Xb, Yb, Zb; Ub, Vb, Wb (optional)
+      Xb, Yb, Zb : Arrays of scalars (kpc)
+        Barycentric Cartesian coordinates
+      Ub, Vb, Wb : Array of scalars (km/s), optional
+        Barycentric Cartesian velocities (i.e. vel_x, vel_y, vel_z)
+        NOTE: Ub, Vb, Wb omit Sun's velocity relative to LSR (i.e. pure barycentric vels)
+    """
+
+    # Tilt of b=0 relative to galactic plane
+    tilt = np.arcsin(0.001 * Zsun / R0)
+    # Other useful constants
+    cos_roll = np.cos(roll * _DEG_TO_RAD)
+    sin_roll = np.sin(roll * _DEG_TO_RAD)
+    cos_tilt = np.cos(tilt)
+    sin_tilt = np.sin(tilt)
+    #
+    # Tilt plane to Sun's height above midplane
+    #
+    Xg1 = cos_tilt * Xg - sin_tilt * Zg
+    Yg1 = np.copy(Yg)  # prevent accidental modification of Yg data
+    Zg1 = sin_tilt * Xg + cos_tilt * Zg
+    #
+    # Translate to Sun's radial position
+    #
+    Xg1 += R0
+    #
+    # Roll Y-Z plane of galactocentric frame about X-axis to
+    # align with the Y-Z plane of the barycentric Cartesian frame
+    #
+    Xb = Xg1
+    Yb = cos_roll * Yg1 + sin_roll * Zg1
+    Zb = -sin_roll * Yg1 + cos_roll * Zg1
+
+    if Vxg is not None and Vyg is not None and Vzg is not None:
+        # Tilt to correct for Sun's heiht above midplane
+        Vxg1 = cos_tilt * (Vxg - Usun) - sin_tilt * (Vzg - Wsun)
+        Vyg1 = Vyg - Vsun - Theta0
+        Vzg1 = sin_tilt * (Vxg - Usun) + cos_tilt * (Vzg - Wsun)
+
+        # Roll Y-Z plane of galactocentric frame about X-axis to
+        # align with the Y-Z plane of the barycentric Cartesian frame
+        Ub = Vxg1
+        Vb = cos_roll * Vyg1 + sin_roll * Vzg1
+        Wb = -sin_roll * Vyg1 + cos_roll * Vzg1
+
+        return (Xb, Yb, Zb, Ub, Vb, Wb) if return_pos else (Ub, Vb, Wb)
+
+    return Xb, Yb, Zb
 
 
 def gcen_cart_to_gcen_cyl(
@@ -487,7 +732,14 @@ def gcen_cart_to_gcen_cyl(
     v_radial = (x * vx + y * vy) / perp_distance_km  # km/s
     v_tangent = (y * vx - x * vy) / perp_distance_km  # km/s
 
-    if e_xkpc is not None and e_ykpc is not None and e_zkpc is not None and e_vx is not None and e_vy is not None and e_vz is not None:
+    if (
+        e_xkpc is not None
+        and e_ykpc is not None
+        and e_zkpc is not None
+        and e_vx is not None
+        and e_vy is not None
+        and e_vz is not None
+    ):
         # Squared useful quantities (prevent recalculation)
         x_sq = x * x  # km^2
         y_sq = y * y  # km^2
@@ -531,6 +783,53 @@ def gcen_cart_to_gcen_cyl(
                 e_dist, e_azimuth, e_zkpc, e_vrad, e_vtan, e_vz)
 
     return perp_distance, azimuth, z_kpc, v_radial, v_tangent, vz
+
+
+def gcen_cyl_to_gcen_cart(
+  perp_distance, azimuth, height,
+  v_radial=None, v_tangent=None, v_vertical=None
+):
+    """
+    Convert galactocentric cylindrical positions and velocities to
+    galactocentric Cartesian positions and velocities
+
+                +z +y
+                 | /
+                 |/
+    Sun -x ------+------ +x
+                /|
+               / |
+
+    Inputs: perp_distance, azimuth, height, v_radial, v_tangent, v_vertical;
+      perp_distance : Array of scalars (kpc)
+        Radial distance perpendicular to z-axis
+      azimuth : Array of scalars (deg)
+        Azimuthal angle; positive CW from -x-axis (left-hand convention!)
+      height : Array of scalars (kpc)
+        Height above xy-plane (i.e. z_kpc)
+      v_radial : Array of scalars (km/s)
+        Radial velocity; positive away from z-axis
+      v_tangent : Array of scalars (km/s)
+        Tangential velocity; positive CW (left-hand convention!)
+      v_vertical : Array of scalars (km/s)
+        Velocity perp. to xy-plane; positive if pointing above xy-plane (i.e. vz)
+
+    Returns: x_kpc, y_kpc, z_kpc, vx, vy, vz
+      x_kpc, y_kpc, z_kpc : Array of scalars (kpc)
+        Galactocentric Cartesian positions
+      vx, vy, vz : Array of scalars (km/s)
+        Galactocentric Cartesian velocities
+    """
+
+    cos_az = np.cos(azimuth * _DEG_TO_RAD)
+    sin_az = np.sin(azimuth * _DEG_TO_RAD)
+
+    x_kpc = perp_distance * -cos_az  # kpc
+    y_kpc = perp_distance * sin_az  # kpc
+    vx = v_radial * -cos_az + v_tangent * sin_az  # km/s
+    vy = v_radial * sin_az + v_tangent * cos_az  # km/s
+
+    return x_kpc, y_kpc, height, vx, vy, v_vertical
 
 
 def get_gcen_cyl_radius_and_circ_velocity(
@@ -624,6 +923,33 @@ def get_gcen_cyl_radius_and_circ_velocity(
     return perp_distance, v_tangent
 
 
+def get_gcen_cyl_radius(glon, glat, plx):
+    """
+    Convert galactic longitude, latitude, and parallax to
+    galactocentric cylindrical distances
+
+    Inputs:
+      glon, glat : Array of scalars (deg)
+        Galactic longitude and latitude
+      plx : Array of scalars (mas)
+        Parallax of objects
+
+    Returns: perp_distance
+      perp_distance : Array of scalars (kpc)
+        Radial distanced perpendicular to z-axis in galactocentric cylindrical frame
+    """
+    # Parallax to distance
+    gdist = parallax_to_dist(plx)  # kpc
+
+    # Transform from galactic to galactocentric Cartesian coordinates
+    bary_x, bary_y, bary_z = gal_to_bary(glon, glat, gdist)  # kpc
+    gcen_x, gcen_y, gcen_z = bary_to_gcen(bary_x, bary_y, bary_z)  # kpc
+
+    perp_distance = np.sqrt(gcen_x * gcen_x + gcen_y * gcen_y)  # kpc
+
+    return perp_distance
+
+
 def vlsr_to_vbary(vlsr, glon, glat, e_vlsr=None):
     """
     Converts LSR (radial) velocity to radial velocity in barycentric frame
@@ -686,3 +1012,57 @@ def vbary_to_vlsr(vbary, glon, glat, e_vbary=None):
         return vlsr, e_vbary
 
     return vlsr
+
+
+def eq_and_gal_to_gcen_cyl(
+    ra, dec, plx, glon, glat, eq_mux, eq_muy, vlsr, return_only_r_and_theta=True
+):
+    """
+    Converts RA, dec, parallax, longitude, latitude,
+    equatorial proper motions, and LSR velocity to
+    galactocentric cylindrical positions and velocities.
+    Does not return uncertainties!
+
+    If return_only_r_and_theta is True: only return radius and circular velocity
+    Else: return all positiosn and velocities in cylindrical coordinates
+
+    TODO: finish docstring
+    """
+
+    # === POSITION CONVERSIONS ===
+
+    # Parallax to distance
+    gdist = parallax_to_dist(plx)
+
+    # Transform from galactic to galactocentric Cartesian coordinates
+    bary_x, bary_y, bary_z = gal_to_bary(glon, glat, gdist)
+    gcen_x, gcen_y, gcen_z = bary_to_gcen(bary_x, bary_y, bary_z)
+
+    # === VELOCITY CONVERSIONS ===
+
+    # LSR velocity to barycentric velocity
+    vbary = vlsr_to_vbary(vlsr, glon, glat)
+
+    # Transform equatorial proper motions to galactic proper motions
+    gmul, gmub = eq_to_gal(ra, dec, eq_mux, eq_muy, return_pos=False)
+
+    # Transform galactic proper motions to barycentric Cartesian velocities
+    U, V, W = gal_to_bary_vel(glon, glat, gdist, gmul, gmub, vbary)
+
+    # Transform barycentric Cartesian velocities to galactocentric Cartesian velocities
+    gcen_vx, gcen_vy, gcen_vz = bary_to_gcen_vel(U, V, W)
+
+    # === GALACTOCENTRIC CARTESIAN TO GALACTOCENTRIC CYLINDRICAL CONVERSION ===
+
+    if return_only_r_and_theta is True:
+        # Calculate radial distance and circular rotation speed in cylindrical frame
+        radius, v_circ = get_gcen_cyl_radius_and_circ_velocity(
+            gcen_x, gcen_y, gcen_vx, gcen_vy
+        )
+        return radius, v_circ
+
+    # Calculate all coordinates & velocities in cylindrical frame
+    radius, azimuth, height, v_radial, v_circ, v_vert = gcen_cart_to_gcen_cyl(
+        gcen_x, gcen_y, gcen_z, gcen_vx, gcen_vy, gcen_vz
+    )
+    return radius, azimuth, height, v_radial, v_circ, v_vert
