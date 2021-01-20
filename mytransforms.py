@@ -56,7 +56,8 @@ _COS_DEC_NGP = np.cos(_DEC_NGP * _DEG_TO_RAD)
 _SIN_DEC_NGP = np.sin(_DEC_NGP * _DEG_TO_RAD)
 # Galactic longitude of North Celestial Pole (deg)
 _L_NCP = 122.9319185680026
-
+_COS_L_NCP = np.cos(_L_NCP * _DEG_TO_RAD)
+_SIN_L_NCP = np.sin(_L_NCP * _DEG_TO_RAD)
 
 def eq_to_gal(ra, dec, mux, muy, e_mux=None, e_muy=None, return_pos=True):
     """
@@ -107,7 +108,7 @@ def eq_to_gal(ra, dec, mux, muy, e_mux=None, e_muy=None, return_pos=True):
     # Binney & Merrifield (1998)
     #
     sin_glat = cos_dec * _COS_DEC_NGP * cos_ra_off + sin_dec * _SIN_DEC_NGP
-    glat = np.arcsin(sin_glat) * _RAD_TO_DEG
+    glat = np.arcsin(sin_glat) * _RAD_TO_DEG  # deg in [-90,90]
     tan_glon_num = cos_dec * sin_ra_off
     tan_glon_den = sin_dec * _COS_DEC_NGP - cos_dec * _SIN_DEC_NGP * cos_ra_off
     glon = _L_NCP - np.arctan2(tan_glon_num, tan_glon_den) * _RAD_TO_DEG
@@ -143,10 +144,8 @@ def eq_to_gal(ra, dec, mux, muy, e_mux=None, e_muy=None, return_pos=True):
 
 def gal_to_eq(glon, glat, mul, mub, return_pos=True):
     """
-    ! DOES NOT WORK
     Convert Galactic longitudes, latitudes, and proper motions to
     J2000 equatorial right ascensions, declinations, and proper motions
-
 
     Inputs: glon, glat, mul, mub; e_mul, e_mub (optional)
       glon :: scalar or array of scalars (deg)
@@ -171,55 +170,44 @@ def gal_to_eq(glon, glat, mul, mub, return_pos=True):
       muy :: scalar or array of scalars (mas/yr)
         Declination proper motion
     """
-    # #
-    # # Useful constants
-    # #
-    # cos_dec = np.cos(dec * _DEG_TO_RAD)
-    # sin_dec = np.sin(dec * _DEG_TO_RAD)
-    # cos_ra_off = np.cos((ra - _RA_NGP) * _DEG_TO_RAD)
-    # sin_ra_off = np.sin((ra - _RA_NGP) * _DEG_TO_RAD)
-    # #
-    # # Binney & Merrifield (1998)
-    # #
-    # sin_glat = cos_dec * _COS_DEC_NGP * cos_ra_off + sin_dec * _SIN_DEC_NGP
-    # glat = np.arcsin(sin_glat) * _RAD_TO_DEG
-    # tan_glon_num = cos_dec * sin_ra_off
-    # tan_glon_den = sin_dec * _COS_DEC_NGP - cos_dec * _SIN_DEC_NGP * cos_ra_off
-    # glon = _L_NCP - np.arctan2(tan_glon_num, tan_glon_den) * _RAD_TO_DEG
-    # # get range 0 to 360 degrees
-    # glon = glon % 360.0
-    # #
-    # # Rotation matrix from Poleski (2018)
-    # #
-    # matc1 = _SIN_DEC_NGP * cos_dec - _COS_DEC_NGP * sin_dec * cos_ra_off
-    # matc2 = _COS_DEC_NGP * sin_ra_off
-    # cos_b = np.sqrt(matc1 * matc1 + matc2 * matc2)  # Notice cos_b >= 0
-    # mul = (matc1 * mux + matc2 * muy) / cos_b
-    # mub = (-matc2 * mux + matc1 * muy) / cos_b
 
-    # =======
-    # Jo Bovy (2019), eqn (24)
+    # Adopt method used by Jo Bovy (2019). Eqns (67) & (68), and inverse of eqn (69)
+    # https://github.com/jobovy/stellarkinematics/blob/master/stellarkinematics.pdf
+
+    # Useful constants
     sin_b = np.sin(glat * _DEG_TO_RAD)
     cos_b = np.cos(glat * _DEG_TO_RAD)
     sin_l = np.sin(glon * _DEG_TO_RAD)
     cos_l = np.cos(glon * _DEG_TO_RAD)
     cbcl = cos_b * cos_l
     cbsl = cos_b * sin_l
-    sin_dec = _COS_DEC_NGP * _COS_RA_NGP * cbcl - _COS_DEC_NGP * _SIN_RA_NGP * cbsl + _SIN_DEC_NGP * sin_b
-    dec = (np.arcsin(sin_dec) * _RAD_TO_DEG) % 360  # deg in [0,360)
-    cos_ra_off = (sin_b - _SIN_DEC_NGP * sin_dec) / (_COS_DEC_NGP * np.cos(dec * _DEG_TO_RAD))
-    ra = (np.arccos(cos_ra_off) * _RAD_TO_DEG - _RA_NGP) % 360  # deg in [0,360)
-    # Adopt method used by Jo Bovy (2019). Eqns (67) & (68), and inverse of eqn (69)
-    # https://github.com/jobovy/stellarkinematics/blob/master/stellarkinematics.pdf
+
+    # Calculate declination. Inverse of eqns (26) & (31)
+    sin_dec = (
+        _COS_DEC_NGP * _COS_L_NCP * cbcl
+        + _COS_DEC_NGP * _SIN_L_NCP * cbsl
+        + _SIN_DEC_NGP * sin_b
+    )
+    dec = np.arcsin(sin_dec) * _RAD_TO_DEG  # deg in [-90,90]
+
+    # Calculate RA. Eqn (18) divided by eqn (21) & solve for alpha
+    tan_ra_off_num = _SIN_DEC_NGP * cos_b * np.sin((_L_NCP - glon) * _DEG_TO_RAD)
+    tan_ra_off_den = (
+      sin_dec * _COS_DEC_NGP
+      - cos_b * np.cos((_L_NCP - glon) * _DEG_TO_RAD)
+    )
+    ra = (np.arctan2(tan_ra_off_num, tan_ra_off_den) * _RAD_TO_DEG + _RA_NGP) % 360
+
+    # Calculate proper motion
     # Useful constants
     cos_dec = np.cos(dec * _DEG_TO_RAD)
     sin_ra_off = np.sin((ra - _RA_NGP) * _DEG_TO_RAD)
+    # Calculate cos & sin of galactic parallactic angle, phi. Eqns (67) & (68)
     cos_phi = (_SIN_DEC_NGP - sin_dec * sin_b) / (cos_dec * cos_b)
     sin_phi = sin_ra_off * _COS_DEC_NGP / cos_b
-    # Straightforward rotation matrix
+    # Straightforward rotation matrix. Inverse of eqn (69)
     mux = cos_phi * mul - sin_phi * mub
     muy = sin_phi * mul + cos_phi * mub
-    
 
     # Return only specified variables
     return (ra, dec, mux, muy) if return_pos else (mux, muy)
