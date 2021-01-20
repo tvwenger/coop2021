@@ -7,6 +7,7 @@ Isaac Cheng - January 2021
 import sys
 from pathlib import Path
 import sqlite3
+from contextlib import closing
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
@@ -30,45 +31,33 @@ _A_THREE = 1.62  # (Reid et al. 2019)
 _RSUN = 8.15  # kpc (Reid et al. 2019)
 
 
-def create_connection(db_file):
+def get_coords(db_file):
     """
-    Creates SQLite database connection specified by db_file
-    """
+    Retrieves ra, dec, glong, glat, plx, and e_plx from
+    database connection specified by db_file
 
-    conn = None
-    try:
-        conn = sqlite3.connect(db_file)
-    except Exception as e:
-        print(e)
-
-    return conn
-
-
-def get_coords(conn):
-    """
-    Retrieves ra, dec, glong, glat, plx, and e_plx from database conn
     Returns DataFrame with:
         ra (deg), dec (deg), glong (deg), glat (deg), plx (mas), and e_plx (mas)
     """
 
-    cur = conn.cursor()
-    cur.execute("SELECT ra, dec, glong, glat, plx, e_plx FROM Parallax")
-    coords = pd.DataFrame(cur.fetchall(), columns=[desc[0] for desc in cur.description])
+    with closing(sqlite3.connect(db_file).cursor()) as cur:  # context manager, auto-close
+        cur.execute("SELECT ra, dec, glong, glat, plx, e_plx FROM Parallax")
+        coords = pd.DataFrame(cur.fetchall(), columns=[desc[0] for desc in cur.description])
 
     return coords
 
 
-def get_vels(conn):
+def get_vels(db_file):
     """
     Retrieves x & y proper motions (mux, muy) from J200 equatorial frame,
-    and vlsr from database conn
+    and vlsr from database connection specified by db_file
 
     Returns DataFrame with: mux (mas/yr), muy (mas/yr), vlsr (km/s) + all uncertainties
     """
 
-    cur = conn.cursor()
-    cur.execute("SELECT mux, muy, vlsr, e_mux, e_muy, e_vlsr FROM Parallax")
-    vels = pd.DataFrame(cur.fetchall(), columns=[desc[0] for desc in cur.description])
+    with closing(sqlite3.connect(db_file).cursor()) as cur:  # context manager, auto-close
+        cur.execute("SELECT mux, muy, vlsr, e_mux, e_muy, e_vlsr FROM Parallax")
+        vels = pd.DataFrame(cur.fetchall(), columns=[desc[0] for desc in cur.description])
 
     return vels
 
@@ -83,12 +72,9 @@ def main():
     # (allows file to be run in multiple locations as long as database location does not move)
     db = Path("/home/chengi/Documents/coop2021/data/hii_v2_20201203.db")
 
-    # Create database connection to db
-    conn = create_connection(db)
-
     # Get data + put into DataFrame
-    coords = get_coords(conn)  # coordinates
-    vels = get_vels(conn)  # velocities
+    coords = get_coords(db)  # coordinates
+    vels = get_vels(db)  # velocities
     # print(coords.to_markdown())
 
     # Create condition to filter data
