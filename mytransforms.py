@@ -48,8 +48,8 @@ _WSTD = 7.74  # km/s
 # J2000 Coordinate conversion constants from astropy
 # Right ascension of North Galactic Pole (deg)
 _RA_NGP = 192.8594812065348
-_COS_RA_NGP = np.cos(_RA_NGP * _DEG_TO_RAD)
-_SIN_RA_NGP = np.sin(_RA_NGP * _DEG_TO_RAD)
+# _COS_RA_NGP = np.cos(_RA_NGP * _DEG_TO_RAD)
+# _SIN_RA_NGP = np.sin(_RA_NGP * _DEG_TO_RAD)
 # Declination of North Galactic Pole (deg)
 _DEC_NGP = 27.12825118085622
 _COS_DEC_NGP = np.cos(_DEC_NGP * _DEG_TO_RAD)
