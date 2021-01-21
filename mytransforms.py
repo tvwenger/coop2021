@@ -1003,7 +1003,9 @@ def vbary_to_vlsr(vbary, glon, glat, e_vbary=None):
 
 
 def eq_and_gal_to_gcen_cyl(
-    ra, dec, plx, glon, glat, eq_mux, eq_muy, vlsr, return_only_r_and_theta=True
+    ra, dec, plx, glon, glat, eq_mux, eq_muy, vlsr,
+    R0=_RSUN, Usun=_USUN, Vsun=_VSUN, Wsun=_WSUN,
+    return_only_r_and_theta=True
 ):
     """
     Converts RA, dec, parallax, longitude, latitude,
@@ -1024,7 +1026,7 @@ def eq_and_gal_to_gcen_cyl(
 
     # Transform from galactic to galactocentric Cartesian coordinates
     bary_x, bary_y, bary_z = gal_to_bary(glon, glat, gdist)
-    gcen_x, gcen_y, gcen_z = bary_to_gcen(bary_x, bary_y, bary_z)
+    gcen_x, gcen_y, gcen_z = bary_to_gcen(bary_x, bary_y, bary_z, R0=R0)
 
     # === VELOCITY CONVERSIONS ===
 
@@ -1038,7 +1040,9 @@ def eq_and_gal_to_gcen_cyl(
     U, V, W = gal_to_bary_vel(glon, glat, gdist, gmul, gmub, vbary)
 
     # Transform barycentric Cartesian velocities to galactocentric Cartesian velocities
-    gcen_vx, gcen_vy, gcen_vz = bary_to_gcen_vel(U, V, W)
+    gcen_vx, gcen_vy, gcen_vz = bary_to_gcen_vel(
+      U, V, W, R0=R0, Usun=Usun, Vsun=Vsun, Wsun=Wsun
+    )
 
     # === GALACTOCENTRIC CARTESIAN TO GALACTOCENTRIC CYLINDRICAL CONVERSION ===
 
@@ -1054,3 +1058,40 @@ def eq_and_gal_to_gcen_cyl(
         gcen_x, gcen_y, gcen_z, gcen_vx, gcen_vy, gcen_vz
     )
     return radius, azimuth, height, v_radial, v_circ, v_vert
+
+
+def gcen_cyl_to_eq(
+  radius, azimuth, height, v_radial, v_circ, v_vert,
+  R0=_RSUN, Usun=_USUN, Vsun=_VSUN, Wsun=_WSUN
+):
+    """
+    Go from galactocentric cylindrical coordinates and velocities
+    to coordinates and velocities given in database
+
+    TODO: finish docstring
+    """
+
+    # Galactocentric cylindrical to galactocentric Cartesian
+    gcen_x, gcen_y, gcen_z, gcen_vx, gcen_vy, gcen_vz = gcen_cyl_to_gcen_cart(
+      radius, azimuth, height, v_radial, v_circ, v_vert
+    )
+
+    # Galactocentric Cartesian to barycentric Cartesian
+    Xb, Yb, Zb, Ub, Vb, Wb = gcen_to_bary(
+      gcen_x, gcen_y, gcen_z, gcen_vx, gcen_vy, gcen_vz,
+      R0=R0, Usun=Usun, Vsun=Vsun, Wsun=Wsun
+    )
+
+    # Barycentric Cartesian to (barycentric) galactic
+    glon, glat, gdist, gmul, gmub, vbary = bary_to_gal(Xb, Yb, Zb, Ub, Vb, Wb)
+
+    # Galactic to equatorial
+    ra, dec, eq_mux, eq_muy = gal_to_eq(glon, glat, gmul, gmub)
+
+    # vbary to vlsr
+    vlsr = vbary_to_vlsr(vbary, glon, glat)
+
+    # Distance to parallax
+    parallax = dist_to_parallax(gdist)
+
+    return ra, dec, glon, glat, parallax, eq_mux, eq_muy, vlsr
