@@ -12,7 +12,7 @@ _POSITION = 0.001  # 1 pc
 
 
 class TestGalaxyMap(unittest.TestCase):
-    def test_gal_to_bar_single(self):
+    def test_gal_to_bary_single(self):
         """
         Test single galactic to barycentric Cartesian coordinate conversion.
         """
@@ -28,7 +28,7 @@ class TestGalaxyMap(unittest.TestCase):
         self.assertAlmostEqual(Y, gal.cartesian.y.to("kpc").value, delta=_POSITION)
         self.assertAlmostEqual(Z, gal.cartesian.z.to("kpc").value, delta=_POSITION)
 
-    def test_gal_to_bar_multi(self):
+    def test_gal_to_bary_multi(self):
         """
         Test multiple galactic to barycentric Cartesian coordinate conversions.
         """
@@ -45,7 +45,7 @@ class TestGalaxyMap(unittest.TestCase):
             self.assertAlmostEqual(Y, gal.cartesian.y.to("kpc").value, delta=_POSITION)
             self.assertAlmostEqual(Z, gal.cartesian.z.to("kpc").value, delta=_POSITION)
 
-    def test_bar_to_gcen_single(self):
+    def test_bary_to_gcen_single(self):
         """
         Test single barycentric Cartesian to galactocentric
         Cartesian coordinate conversion.
@@ -68,7 +68,7 @@ class TestGalaxyMap(unittest.TestCase):
         self.assertAlmostEqual(Yg, gcen.cartesian.y.to("kpc").value, delta=_POSITION)
         self.assertAlmostEqual(Zg, gcen.cartesian.z.to("kpc").value, delta=_POSITION)
 
-    def test_bar_to_gcen_multi(self):
+    def test_bary_to_gcen_multi(self):
         """
         Test multiple barycentric Cartesian to
         galactocentric Cartesian coordinate conversions.
