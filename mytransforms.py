@@ -16,6 +16,7 @@ Isaac Cheng - January 2021
 """
 
 import numpy as np
+import theano.tensor as tt  # for arctan2 (no autoconversion from numpy)
 
 # Useful constants
 _DEG_TO_RAD = 0.017453292519943295  # pi/180
@@ -111,7 +112,8 @@ def eq_to_gal(ra, dec, mux, muy, e_mux=None, e_muy=None, return_pos=True):
     glat = np.arcsin(sin_glat) * _RAD_TO_DEG  # deg in [-90,90]
     tan_glon_num = cos_dec * sin_ra_off
     tan_glon_den = sin_dec * _COS_DEC_NGP - cos_dec * _SIN_DEC_NGP * cos_ra_off
-    glon = _L_NCP - np.arctan2(tan_glon_num, tan_glon_den) * _RAD_TO_DEG
+    # glon = _L_NCP - np.arctan2(tan_glon_num, tan_glon_den) * _RAD_TO_DEG
+    glon = _L_NCP - tt.arctan2(tan_glon_num, tan_glon_den) * _RAD_TO_DEG
     # get range 0 to 360 degrees
     glon = glon % 360.0
     #
@@ -196,7 +198,8 @@ def gal_to_eq(glon, glat, mul, mub, return_pos=True):
       sin_dec * _COS_DEC_NGP
       - cos_b * np.cos((_L_NCP - glon) * _DEG_TO_RAD)
     )
-    ra = (np.arctan2(tan_ra_off_num, tan_ra_off_den) * _RAD_TO_DEG + _RA_NGP) % 360
+    # ra = (np.arctan2(tan_ra_off_num, tan_ra_off_den) * _RAD_TO_DEG + _RA_NGP) % 360
+    ra = (tt.arctan2(tan_ra_off_num, tan_ra_off_den) * _RAD_TO_DEG + _RA_NGP) % 360
 
     # Calculate proper motion
     # Useful constants
@@ -473,9 +476,13 @@ def bary_to_gal(Xb, Yb, Zb, Ub=None, Vb=None, Wb=None, return_pos=True):
         Radial velocity relative to barycentre (NOT vlsr)
     """
 
-    glon = (np.arctan2(Yb, Xb) * _RAD_TO_DEG) % 360  # deg in [0,360)
-    glat = (np.arctan2(Zb, np.sqrt(Xb * Xb + Yb * Yb)) * _RAD_TO_DEG) % 360  # deg in [0,360)
-    dist = np.sqrt(Xb * Xb + Yb * Yb + Zb * Zb)  # kpc
+    # glon = (np.arctan2(Yb, Xb) * _RAD_TO_DEG) % 360  # deg in [0,360)
+    # glat = (np.arctan2(Zb, np.sqrt(Xb * Xb + Yb * Yb)) * _RAD_TO_DEG) % 360  # deg in [0,360)
+    # dist = np.sqrt(Xb * Xb + Yb * Yb + Zb * Zb)  # kpc
+
+    glon = (tt.arctan2(Yb, Xb) * _RAD_TO_DEG) % 360  # deg in [0,360)
+    glat = (tt.arctan2(Zb, np.sqrt(Xb * Xb + Yb * Yb)) * _RAD_TO_DEG) % 360  # deg in [0,360)
+    dist = tt.sqrt(Xb * Xb + Yb * Yb + Zb * Zb)  # kpc
 
     if Ub is not None and Vb is not None and Wb is not None:
         # Useful constants
@@ -692,7 +699,8 @@ def gcen_cart_to_gcen_cyl(
     perp_distance = np.sqrt(x_kpc * x_kpc + y_kpc * y_kpc)  # kpc
     perp_distance_km = perp_distance * _KPC_TO_KM  # km
 
-    azimuth = (np.arctan2(y_kpc, -x_kpc) * _RAD_TO_DEG) % 360  # deg in [0,360)
+    # azimuth = (np.arctan2(y_kpc, -x_kpc) * _RAD_TO_DEG) % 360  # deg in [0,360)
+    azimuth = (tt.arctan2(y_kpc, -x_kpc) * _RAD_TO_DEG) % 360  # deg in [0,360)
 
     # #
     # # **Check if any object is on z-axis (i.e. object's x_kpc & y_kpc both zero)**
@@ -1095,3 +1103,37 @@ def gcen_cyl_to_eq(
     parallax = dist_to_parallax(gdist)
 
     return ra, dec, glon, glat, parallax, eq_mux, eq_muy, vlsr
+
+
+def gcen_cyl_to_pm_and_vlsr(
+  radius, azimuth, height, v_radial, v_circ, v_vert,
+  R0=_RSUN, Usun=_USUN, Vsun=_VSUN, Wsun=_WSUN
+):
+    """
+    Go from galactocentric cylindrical coordinates and velocities
+    to equatorial proper motions and LSR velocities
+
+    TODO: finish docstring
+    """
+
+    # Galactocentric cylindrical to galactocentric Cartesian
+    gcen_x, gcen_y, gcen_z, gcen_vx, gcen_vy, gcen_vz = gcen_cyl_to_gcen_cart(
+      radius, azimuth, height, v_radial, v_circ, v_vert
+    )
+
+    # Galactocentric Cartesian to barycentric Cartesian
+    Xb, Yb, Zb, Ub, Vb, Wb = gcen_to_bary(
+      gcen_x, gcen_y, gcen_z, gcen_vx, gcen_vy, gcen_vz,
+      R0=R0, Usun=Usun, Vsun=Vsun, Wsun=Wsun
+    )
+
+    # Barycentric Cartesian to (barycentric) galactic
+    glon, glat, gdist, gmul, gmub, vbary = bary_to_gal(Xb, Yb, Zb, Ub, Vb, Wb)
+
+    # Galactic to equatorial
+    eq_mux, eq_muy = gal_to_eq(glon, glat, gmul, gmub, return_pos=False)
+
+    # vbary to vlsr
+    vlsr = vbary_to_vlsr(vbary, glon, glat)
+
+    return eq_mux, eq_muy, vlsr
