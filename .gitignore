@@ -136,3 +136,5 @@ data/schema_v2_20201203.txt
 *.jpg
 *.png
 
+# Pickle files
+*.pkl
