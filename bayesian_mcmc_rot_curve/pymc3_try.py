@@ -59,7 +59,8 @@ print(pm.summary(trace))
 # Explanation of terms:
 #   mcse = uncertainty due to algorithm itself,
 #          usually much less than std so not too important.
-#          Can increase iteration # to decrease
+#          Can increase iteration # to decrease.
+#          Rule of thumb: MCSE < 5% of STD
 #   ess = effective sample size (small means you need to run chain for longer)
 #   N.B. want r_hat to be as close to 1 as possible (r_har >= 1 always)
 
@@ -73,14 +74,14 @@ samples.append(trace['m'])
 samples.append(trace['b'])
 samples.append(trace['log_f'])
 samples = np.array(samples)
-np.shape(samples)
+# print(np.shape(samples))
 
 samples2 = [s.reshape((chains, iterations)) for s in samples]
 # print(samples2[0])
 # print(samples2[0].shape)
 fig, axes = plt.subplots(3)
-for ax, samples2 in zip(axes, samples2):
-    for chain in samples2:
+for ax, sample in zip(axes, samples2):
+    for chain in sample:
         ax.plot(chain, "k-", alpha=0.5, linewidth=0.5)
 plt.show()
 
