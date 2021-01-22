@@ -8,7 +8,7 @@ import corner
 import dill
 
 
-def plot_MCMC(trace, like_type):
+def plot_MCMC(trace, prior_set, like_type, num_sources):
     """
     Plots walkers and corner plot from trace. Returns None
     """
@@ -49,24 +49,24 @@ def plot_MCMC(trace, like_type):
 
     if like_type == "gaussian":
         fig1.suptitle(
-            f"MCMC walkers: {num_chains} chains each with {num_iters} iterations\n(Gaussian PDF)",
-            fontsize=10,
+            f"MCMC walkers: {num_chains} chains each with {num_iters} iterations\n(Gaussian PDF with {prior_set} priors. {num_sources} sources used in fit)",
+            fontsize=9,
         )
         fig1.tight_layout()  # Need this below suptitle()
         fig1.savefig(
-            Path(__file__).parent / "reid_MCMC_chains_gauss.jpg",
+            Path(__file__).parent / f"reid_MCMC_chains_gauss_{prior_set}.jpg",
             format="jpg",
             dpi=300,
             bbox_inches="tight",
         )
     else:  # like_type == "cauchy"
         fig1.suptitle(
-            f"MCMC walkers: {num_chains} chains each with {num_iters} iterations\n(Lorentzian-Like PDF)",
-            fontsize=10,
+            f"MCMC walkers: {num_chains} chains each with {num_iters} iterations\n(Lorentzian PDF with {prior_set} priors. {num_sources} sources used in fit)",
+            fontsize=9,
         )
         fig1.tight_layout()  # Need this below suptitle()
         fig1.savefig(
-            Path(__file__).parent / "reid_MCMC_chains_lorentz.jpg",
+            Path(__file__).parent / f"reid_MCMC_chains_lorentz_{prior_set}.jpg",
             format="jpg",
             dpi=300,
             bbox_inches="tight",
@@ -83,14 +83,14 @@ def plot_MCMC(trace, like_type):
     )
     if like_type == "gaussian":
         fig2.savefig(
-            Path(__file__).parent / "reid_MCMC_histogram_gauss.jpg",
+            Path(__file__).parent / f"reid_MCMC_histogram_gauss_{prior_set}.jpg",
             format="jpg",
             dpi=300,
             bbox_inches="tight",
         )
     else:  # like_type == "cauchy"
         fig2.savefig(
-            Path(__file__).parent / "reid_MCMC_histogram_lorentz.jpg",
+            Path(__file__).parent / f"reid_MCMC_histogram_lorentz_{prior_set}.jpg",
             format="jpg",
             dpi=300,
             bbox_inches="tight",
@@ -100,15 +100,22 @@ def plot_MCMC(trace, like_type):
 
 def main():
     # Binary file to read
-    infile = Path(__file__).parent / "reid_MCMC_outfile.pkl"
+    # infile = Path(__file__).parent / "reid_MCMC_outfile.pkl"
+    infile = Path(
+        "/home/chengi/Documents/coop2021/bayesian_mcmc_rot_curve/reid_MCMC_outfile.pkl"
+    )
 
     with open(infile, "rb") as f:
         file = dill.load(f)
         trace = file["trace"]
+        prior_set = file["prior_set"]  # "A1", "A5", "B", "C", "D"
         like_type = file["like_type"]  # "gaussian" or "cauchy"
+        num_sources = file["num_sources"]
+        print("prior_set:", prior_set)
         print("like_type:", like_type)
+        print("num_sources:", num_sources)
 
-        plot_MCMC(trace, like_type)
+        plot_MCMC(trace, prior_set, like_type, num_sources)
 
 
 if __name__ == "__main__":

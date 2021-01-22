@@ -1,4 +1,7 @@
-=== GAUSSIAN PDF. SET A PRIORS ===
+=========================================================================================
+===== ALL MCMC RUN USING init="advi", 2 chains, 2000 tunings + 2000 iterations each =====
+=========================================================================================
+=== GAUSSIAN PDF. SET A1 PRIORS ===
 2 chains, 2000 iterations each chain, 2000 tuning iterations, init='advi'
         mean     sd  hdi_3%  hdi_97%  mcse_mean  mcse_sd  ess_mean  ess_sd  ess_bulk  ess_tail  r_hat
 Usun   8.001  0.912   6.354    9.785      0.020    0.014    2141.0  2099.0    2140.0    1975.0    1.0
@@ -10,7 +13,7 @@ R0     7.899  0.064   7.785    8.022      0.001    0.001    1901.0  1900.0    19
 a2     0.966  0.026   0.920    1.015      0.001    0.001    1104.0  1104.0    1105.0    1938.0    1.0
 a3     1.648  0.017   1.618    1.681      0.001    0.000     658.0   658.0     655.0     956.0    1.0
 
-=== GAUSSIAN PDF. SET A PRIORS ===
+=== GAUSSIAN PDF. SET A1 PRIORS ===
 2 chains, 2000 iterations each chain, 2000 tuning iterations, init='advi'
         mean     sd  hdi_3%  hdi_97%  mcse_mean  mcse_sd  ess_mean  ess_sd  ess_bulk  ess_tail  r_hat
 Usun   7.990  0.908   6.342    9.768      0.019    0.013    2298.0  2268.0    2300.0    2577.0    1.0
@@ -22,7 +25,7 @@ R0     7.899  0.064   7.776    8.017      0.001    0.001    2205.0  2205.0    21
 a2     0.967  0.026   0.917    1.015      0.001    0.001    1222.0  1222.0    1222.0    1901.0    1.0
 a3     1.649  0.018   1.617    1.682      0.001    0.000     751.0   750.0     746.0     949.0    1.0
 
-=== LORENTZIAN-LIKE PDF. SET A PRIORS ===
+=== LORENTZIAN PDF. SET A1 PRIORS ===
 2 chains, 2000 iterations each chain, 2000 tuning iterations, init='advi'
         mean     sd  hdi_3%  hdi_97%  mcse_mean  mcse_sd  ess_mean  ess_sd  ess_bulk  ess_tail  r_hat
 Usun  10.232  1.072   8.054   12.093      0.019    0.014    3031.0  2998.0    3027.0    2729.0    1.0
@@ -34,3 +37,221 @@ R0     8.096  0.127   7.853    8.321      0.003    0.002    1764.0  1764.0    17
 a2     0.988  0.058   0.881    1.096      0.002    0.001    1153.0  1153.0    1166.0    1975.0    1.0
 a3     1.621  0.031   1.566    1.680      0.001    0.001     656.0   656.0     656.0     791.0    1.0
 - N.B. This set of results is similar to Reid et al. (2019)! Most dissimilar is Upec, where Reid et al. got 6.1 +/- 1.9 km/s. Still within our uncertainties though (and notice our Upec has an unusually small effective sample size).
+
+=== SET A5 PRIORS ===
+1st ITERATION: Standard filtering (threw away sources with R < 4 kpc, e_plx/plx > 0.2). Lorentzian PDF to fit parameters
+# sources = 158
+        mean     sd  hdi_3%  hdi_97%  mcse_mean  mcse_sd  ess_mean  ess_sd  ess_bulk  ess_tail  r_hat
+Usun  10.232  1.088   8.209   12.270      0.020    0.014    3013.0  2979.0    3013.0    2609.0    1.0
+Vsun  14.702  3.580   7.839   21.167      0.095    0.067    1410.0  1409.0    1410.0    1700.0    1.0
+Wsun   8.103  0.641   6.967    9.368      0.009    0.007    4641.0  4619.0    4633.0    2908.0    1.0
+Upec  -1.148  7.643 -15.894   12.780      0.335    0.237     521.0   521.0     520.0     647.0    1.0
+Vpec  -3.223  1.415  -5.932   -0.682      0.027    0.019    2754.0  2695.0    2746.0    2857.0    1.0
+R0     8.100  0.132   7.843    8.338      0.003    0.002    1782.0  1782.0    1784.0    2290.0    1.0
+a2     0.987  0.056   0.877    1.084      0.002    0.001    1088.0  1082.0    1079.0    2155.0    1.0
+a3     1.620  0.029   1.567    1.678      0.001    0.001     595.0   592.0     586.0     834.0    1.0
+2nd ITERATION: Filtered data with proper motions or vlsr > 3 sigma from predicted (i.e. assumed Gaussian residuals). Lorentzian PDF to fit parameters
+# sources = 115 (-43)
+        mean     sd  hdi_3%  hdi_97%  mcse_mean  mcse_sd  ess_mean  ess_sd  ess_bulk  ess_tail  r_hat
+Usun  10.393  1.094   8.323   12.391      0.020    0.014    3109.0  3078.0    3105.0    2460.0    1.0
+Vsun  11.993  4.701   3.373   20.634      0.154    0.109     928.0   928.0     940.0    1638.0    1.0
+Wsun   8.449  0.663   7.236    9.692      0.011    0.008    3670.0  3670.0    3652.0    2658.0    1.0
+Upec  -2.811  7.489 -16.886   10.699      0.290    0.205     668.0   668.0     673.0     954.0    1.0
+Vpec  -2.329  1.463  -5.042    0.382      0.027    0.020    2979.0  2599.0    2983.0    2366.0    1.0
+R0     8.038  0.156   7.734    8.322      0.004    0.003    1435.0  1435.0    1426.0    2379.0    1.0
+a2     0.973  0.058   0.861    1.077      0.002    0.001    1308.0  1308.0    1335.0    2073.0    1.0
+a3     1.619  0.029   1.565    1.674      0.001    0.001     735.0   735.0     736.0     823.0    1.0
+- N.B. We removed too many sources (bc of our different "optimal" parameters). However, our values for A5 are still consistent with Reid et al.'s (2019).
+- (Forgot to iterate cleaning & did not do any more fits. Whoops. See trial directly below.)
+
+=== SET A5 PRIORS ===
+1st ITERATION: Standard filtering (threw away sources with R < 4 kpc, e_plx/plx > 0.2). Lorentzian PDF to fit parameters
+# sources = 158
+        mean     sd  hdi_3%  hdi_97%  mcse_mean  mcse_sd  ess_mean  ess_sd  ess_bulk  ess_tail  r_hat
+Usun  10.247  1.056   8.268   12.200      0.019    0.013    3099.0  3083.0    3101.0    2885.0    1.0
+Vsun  14.880  3.443   8.635   21.566      0.092    0.065    1415.0  1413.0    1416.0    1494.0    1.0
+Wsun   8.102  0.615   6.952    9.241      0.009    0.007    4207.0  4164.0    4188.0    2617.0    1.0
+Upec  -1.137  7.577 -15.637   12.790      0.292    0.206     674.0   674.0     682.0     914.0    1.0
+Vpec  -3.225  1.396  -6.031   -0.783      0.026    0.019    2973.0  2787.0    2980.0    2721.0    1.0
+R0     8.103  0.127   7.867    8.344      0.003    0.002    1732.0  1732.0    1734.0    2365.0    1.0
+a2     0.988  0.055   0.888    1.090      0.001    0.001    1419.0  1419.0    1453.0    2158.0    1.0
+a3     1.620  0.029   1.564    1.673      0.001    0.001     707.0   707.0     717.0     993.0    1.0
+2nd ITERATION: Filtered data with proper motions or vlsr > 3 sigma from predicted (i.e. assumed Gaussian residuals). Lorentzian PDF to fit parameters
+# sources = 115 (-43)
+        mean     sd  hdi_3%  hdi_97%  mcse_mean  mcse_sd  ess_mean  ess_sd  ess_bulk  ess_tail  r_hat
+Usun  10.394  1.048   8.461   12.427      0.019    0.014    2940.0  2940.0    2934.0    3003.0    1.0
+Vsun  11.900  4.581   3.521   20.551      0.141    0.101    1049.0  1022.0    1053.0    1414.0    1.0
+Wsun   8.447  0.663   7.202    9.665      0.010    0.007    4312.0  4250.0    4307.0    2690.0    1.0
+Upec  -3.212  7.572 -16.863   11.226      0.292    0.207     671.0   671.0     673.0    1163.0    1.0
+Vpec  -2.336  1.410  -5.018    0.288      0.027    0.019    2721.0  2633.0    2716.0    2286.0    1.0
+R0     8.038  0.151   7.774    8.337      0.004    0.003    1364.0  1363.0    1370.0    2297.0    1.0
+a2     0.974  0.058   0.862    1.081      0.001    0.001    1558.0  1558.0    1564.0    2198.0    1.0
+a3     1.620  0.029   1.570    1.678      0.001    0.001     784.0   784.0     787.0    1137.0    1.0
+3rd ITERATION: Filtered data with proper motions or vlsr > 3 sigma from predicted (i.e. assumed Gaussian residuals). Lorentzian PDF to fit parameters
+# sources = 114 (-1)
+        mean     sd  hdi_3%  hdi_97%  mcse_mean  mcse_sd  ess_mean  ess_sd  ess_bulk  ess_tail  r_hat
+Usun  10.354  1.070   8.474   12.469      0.020    0.014    2811.0  2775.0    2813.0    2269.0    1.0
+Vsun  11.530  4.552   3.423   20.011      0.131    0.093    1208.0  1208.0    1215.0    1687.0    1.0
+Wsun   8.409  0.655   7.118    9.612      0.010    0.007    4346.0  4290.0    4345.0    2737.0    1.0
+Upec  -3.058  7.801 -18.164   11.471      0.333    0.236     549.0   549.0     552.0     665.0    1.0
+Vpec  -2.173  1.405  -4.831    0.458      0.027    0.020    2802.0  2551.0    2814.0    2231.0    1.0
+R0     8.028  0.149   7.743    8.302      0.004    0.003    1606.0  1606.0    1603.0    2564.0    1.0
+a2     0.972  0.060   0.859    1.081      0.002    0.001    1392.0  1392.0    1414.0    1545.0    1.0
+a3     1.618  0.030   1.560    1.673      0.001    0.001     623.0   623.0     624.0     909.0    1.0
+4th ITERATION: Filtered data with proper motions or vlsr > 3 sigma from predicted (i.e. assumed Gaussian residuals). Lorentzian PDF to fit parameters
+# sources = 113 (-1)
+        mean     sd  hdi_3%  hdi_97%  mcse_mean  mcse_sd  ess_mean  ess_sd  ess_bulk  ess_tail  r_hat
+Usun  10.352  1.072   8.299   12.310      0.020    0.014    2930.0  2899.0    2932.0    2847.0    1.0
+Vsun  11.693  4.653   3.221   20.301      0.127    0.090    1341.0  1341.0    1336.0    1432.0    1.0
+Wsun   8.328  0.634   7.077    9.479      0.010    0.007    4120.0  4120.0    4131.0    2718.0    1.0
+Upec  -1.811  7.851 -16.133   13.599      0.315    0.225     622.0   607.0     627.0     795.0    1.0
+Vpec  -2.232  1.392  -4.898    0.275      0.026    0.019    2848.0  2592.0    2844.0    2239.0    1.0
+R0     8.036  0.151   7.763    8.329      0.004    0.003    1767.0  1767.0    1755.0    2034.0    1.0
+a2     0.966  0.061   0.847    1.072      0.002    0.001    1586.0  1586.0    1596.0    2019.0    1.0
+a3     1.613  0.031   1.556    1.672      0.001    0.001     728.0   728.0     732.0     827.0    1.0
+- NO MORE DATA REMOVED AFTER THIS. Forgot to save this plot :(
+
+=== SET A5 PRIORS ("lorentz_A5-fixedUpecVpec") ===
+1st ITERATION: Standard filtering (threw away sources with R < 4 kpc, e_plx/plx > 0.2). Lorentzian PDF to fit parameters
+# sources = 158
+        mean     sd  hdi_3%  hdi_97%  mcse_mean  mcse_sd  ess_mean  ess_sd  ess_bulk  ess_tail  r_hat
+Usun  10.254  1.102   8.248   12.382      0.020    0.014    3074.0  3057.0    3076.0    2578.0    1.0
+Vsun  14.736  3.734   7.281   21.452      0.102    0.074    1327.0  1290.0    1331.0    1183.0    1.0
+Wsun   8.108  0.624   6.936    9.307      0.009    0.006    4692.0  4637.0    4683.0    2769.0    1.0
+Upec  -1.267  7.585 -14.972   12.859      0.318    0.225     569.0   569.0     566.0     859.0    1.0
+Vpec  -3.244  1.429  -5.969   -0.634      0.026    0.019    2990.0  2821.0    2979.0    2385.0    1.0
+R0     8.099  0.135   7.850    8.354      0.003    0.002    1694.0  1693.0    1696.0    2228.0    1.0
+a2     0.987  0.057   0.880    1.091      0.002    0.001     879.0   879.0     886.0    1781.0    1.0
+a3     1.620  0.030   1.565    1.676      0.001    0.001     558.0   557.0     553.0     906.0    1.0
+2nd ITERATION: Filtered data with proper motions or vlsr > 3 sigma from predicted (i.e. assumed Gaussian residuals). Lorentzian PDF to fit parameters
+# sources = 105 (-53) (forced Upec = 6.1 km/s, Vpec = -2.1 km/s as in Reid's set-A1 best-fit values during data cleaning. <-- WRONG. Should not have done this)
+        mean     sd  hdi_3%  hdi_97%  mcse_mean  mcse_sd  ess_mean  ess_sd  ess_bulk  ess_tail  r_hat
+Usun  10.238  1.075   8.338   12.340      0.019    0.014    3137.0  3134.0    3140.0    2688.0   1.00
+Vsun  18.493  3.532  11.916   25.176      0.103    0.074    1176.0  1155.0    1185.0    1420.0   1.00
+Wsun   7.962  0.687   6.649    9.239      0.010    0.007    4406.0  4385.0    4433.0    2613.0   1.00
+Upec   1.871  7.238 -12.327   14.905      0.300    0.212     581.0   581.0     581.0     473.0   1.01
+Vpec  -1.751  1.382  -4.443    0.751      0.025    0.019    3095.0  2704.0    3093.0    2641.0   1.00
+R0     8.152  0.122   7.938    8.398      0.003    0.002    1782.0  1780.0    1781.0    2390.0   1.00
+a2     0.954  0.062   0.838    1.066      0.002    0.001    1237.0  1232.0    1225.0    1685.0   1.00
+a3     1.631  0.028   1.579    1.684      0.001    0.001     621.0   619.0     602.0     454.0   1.01
+3rd ITERATION: Filtered data with proper motions or vlsr > 3 sigma from predicted (i.e. assumed Gaussian residuals). Lorentzian PDF to fit parameters
+# sources = 104 (-1) (forced Upec = 6.1 km/s, Vpec = -2.1 km/s as in Reid's set-A1 best-fit values during data cleaning. <-- WRONG. Should not have done this)
+        mean     sd  hdi_3%  hdi_97%  mcse_mean  mcse_sd  ess_mean  ess_sd  ess_bulk  ess_tail  r_hat
+Usun  10.295  1.060   8.325   12.306      0.020    0.014    2951.0  2890.0    2986.0    2653.0    1.0
+Vsun  18.389  3.685  11.391   25.142      0.094    0.068    1524.0  1459.0    1550.0    1601.0    1.0
+Wsun   7.962  0.677   6.706    9.232      0.010    0.007    4698.0  4646.0    4697.0    3043.0    1.0
+Upec   1.762  7.131 -10.607   16.070      0.251    0.177     808.0   808.0     803.0     959.0    1.0
+Vpec  -1.726  1.323  -4.249    0.688      0.025    0.019    2885.0  2361.0    2904.0    2311.0    1.0
+R0     8.112  0.128   7.881    8.358      0.003    0.002    2067.0  2064.0    2085.0    2365.0    1.0
+a2     0.954  0.061   0.838    1.066      0.001    0.001    1744.0  1744.0    1749.0    2142.0    1.0
+a3     1.631  0.028   1.578    1.680      0.001    0.001     918.0   915.0     892.0     829.0    1.0
+4th ITERATION: Filtered data with proper motions or vlsr > 3 sigma from predicted (i.e. assumed Gaussian residuals). Lorentzian PDF to fit parameters
+# sources = 102 (-2) (forced Upec = 6.1 km/s, Vpec = -2.1 km/s as in Reid's set-A1 best-fit values during data cleaning. <-- WRONG. Should not have done this)
+        mean     sd  hdi_3%  hdi_97%  mcse_mean  mcse_sd  ess_mean  ess_sd  ess_bulk  ess_tail  r_hat
+Usun  10.390  1.028   8.330   12.226      0.020    0.014    2649.0  2521.0    2651.0    2461.0   1.00
+Vsun  18.676  3.755  11.442   25.586      0.099    0.071    1426.0  1396.0    1435.0    1415.0   1.00
+Wsun   7.931  0.685   6.644    9.217      0.010    0.007    4401.0  4380.0    4406.0    2507.0   1.00
+Upec   1.584  7.578 -12.593   15.275      0.360    0.255     442.0   442.0     439.0     663.0   1.01
+Vpec  -1.668  1.300  -4.048    0.864      0.026    0.019    2542.0  2357.0    2534.0    2389.0   1.00
+R0     8.100  0.125   7.866    8.330      0.003    0.002    1948.0  1946.0    1961.0    2384.0   1.00
+a2     0.956  0.062   0.836    1.069      0.002    0.001    1037.0  1019.0    1002.0    1709.0   1.00
+a3     1.633  0.029   1.583    1.691      0.001    0.001     471.0   468.0     457.0     468.0   1.01
+5th ITERATION: Filtered data with proper motions or vlsr > 3 sigma from predicted (i.e. assumed Gaussian residuals). Lorentzian PDF to fit parameters
+# sources = 100 (-2) (forced Upec = 6.1 km/s, Vpec = -2.1 km/s as in Reid's set-A1 best-fit values during data cleaning. <-- WRONG. Should not have done this)
+        mean     sd  hdi_3%  hdi_97%  mcse_mean  mcse_sd  ess_mean  ess_sd  ess_bulk  ess_tail  r_hat
+Usun  10.592  1.058   8.673   12.591      0.018    0.013    3409.0  3390.0    3408.0    2895.0    1.0
+Vsun  18.226  4.181  10.163   25.908      0.116    0.084    1299.0  1234.0    1285.0    1604.0    1.0
+Wsun   7.997  0.677   6.759    9.282      0.010    0.007    4436.0  4398.0    4428.0    2977.0    1.0
+Upec   2.135  7.473 -12.480   15.603      0.265    0.191     795.0   762.0     793.0    1027.0    1.0
+Vpec  -1.805  1.329  -4.226    0.768      0.025    0.018    2931.0  2701.0    2922.0    3004.0    1.0
+R0     8.049  0.131   7.809    8.309      0.003    0.002    1868.0  1868.0    1872.0    2363.0    1.0
+a2     0.953  0.063   0.834    1.064      0.002    0.001    1396.0  1395.0    1395.0    2200.0    1.0
+a3     1.630  0.029   1.577    1.685      0.001    0.001     818.0   814.0     806.0     801.0    1.0
+- NO MORE DATA REMOVED AFTER THIS
+
+=== SET A5 PRIORS ("gauss_A5-freeparams") ===
+1st ITERATION: Standard filtering (threw away sources with R < 4 kpc, e_plx/plx > 0.2). Lorentzian PDF to fit parameters
+# sources = 158
+        mean     sd  hdi_3%  hdi_97%  mcse_mean  mcse_sd  ess_mean  ess_sd  ess_bulk  ess_tail  r_hat
+Usun  10.213  1.075   8.230   12.213      0.021    0.015    2706.0  2706.0    2698.0    2894.0   1.00
+Vsun  14.750  3.507   8.069   21.229      0.086    0.061    1646.0  1646.0    1644.0    1707.0   1.00
+Wsun   8.110  0.640   6.888    9.309      0.010    0.007    4232.0  4195.0    4257.0    2208.0   1.00
+Upec  -1.097  7.610 -15.760   12.677      0.291    0.206     682.0   682.0     686.0     848.0   1.01
+Vpec  -3.197  1.413  -5.811   -0.539      0.026    0.019    2905.0  2732.0    2912.0    2744.0   1.00
+R0     8.101  0.131   7.865    8.355      0.003    0.002    2088.0  2088.0    2084.0    2200.0   1.00
+a2     0.987  0.056   0.882    1.091      0.002    0.001    1336.0  1336.0    1370.0    2004.0   1.00
+a3     1.620  0.030   1.566    1.676      0.001    0.001     740.0   740.0     746.0     946.0   1.01
+2nd ITERATION: Filtered data with proper motions or vlsr > 3 sigma from predicted (i.e. assumed Gaussian residuals). Gaussian PDF to fit parameters
+# sources = 115 (-43)
+        mean     sd  hdi_3%  hdi_97%  mcse_mean  mcse_sd  ess_mean  ess_sd  ess_bulk  ess_tail  r_hat
+Usun  10.087  0.985   8.305   11.984      0.020    0.014    2402.0  2402.0    2399.0    2487.0    1.0
+Vsun  11.920  2.432   7.222   16.351      0.060    0.042    1649.0  1649.0    1649.0    1762.0    1.0
+Wsun   8.768  0.497   7.830    9.680      0.007    0.005    4636.0  4614.0    4626.0    2689.0    1.0
+Upec  -5.027  5.799 -15.717    5.830      0.236    0.167     606.0   606.0     607.0     917.0    1.0
+Vpec  -2.839  1.165  -5.030   -0.641      0.023    0.017    2556.0  2476.0    2563.0    2357.0    1.0
+R0     8.080  0.082   7.925    8.232      0.002    0.001    1972.0  1971.0    1981.0    1833.0    1.0
+a2     0.991  0.036   0.922    1.055      0.001    0.001    1103.0  1103.0    1103.0    1966.0    1.0
+a3     1.627  0.021   1.584    1.664      0.001    0.001     629.0   628.0     630.0     833.0    1.0
+3rd ITERATION: Filtered data with proper motions or vlsr > 3 sigma from predicted (i.e. assumed Gaussian residuals). Gaussian PDF to fit parameters
+# sources = 114 (-1)
+        mean     sd  hdi_3%  hdi_97%  mcse_mean  mcse_sd  ess_mean  ess_sd  ess_bulk  ess_tail  r_hat
+Usun   9.996  1.036   7.951   11.822      0.022    0.016    2129.0  2115.0    2137.0    2605.0    1.0
+Vsun  11.392  2.389   6.945   16.021      0.057    0.041    1730.0  1719.0    1731.0    1809.0    1.0
+Wsun   8.723  0.496   7.811    9.658      0.007    0.005    4545.0  4545.0    4560.0    2737.0    1.0
+Upec  -4.675  5.853 -17.124    5.366      0.221    0.159     699.0   676.0     701.0     840.0    1.0
+Vpec  -2.634  1.186  -4.870   -0.425      0.024    0.018    2345.0  2268.0    2357.0    2427.0    1.0
+R0     8.067  0.081   7.908    8.213      0.002    0.001    2077.0  2077.0    2076.0    2237.0    1.0
+a2     0.991  0.036   0.923    1.056      0.001    0.001    1298.0  1294.0    1291.0    1610.0    1.0
+a3     1.624  0.021   1.584    1.667      0.001    0.001     726.0   725.0     729.0     888.0    1.0
+= N.B. Upec does not agree with Reid et al., 2019. Reasons: diff initial PDF --> diff number of sources removed and maybe used diff PDF (Gaussian vs. Lorentzian for runs 2 & 3).
+- NO MORE DATA REMOVED AFTER THIS
+
+=== SET A5 PRIORS ("lorentz_A5-fixedAllParams") ===
+1st ITERATION: Standard filtering (threw away sources with R < 4 kpc, e_plx/plx > 0.2). Lorentzian PDF to fit parameters
+# sources = 158
+        mean     sd  hdi_3%  hdi_97%  mcse_mean  mcse_sd  ess_mean  ess_sd  ess_bulk  ess_tail  r_hat
+Usun  10.212  1.072   8.315   12.338      0.019    0.014    3142.0  3111.0    3132.0    2865.0    1.0
+Vsun  14.677  3.444   8.469   21.333      0.087    0.062    1550.0  1532.0    1547.0    1707.0    1.0
+Wsun   8.097  0.616   6.922    9.240      0.009    0.006    4701.0  4678.0    4700.0    2958.0    1.0
+Upec  -0.877  7.621 -15.711   13.494      0.314    0.222     590.0   590.0     587.0     813.0    1.0
+Vpec  -3.167  1.414  -5.827   -0.542      0.026    0.020    2874.0  2529.0    2880.0    2351.0    1.0
+R0     8.099  0.129   7.864    8.340      0.003    0.002    1994.0  1994.0    1993.0    2443.0    1.0
+a2     0.985  0.055   0.883    1.090      0.002    0.001    1262.0  1262.0    1267.0    2088.0    1.0
+a3     1.619  0.029   1.567    1.678      0.001    0.001     624.0   624.0     625.0     855.0    1.0
+2nd ITERATION: Filtered data with proper motions or vlsr > 3 sigma from predicted (i.e. assumed Gaussian residuals). Lorentzian PDF to fit parameters
+# sources = 94 (-64) (forced all parameters to be A5 best-fit values during data cleaning)
+        mean     sd  hdi_3%  hdi_97%  mcse_mean  mcse_sd  ess_mean  ess_sd  ess_bulk  ess_tail  r_hat
+Usun  10.142  1.064   8.151   12.132      0.018    0.013    3379.0  3379.0    3386.0    2555.0    1.0
+Vsun  18.218  3.397  11.968   24.592      0.090    0.065    1424.0  1379.0    1430.0    1544.0    1.0
+Wsun   7.790  0.711   6.391    9.065      0.010    0.007    4618.0  4618.0    4613.0    2655.0    1.0
+Upec   1.542  7.377 -12.341   15.159      0.296    0.209     623.0   623.0     623.0     865.0    1.0
+Vpec  -1.819  1.366  -4.300    0.736      0.024    0.018    3220.0  2955.0    3222.0    2345.0    1.0
+R0     8.197  0.124   7.973    8.432      0.003    0.002    2155.0  2154.0    2151.0    2795.0    1.0
+a2     0.981  0.060   0.867    1.091      0.002    0.001    1296.0  1296.0    1302.0    1824.0    1.0
+a3     1.634  0.028   1.588    1.692      0.001    0.001     671.0   671.0     677.0     925.0    1.0
+- NO MORE DATA REMOVED AFTER THIS
+
+=== SET A5 PRIORS ("gauss_A5-fixedAllParams") ===
+1st ITERATION: Standard filtering (threw away sources with R < 4 kpc, e_plx/plx > 0.2). Lorentzian PDF to fit parameters
+# sources = 158
+        mean     sd  hdi_3%  hdi_97%  mcse_mean  mcse_sd  ess_mean  ess_sd  ess_bulk  ess_tail  r_hat
+Usun  10.207  1.085   8.106   12.195      0.020    0.014    2944.0  2944.0    2960.0    2558.0    1.0
+Vsun  14.870  3.441   8.168   20.907      0.089    0.063    1512.0  1503.0    1519.0    1530.0    1.0
+Wsun   8.106  0.645   6.878    9.319      0.010    0.007    4421.0  4412.0    4422.0    2649.0    1.0
+Upec  -0.764  7.714 -14.607   14.005      0.295    0.209     682.0   682.0     682.0     830.0    1.0
+Vpec  -3.199  1.414  -5.870   -0.523      0.027    0.020    2707.0  2623.0    2697.0    2309.0    1.0
+R0     8.103  0.127   7.865    8.349      0.003    0.002    1908.0  1908.0    1908.0    2251.0    1.0
+a2     0.985  0.057   0.877    1.089      0.002    0.001    1156.0  1156.0    1178.0    1960.0    1.0
+a3     1.619  0.030   1.563    1.675      0.001    0.001     701.0   701.0     702.0     847.0    1.0
+2nd ITERATION: Filtered data with proper motions or vlsr > 3 sigma from predicted (i.e. assumed Gaussian residuals). Gaussian PDF to fit parameters
+# sources = 94 (-64) (forced all parameters to be A5 best-fit values during data cleaning)
+        mean     sd  hdi_3%  hdi_97%  mcse_mean  mcse_sd  ess_mean  ess_sd  ess_bulk  ess_tail  r_hat
+Usun   9.390  1.026   7.549   11.448      0.022    0.015    2240.0  2240.0    2255.0    2269.0    1.0
+Vsun  17.571  2.355  13.173   21.857      0.059    0.043    1580.0  1516.0    1587.0    1520.0    1.0
+Wsun   8.130  0.533   7.101    9.111      0.008    0.006    4416.0  4416.0    4419.0    2713.0    1.0
+Upec  -1.207  6.263 -13.587    9.808      0.251    0.202     621.0   481.0     617.0     605.0    1.0
+Vpec  -1.391  1.238  -3.903    0.773      0.025    0.018    2382.0  2300.0    2380.0    2211.0    1.0
+R0     8.190  0.082   8.042    8.347      0.002    0.001    1965.0  1962.0    1972.0    2154.0    1.0
+a2     0.997  0.039   0.922    1.067      0.001    0.001    1142.0  1139.0    1138.0    2026.0    1.0
+a3     1.646  0.023   1.605    1.691      0.001    0.001     621.0   618.0     607.0     571.0    1.0
+- NO MORE DATA REMOVED AFTER THIS
