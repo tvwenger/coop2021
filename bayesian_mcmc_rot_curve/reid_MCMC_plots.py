@@ -54,7 +54,7 @@ def plot_MCMC(trace, like_type):
         )
         fig1.tight_layout()  # Need this below suptitle()
         fig1.savefig(
-            Path(__file__).parent / "prior_reid_chains_gauss.jpg",
+            Path(__file__).parent / "reid_MCMC_chains_gauss.jpg",
             format="jpg",
             dpi=300,
             bbox_inches="tight",
@@ -66,7 +66,7 @@ def plot_MCMC(trace, like_type):
         )
         fig1.tight_layout()  # Need this below suptitle()
         fig1.savefig(
-            Path(__file__).parent / "prior_reid_chains_lorentz.jpg",
+            Path(__file__).parent / "reid_MCMC_chains_lorentz.jpg",
             format="jpg",
             dpi=300,
             bbox_inches="tight",
@@ -83,14 +83,14 @@ def plot_MCMC(trace, like_type):
     )
     if like_type == "gaussian":
         fig2.savefig(
-            Path(__file__).parent / "prior_reid_histogram_gauss.jpg",
+            Path(__file__).parent / "reid_MCMC_histogram_gauss.jpg",
             format="jpg",
             dpi=300,
             bbox_inches="tight",
         )
     else:  # like_type == "cauchy"
         fig2.savefig(
-            Path(__file__).parent / "prior_reid_histogram_lorentz.jpg",
+            Path(__file__).parent / "reid_MCMC_histogram_lorentz.jpg",
             format="jpg",
             dpi=300,
             bbox_inches="tight",
@@ -100,7 +100,7 @@ def plot_MCMC(trace, like_type):
 
 def main():
     # Binary file to read
-    infile = Path(__file__).parent / "prior_reid_outfile.pkl"
+    infile = Path(__file__).parent / "reid_MCMC_outfile.pkl"
 
     with open(infile, "rb") as f:
         file = dill.load(f)

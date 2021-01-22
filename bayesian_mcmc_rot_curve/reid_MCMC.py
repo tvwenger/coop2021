@@ -1,7 +1,6 @@
 """
 Bayesian MCMC using priors from Reid et al. (2019)
 """
-from inspect import Attribute
 import sys
 from pathlib import Path
 import sqlite3
@@ -66,7 +65,7 @@ def run_MCMC(data, num_iters, num_tune, num_chains, prior_set, like_type):
     """
 
     # Binary file to store MCMC output
-    outfile = Path(__file__).parent / "prior_reid_outfile.pkl"
+    outfile = Path(__file__).parent / "reid_MCMC_outfile.pkl"
 
     # Create condition to filter data
     all_radii = trans.get_gcen_cyl_radius(data["glong"], data["glat"], data["plx"])
@@ -268,7 +267,7 @@ def plot_MCMC(trace, like_type):
         )
         fig1.tight_layout()  # Need this below suptitle()
         fig1.savefig(
-            Path(__file__).parent / "prior_reid_chains_gauss.jpg",
+            Path(__file__).parent / "reid_MCMC_chains_gauss.jpg",
             format="jpg",
             dpi=300,
             bbox_inches="tight",
@@ -280,7 +279,7 @@ def plot_MCMC(trace, like_type):
         )
         fig1.tight_layout()  # Need this below suptitle()
         fig1.savefig(
-            Path(__file__).parent / "prior_reid_chains_lorentz.jpg",
+            Path(__file__).parent / "reid_MCMC_chains_lorentz.jpg",
             format="jpg",
             dpi=300,
             bbox_inches="tight",
@@ -297,14 +296,14 @@ def plot_MCMC(trace, like_type):
     )
     if like_type == "gaussian":
         fig2.savefig(
-            Path(__file__).parent / "prior_reid_histogram_gauss.jpg",
+            Path(__file__).parent / "reid_MCMC_histogram_gauss.jpg",
             format="jpg",
             dpi=300,
             bbox_inches="tight",
         )
     else:  # like_type == "cauchy"
         fig2.savefig(
-            Path(__file__).parent / "prior_reid_histogram_lorentz.jpg",
+            Path(__file__).parent / "reid_MCMC_histogram_lorentz.jpg",
             format="jpg",
             dpi=300,
             bbox_inches="tight",
