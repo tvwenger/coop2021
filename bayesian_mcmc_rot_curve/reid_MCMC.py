@@ -191,8 +191,9 @@ def run_MCMC(data, num_iters, num_tune, num_chains, prior_set, like_type, is_dat
         # Galactocentric Cartesian frame to galactocentric cylindrical frame
         gcen_cyl_dist = tt.sqrt(gcen_x * gcen_x + gcen_y * gcen_y)  # kpc
         azimuth = (tt.arctan2(gcen_y, -gcen_x) * _RAD_TO_DEG) % 360  # deg in [0,360)
-        v_circ_pred = urc(gcen_cyl_dist, a2=a2, a3=a3, R0=R0) + Upec  # km/s
-        v_rad = Vpec  # km/s
+        v_circ_pred = urc(gcen_cyl_dist, a2=a2, a3=a3, R0=R0) + Vpec  # km/s
+        v_rad = -1 * Upec  # km/s, negative bc toward GC
+        Theta0 = urc(R0, a2=a2, a3=a3, R0=R0) + Vpec  # km/s, LSR circular rotation speed
 
         # Go in reverse!
         # Galactocentric cylindrical to equatorial proper motions & LSR velocity
@@ -207,6 +208,7 @@ def run_MCMC(data, num_iters, num_tune, num_chains, prior_set, like_type, is_dat
             Usun=Usun,
             Vsun=Vsun,
             Wsun=Wsun,
+            Theta0=Theta0,
             use_theano=True,
         )
 
@@ -295,12 +297,12 @@ def run_MCMC(data, num_iters, num_tune, num_chains, prior_set, like_type, is_dat
 def main():
     # Boolean to specify if data should be loaded from database (i.e. using new prior set)
     # or if data should be from pickle file (i.e. use same prior set after data cleanup)
-    _LOAD_DATABASE = False
+    _LOAD_DATABASE = True
     _NUM_ITERS = 2000  # number of iterations per chain
     _NUM_TUNE = 2000  # number of tuning iterations (will be thrown away)
     _NUM_CHAINS = 2  # number of parallel chains to run
     _PRIOR_SET = "A5"  # Prior set from Reid et al. (2019)
-    _LIKELIHOOD_TYPE = "gaussian"  # "gaussian" or "cauchy"
+    _LIKELIHOOD_TYPE = "cauchy"  # "gaussian" or "cauchy"
 
     if _LOAD_DATABASE:
         # # Specifying database file name & folder

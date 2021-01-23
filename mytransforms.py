@@ -1127,7 +1127,7 @@ def gcen_cyl_to_eq(
 
 def gcen_cyl_to_pm_and_vlsr(
   radius, azimuth, height, v_radial, v_circ, v_vert,
-  R0=_RSUN, Usun=_USUN, Vsun=_VSUN, Wsun=_WSUN,
+  R0=_RSUN, Usun=_USUN, Vsun=_VSUN, Wsun=_WSUN, Theta0=_THETA_0,
   use_theano=False
 ):
     """
@@ -1149,7 +1149,7 @@ def gcen_cyl_to_pm_and_vlsr(
     # Galactocentric Cartesian to barycentric Cartesian
     Xb, Yb, Zb, Ub, Vb, Wb = gcen_to_bary(
       gcen_x, gcen_y, gcen_z, gcen_vx, gcen_vy, gcen_vz,
-      R0=R0, Usun=Usun, Vsun=Vsun, Wsun=Wsun
+      R0=R0, Usun=Usun, Vsun=Vsun, Wsun=Wsun, Theta0=Theta0
     )
 
     # Barycentric Cartesian to (barycentric) galactic
