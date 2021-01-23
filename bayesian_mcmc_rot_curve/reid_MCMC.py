@@ -7,11 +7,9 @@ import sqlite3
 from contextlib import closing
 import numpy as np
 import pandas as pd
-from theano.scalar.basic import TrueDiv
 import theano.tensor as tt
 import pymc3 as pm
 import dill
-from theano.tensor.basic import true_div
 
 # Want to add my own programs as package:
 # Make a $PATH to coop2021 (twice parent folder of this file)
