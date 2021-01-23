@@ -193,7 +193,7 @@ def run_MCMC(data, num_iters, num_tune, num_chains, prior_set, like_type, is_dat
         azimuth = (tt.arctan2(gcen_y, -gcen_x) * _RAD_TO_DEG) % 360  # deg in [0,360)
         v_circ_pred = urc(gcen_cyl_dist, a2=a2, a3=a3, R0=R0) + Vpec  # km/s
         v_rad = -1 * Upec  # km/s, negative bc toward GC
-        Theta0 = urc(R0, a2=a2, a3=a3, R0=R0) + Vpec  # km/s, LSR circular rotation speed
+        Theta0 = urc(R0, a2=a2, a3=a3, R0=R0)  # km/s, LSR circular rotation speed
 
         # Go in reverse!
         # Galactocentric cylindrical to equatorial proper motions & LSR velocity
