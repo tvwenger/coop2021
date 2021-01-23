@@ -37,24 +37,24 @@ def cleanup_data(data, trace):
     #         continue  # do not want to include non user-defined parameters
     #     opt_vals["{}".format(varname)] = np.median(trace[varname])
     # print(opt_vals)
-    # R0 = np.median(trace["R0"])  # kpc
-    # Vsun = np.median(trace["Vsun"])  # km/s
-    # Usun = np.median(trace["Usun"])  # km/s
-    # Wsun = np.median(trace["Wsun"])  # km/s
-    # Upec = np.median(trace["Upec"])  # km/s
-    # # Upec = 6.1  # km/s, force Upec to this value since my current number of iterations does not do that
-    # Vpec = np.median(trace["Vpec"])  # km/s
-    # # Vpec = -2.1  # km/s, force Vpec to this value
-    # a2 = np.median(trace["a2"])  # dimensionless
-    # a3 = np.median(trace["a3"])  # dimensionless
-    R0 = 8.15  # kpc
-    Usun = 10.5  # km/s
-    Vsun = 10.7  # km/s
-    Wsun = 7.6  # km/s
-    Upec = 6.0  # km/s
-    Vpec = -4.3  # km/s
-    a2 = 0.96  # dimensionless
-    a3 = 1.62  # dimensionless
+    R0 = np.median(trace["R0"])  # kpc
+    Vsun = np.median(trace["Vsun"])  # km/s
+    Usun = np.median(trace["Usun"])  # km/s
+    Wsun = np.median(trace["Wsun"])  # km/s
+    Upec = np.median(trace["Upec"])  # km/s
+    # Upec = 6.1  # km/s, force Upec to this value since my current number of iterations does not do that
+    Vpec = np.median(trace["Vpec"])  # km/s
+    # Vpec = -2.1  # km/s, force Vpec to this value
+    a2 = np.median(trace["a2"])  # dimensionless
+    a3 = np.median(trace["a3"])  # dimensionless
+    # R0 = 8.15  # kpc
+    # Usun = 10.5  # km/s
+    # Vsun = 10.7  # km/s
+    # Wsun = 7.6  # km/s
+    # Upec = 6.0  # km/s
+    # Vpec = -4.3  # km/s
+    # a2 = 0.96  # dimensionless
+    # a3 = 1.62  # dimensionless
 
     # === Get data ===
     # Slice data into components (using np.asarray to prevent PyMC3 error with pandas)
