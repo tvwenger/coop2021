@@ -31,7 +31,7 @@ _RSUN = 8.15  # kpc (Reid et al. 2019)
 _DEG_TO_RAD = 0.017453292519943295  # pi/180
 _RAD_TO_DEG = 57.29577951308232  # 180/pi (Don't forget to % 360 after)
 _AU_PER_YR_TO_KM_PER_S = 4.740470463533348  # from astropy (uses tropical year)
-_KM_PER_S_TO_AU_PER_YR = 0.21094952656969873  # from astropy (uses tropical year)
+_KM_PER_KPC_S_TO_MAS_PER_YR = 0.21094952656969873  # (mas/yr) / (km/kpc/s)
 _KPC_TO_KM = 3.085677581e16
 _KM_TO_KPC = 3.24077929e-17
 
@@ -55,7 +55,21 @@ def get_data(db_file):
     return data
 
 
-def run_MCMC(data, num_iters, num_tune, num_chains, prior_set, like_type, is_database_data):
+def ln_siviaskilling(x, mean, weight):
+    """
+    Returns the natural log of Sivia & Skilling's (2006) "Lorentzian-like" PDF.
+    N.B. That the PDF is _not_ normalized.
+
+    TODO: Finish docstring
+    """
+
+    residual = (x - mean) / weight
+    return tt.log((1 - tt.exp(-0.5 * residual * residual)) / (residual * residual))
+
+
+def run_MCMC(
+    data, num_iters, num_tune, num_chains, prior_set, like_type, is_database_data
+):
     """
     Runs Bayesian MCMC. Returns trace & number of sources used in fit.
 
@@ -135,12 +149,15 @@ def run_MCMC(data, num_iters, num_tune, num_chains, prior_set, like_type, is_dat
     # Zero vertical velocity in URC
     v_vert = 0.0
 
-    # 8 parameters from Reid et al. (2019): (see Section 4 & Table 3)
+    # 1D Virial dispersion for stars in HMSFR w/ mass ~ 10^4 Msun w/in radius of ~ 1 pc
+    sigma_vir = 5.0  # km/s
+
+    # 8 parameters from Reid et al. (2019): (see Section 4 & Table 3 of paper)
     #   R0, Usun, Vsun, Wsun, Upec, Vpec, a2, a3
     model_obj = pm.Model()
     with model_obj:
         if prior_set == "A1" or prior_set == "A5":  # Make model with SET A PRIORS
-            # R0 = pm.Uniform("R0", lower=0, upper=np.inf)  # kpc
+            # R0 = pm.Uniform("R0", lower=0, upper=500.)  # kpc
             R0 = pm.Uniform("R0", lower=7.0, upper=10.0)  # kpc
             Usun = pm.Normal("Usun", mu=11.1, sigma=1.2)  # km/s
             Vsun = pm.Normal("Vsun", mu=15.0, sigma=10.0)  # km/s
@@ -150,32 +167,32 @@ def run_MCMC(data, num_iters, num_tune, num_chains, prior_set, like_type, is_dat
             a2 = pm.Uniform("a2", lower=0.5, upper=1.5)  # dimensionless
             a3 = pm.Uniform("a3", lower=1.5, upper=1.7)  # dimensionless
         elif prior_set == "B":
-            R0 = pm.Uniform("R0", lower=0, upper=np.inf)  # kpc
-            # R0 = pm.Uniform("R0", lower=7.0, upper=10.0)  # kpc
+            # R0 = pm.Uniform("R0", lower=0, upper=500.)  # kpc
+            R0 = pm.Uniform("R0", lower=7.0, upper=10.0)  # kpc
             Usun = pm.Normal("Usun", mu=11.1, sigma=1.2)  # km/s
             Vsun = pm.Normal("Vsun", mu=12.2, sigma=2.1)  # km/s
             Wsun = pm.Normal("Wsun", mu=7.2, sigma=1.1)  # km/s
-            Upec = pm.Uniform("Upec", lower=-np.inf, upper=np.inf)  # km/s
-            Vpec = pm.Uniform("Upec", lower=-np.inf, upper=np.inf)  # km/s
+            Upec = pm.Uniform("Upec", lower=-500.0, upper=500.0)  # km/s
+            Vpec = pm.Uniform("Vpec", lower=-500.0, upper=500.0)  # km/s
             a2 = pm.Uniform("a2", lower=0.5, upper=1.5)  # dimensionless
             a3 = pm.Uniform("a3", lower=1.5, upper=1.7)  # dimensionless
         elif prior_set == "C":
-            R0 = pm.Uniform("R0", lower=0, upper=np.inf)  # kpc
+            R0 = pm.Uniform("R0", lower=0, upper=500.0)  # kpc
             # R0 = pm.Uniform("R0", lower=7.0, upper=10.0)  # kpc
-            Usun = pm.Uniform("Usun", lower=0, upper=np.inf)  # km/s
+            Usun = pm.Uniform("Usun", lower=0, upper=500.0)  # km/s
             Vsun = pm.Uniform("Vsun", lower=-5.0, sigma=35.0)  # km/s
-            Wsun = pm.Uniform("Wsun", lower=0, upper=np.inf)  # km/s
+            Wsun = pm.Uniform("Wsun", lower=0, upper=500.0)  # km/s
             Upec = pm.Normal("Upec", mu=3.5, sigma=5.0)  # km/s
             Vpec = pm.Normal("Vpec", mu=-3.0, sigma=5.0)  # km/s
             a2 = pm.Uniform("a2", lower=0.5, upper=1.5)  # dimensionless
             a3 = pm.Uniform("a3", lower=1.5, upper=1.7)  # dimensionless
         elif prior_set == "D":
-            R0 = pm.Uniform("R0", lower=0, upper=np.inf)  # kpc
+            R0 = pm.Uniform("R0", lower=0, upper=500.0)  # kpc
             # R0 = pm.Uniform("R0", lower=7.0, upper=10.0)  # kpc
-            Usun = pm.Uniform("Usun", lower=0, upper=np.inf)  # km/s
+            Usun = pm.Uniform("Usun", lower=0, upper=500.0)  # km/s
             Vsun = pm.Uniform("Vsun", lower=-5.0, sigma=35.0)  # km/s
-            Wsun = pm.Uniform("Wsun", lower=0, upper=np.inf)  # km/s
-            Upec = pm.Uniform("Upec", lower=0, upper=np.inf)  # kpc
+            Wsun = pm.Uniform("Wsun", lower=0, upper=500.0)  # km/s
+            Upec = pm.Uniform("Upec", lower=0, upper=500.0)  # kpc
             Vpec = pm.Uniform("Vpec", lower=-23.0, upper=17.0)  # km/s
             a2 = pm.Uniform("a2", lower=0.5, upper=1.5)  # dimensionless
             a3 = pm.Uniform("a3", lower=1.5, upper=1.7)  # dimensionless
@@ -190,7 +207,7 @@ def run_MCMC(data, num_iters, num_tune, num_chains, prior_set, like_type, is_dat
         gcen_cyl_dist = tt.sqrt(gcen_x * gcen_x + gcen_y * gcen_y)  # kpc
         azimuth = (tt.arctan2(gcen_y, -gcen_x) * _RAD_TO_DEG) % 360  # deg in [0,360)
         v_circ_pred = urc(gcen_cyl_dist, a2=a2, a3=a3, R0=R0) + Vpec  # km/s
-        v_rad = -1 * Upec  # km/s, negative bc toward GC
+        v_rad = -1 * Upec  # km/s, negative because toward galactic centre
         Theta0 = urc(R0, a2=a2, a3=a3, R0=R0)  # km/s, LSR circular rotation speed
 
         # Go in reverse!
@@ -210,53 +227,52 @@ def run_MCMC(data, num_iters, num_tune, num_chains, prior_set, like_type, is_dat
             use_theano=True,
         )
 
-        # === Likelihood function (only works in PyMC v3.7) ===
-        # likelihood_eqmux = pm.Normal(
-        #     "likelihood_eqmux", mu=eqmux_pred, sigma=e_eqmux, observed=eqmux
-        # )
-        # likelihood_eqmuy = pm.Normal(
-        #     "likelihood_eqmux", mu=eqmuy_pred, sigma=e_eqmuy, observed=eqmuy
-        # )
-        # likelihood_vlsr = pm.Normal(
-        #     "likelihood_eqmux", mu=vlsr_pred, sigma=e_vlsr, observed=vlsr
-        # )
-        #
-        # # Joint likelihood (Gaussian mixture model)
-        # joint_lnlike = (
-        #     lambda lnlike_eqmux, lnlike_eqmuy, lnlike_vlsr: lnlike_eqmux
-        #     + lnlike_eqmuy
-        #     + lnlike_vlsr
-        # )
-        # # Observed values ?
-        # observed = {
-        #     "lnlike_eqmux": lnlike_eqmux,
-        #     "lnlike_eqmuy": lnlike_eqmuy,
-        #     "lnlike_vlsr": lnlike_vlsr,
-        # }
-        # Full likelihood function
-        # likelihood = pm.DensityDist('likelihood', logp=joint_lnlike, observed=observed)
-
         # === Likelihood components (sigma values are from observed data) ===
-        # Returns array of likelihood values evaluated at data points
-        if like_type == "gaussian":
-            # GAUSSIAN MIXTURE MODEL
+        # Calculating uncertainties for likelihood function
+        weight_eqmux = tt.sqrt(
+            e_eqmux * e_eqmux
+            + sigma_vir * sigma_vir
+            * plx * plx
+            * _KM_PER_KPC_S_TO_MAS_PER_YR * _KM_PER_KPC_S_TO_MAS_PER_YR
+        )
+        weight_eqmuy = tt.sqrt(
+            e_eqmuy * e_eqmuy
+            + sigma_vir * sigma_vir
+            * plx * plx
+            * _KM_PER_KPC_S_TO_MAS_PER_YR * _KM_PER_KPC_S_TO_MAS_PER_YR
+        )
+        weight_vlsr = tt.sqrt(e_vlsr * e_vlsr + sigma_vir * sigma_vir)
+
+        # Making array of likelihood values evaluated at data points
+        if like_type == "gauss":
+            # GAUSSIAN MIXTURE PDF
             print("Using Gaussian PDF")
-            lnlike_eqmux = pm.Normal.dist(mu=eqmux_pred, sigma=e_eqmux).logp(eqmux)
-            lnlike_eqmuy = pm.Normal.dist(mu=eqmuy_pred, sigma=e_eqmuy).logp(eqmuy)
-            lnlike_vlsr = pm.Normal.dist(mu=vlsr_pred, sigma=e_vlsr).logp(vlsr)
+            lnlike_eqmux = pm.Normal.dist(mu=eqmux_pred, sigma=weight_eqmux).logp(eqmux)
+            lnlike_eqmuy = pm.Normal.dist(mu=eqmuy_pred, sigma=weight_eqmuy).logp(eqmuy)
+            lnlike_vlsr = pm.Normal.dist(mu=vlsr_pred, sigma=weight_vlsr).logp(vlsr)
         elif like_type == "cauchy":
-            # LORENTZIAN CONSERVATIVE PDF
-            print("Using Lorentzian PDF")
+            # CAUCHY PDF
+            print("Using Cauchy PDF")
             hwhm = tt.sqrt(2 * tt.log(2))  # half width at half maximum
-            lnlike_eqmux = pm.Cauchy.dist(alpha=eqmux_pred, beta=hwhm * e_eqmux).logp(
-                eqmux
-            )
-            lnlike_eqmuy = pm.Cauchy.dist(alpha=eqmuy_pred, beta=hwhm * e_eqmuy).logp(
-                eqmuy
-            )
-            lnlike_vlsr = pm.Cauchy.dist(alpha=vlsr_pred, beta=hwhm * e_vlsr).logp(vlsr)
+            lnlike_eqmux = pm.Cauchy.dist(
+                alpha=eqmux_pred, beta=hwhm * weight_eqmux
+            ).logp(eqmux)
+            lnlike_eqmuy = pm.Cauchy.dist(
+                alpha=eqmuy_pred, beta=hwhm * weight_eqmuy
+            ).logp(eqmuy)
+            lnlike_vlsr = pm.Cauchy.dist(
+                alpha=vlsr_pred, beta=hwhm * weight_vlsr
+            ).logp(vlsr)
+        elif like_type == "sivia":
+            # SIVIA & SKILLING (2006) "LORENTZIAN-LIKE" CONSERVATIVE PDF
+            print("Using Sivia & Skilling (2006) PDF")
+            lnlike_eqmux = ln_siviaskilling(eqmux, eqmux_pred, weight_eqmux)
+            lnlike_eqmuy = ln_siviaskilling(eqmuy, eqmuy_pred, weight_eqmuy)
+            lnlike_vlsr = ln_siviaskilling(vlsr, vlsr_pred, weight_vlsr)
         else:
-            raise ValueError("Invalid like_type. Please input 'gaussian' or 'cauchy'.")
+            raise ValueError(
+                "Invalid like_type. Please input 'gauss', 'cauchy', or 'sivia'."
+            )
 
         # === Full likelihood function (specified by log-probability) ===
         likelihood = pm.Potential(
@@ -289,18 +305,25 @@ def run_MCMC(data, num_iters, num_tune, num_chains, prior_set, like_type, is_dat
                 f,
             )
 
-    # return trace, num_sources
-
 
 def main():
-    # Boolean to specify if data should be loaded from database (i.e. using new prior set)
-    # or if data should be from pickle file (i.e. use same prior set after data cleanup)
-    _LOAD_DATABASE = True
+    # Specify Bayesian MCMC parameters
     _NUM_ITERS = 2000  # number of iterations per chain
     _NUM_TUNE = 2000  # number of tuning iterations (will be thrown away)
     _NUM_CHAINS = 2  # number of parallel chains to run
-    _PRIOR_SET = "A5"  # Prior set from Reid et al. (2019)
-    _LIKELIHOOD_TYPE = "cauchy"  # "gaussian" or "cauchy"
+    _PRIOR_SET = "A1"  # Prior set from Reid et al. (2019)
+    _LIKELIHOOD_TYPE = "sivia"  # "gauss", "cauchy", or "sivia"
+
+    # If data has already been filtered & using same prior set
+    if _LIKELIHOOD_TYPE == "gauss":
+        _LOAD_DATABASE = False  # Use data from pickle file
+    # If data has not been filtered & using new prior set
+    elif _LIKELIHOOD_TYPE == "cauchy" or _LIKELIHOOD_TYPE == "sivia":
+        _LOAD_DATABASE = True  # Use data from database
+    else:
+        raise ValueError(
+            "Invalid _LIKELIHOOD_TYPE. Please choose 'gauss', 'cauchy', or 'sivia'."
+        )
 
     if _LOAD_DATABASE:
         # # Specifying database file name & folder
@@ -318,12 +341,8 @@ def main():
         infile = Path(
             "/home/chengi/Documents/coop2021/bayesian_mcmc_rot_curve/reid_MCMC_outfile.pkl"
         )
-
         with open(infile, "rb") as f:
             data = dill.load(f)["data"]
-
-    # Get data + put into DataFrame
-    # print(data.to_markdown())
 
     # Run simulation
     run_MCMC(
