@@ -68,7 +68,7 @@ def ln_siviaskilling(x, mean, weight):
 
 
 def run_MCMC(
-    data, num_iters, num_tune, num_chains, prior_set, like_type, is_database_data
+    data, num_iters, num_tune, num_chains, prior_set, like_type, num_samples, is_database_data
 ):
     """
     Runs Bayesian MCMC. Returns trace & number of sources used in fit.
@@ -143,17 +143,16 @@ def run_MCMC(
     print("Number of data points used:", num_sources)
 
     # Making array of random parallaxes. Columns are samples of the same source
-    _NUM_SAMPLES = 5  # number of random samples
-    # plx = np.array([plx, ] * _NUM_SAMPLES)
-    plx = np.random.normal(loc=plx, scale=e_plx, size=(_NUM_SAMPLES, num_sources))
-    glon = np.array([glon, ] * _NUM_SAMPLES)  # _NUM_SAMPLES by num_sources
-    glat = np.array([glat, ] * _NUM_SAMPLES)  # _NUM_SAMPLES by num_sources
-    eqmux = np.array([eqmux, ] * _NUM_SAMPLES)
-    eqmuy = np.array([eqmuy, ] * _NUM_SAMPLES)
-    vlsr = np.array([vlsr, ] * _NUM_SAMPLES)
-    e_eqmux = np.array([e_eqmux, ] * _NUM_SAMPLES)
-    e_eqmuy = np.array([e_eqmuy, ] * _NUM_SAMPLES)
-    e_vlsr = np.array([e_vlsr, ] * _NUM_SAMPLES)
+    # plx = np.array([plx, ] * num_samples)
+    plx = np.random.normal(loc=plx, scale=e_plx, size=(num_samples, num_sources))
+    glon = np.array([glon, ] * num_samples)  # num_samples by num_sources
+    glat = np.array([glat, ] * num_samples)  # num_samples by num_sources
+    eqmux = np.array([eqmux, ] * num_samples)
+    eqmuy = np.array([eqmuy, ] * num_samples)
+    vlsr = np.array([vlsr, ] * num_samples)
+    e_eqmux = np.array([e_eqmux, ] * num_samples)
+    e_eqmuy = np.array([e_eqmuy, ] * num_samples)
+    e_vlsr = np.array([e_vlsr, ] * num_samples)
     
     # Parallax to distance
     gdist = trans.parallax_to_dist(plx)
@@ -178,7 +177,7 @@ def run_MCMC(
             Upec = pm.Normal("Upec", mu=3.0, sigma=10.0)  # km/s
             Vpec = pm.Normal("Vpec", mu=-3.0, sigma=10.0)  # km/s
             a2 = pm.Uniform("a2", lower=0.5, upper=1.5)  # dimensionless
-            a3 = pm.Uniform("a3", lower=1.5, upper=1.7)  # dimensionless
+            a3 = pm.Uniform("a3", lower=1.5, upper=1.8)  # dimensionless
         elif prior_set == "B":
             # R0 = pm.Uniform("R0", lower=0, upper=500.)  # kpc
             R0 = pm.Uniform("R0", lower=7.0, upper=10.0)  # kpc
@@ -188,7 +187,7 @@ def run_MCMC(
             Upec = pm.Uniform("Upec", lower=-500.0, upper=500.0)  # km/s
             Vpec = pm.Uniform("Vpec", lower=-500.0, upper=500.0)  # km/s
             a2 = pm.Uniform("a2", lower=0.5, upper=1.5)  # dimensionless
-            a3 = pm.Uniform("a3", lower=1.5, upper=1.7)  # dimensionless
+            a3 = pm.Uniform("a3", lower=1.5, upper=1.8)  # dimensionless
         elif prior_set == "C":
             R0 = pm.Uniform("R0", lower=0, upper=500.0)  # kpc
             # R0 = pm.Uniform("R0", lower=7.0, upper=10.0)  # kpc
@@ -198,7 +197,7 @@ def run_MCMC(
             Upec = pm.Normal("Upec", mu=3.5, sigma=5.0)  # km/s
             Vpec = pm.Normal("Vpec", mu=-3.0, sigma=5.0)  # km/s
             a2 = pm.Uniform("a2", lower=0.5, upper=1.5)  # dimensionless
-            a3 = pm.Uniform("a3", lower=1.5, upper=1.7)  # dimensionless
+            a3 = pm.Uniform("a3", lower=1.5, upper=1.8)  # dimensionless
         elif prior_set == "D":
             R0 = pm.Uniform("R0", lower=0, upper=500.0)  # kpc
             # R0 = pm.Uniform("R0", lower=7.0, upper=10.0)  # kpc
@@ -208,7 +207,7 @@ def run_MCMC(
             Upec = pm.Uniform("Upec", lower=0, upper=500.0)  # kpc
             Vpec = pm.Uniform("Vpec", lower=-23.0, upper=17.0)  # km/s
             a2 = pm.Uniform("a2", lower=0.5, upper=1.5)  # dimensionless
-            a3 = pm.Uniform("a3", lower=1.5, upper=1.7)  # dimensionless
+            a3 = pm.Uniform("a3", lower=1.5, upper=1.8)  # dimensionless
         else:
             raise ValueError("Illegal prior_set. Choose 'A1', 'A5', 'B', 'C', or 'D'.")
         print("Using prior set", prior_set)
@@ -320,7 +319,7 @@ def run_MCMC(
                     "prior_set": prior_set,
                     "like_type": like_type,
                     "num_sources": num_sources,
-                    "num_samples": _NUM_SAMPLES,
+                    "num_samples": num_samples,
                 },
                 f,
             )
@@ -331,8 +330,9 @@ def main():
     _NUM_ITERS = 2000  # number of iterations per chain
     _NUM_TUNE = 2000  # number of tuning iterations (will be thrown away)
     _NUM_CHAINS = 2  # number of parallel chains to run
-    _PRIOR_SET = "A1"  # Prior set from Reid et al. (2019)
+    _PRIOR_SET = "C"  # Prior set from Reid et al. (2019)
     _LIKELIHOOD_TYPE = "sivia"  # "gauss", "cauchy", or "sivia"
+    _NUM_SAMPLES = 5  # number of times to sample each parallax
 
     # If data has already been filtered & using same prior set
     if _LIKELIHOOD_TYPE == "gauss":
@@ -373,6 +373,7 @@ def main():
         _NUM_CHAINS,
         _PRIOR_SET,
         _LIKELIHOOD_TYPE,
+        _NUM_SAMPLES,
         _LOAD_DATABASE,
     )
 
