@@ -49,22 +49,22 @@ def plot_MCMC(trace, prior_set, like_type, num_sources, num_samples):
 
     if like_type == "gauss":
         fig1.suptitle(
-            f"MCMC walkers: {num_chains} chains each with {num_iters} iterations. Each parallax sampled {num_samples} times.\n(Gaussian (+ SS 2006) PDF with {prior_set} priors. {num_sources} sources used in fit)",
+            f"MCMC walkers: {num_chains} chains with {num_iters} iters each. Each parallax sampled {num_samples}×.\n(Gaussian (+ SS 2006) PDF with {prior_set} priors. {num_sources} sources used in fit)",
             fontsize=9,
         )
     elif like_type == "cauchy":
         fig1.suptitle(
-            f"MCMC walkers: {num_chains} chains each with {num_iters} iterations. Each parallax sampled {num_samples} times.\n(Cauchy PDF with {prior_set} priors. {num_sources} sources used in fit)",
+            f"MCMC walkers: {num_chains} chains with {num_iters} iters each. Each parallax sampled {num_samples}×.\n(Cauchy PDF with {prior_set} priors. {num_sources} sources used in fit)",
             fontsize=9,
         )
     else:  # like_type == "sivia"
         fig1.suptitle(
-            f"MCMC walkers: {num_chains} chains each with {num_iters} iterations. Each parallax sampled {num_samples} times.\n(Sivia & Skilling (2006) PDF with {prior_set} priors. {num_sources} sources used in fit)",
+            f"MCMC walkers: {num_chains} chains with {num_iters} iters each. Each parallax sampled {num_samples}×.\n(Sivia & Skilling (2006) PDF with {prior_set} priors. {num_sources} sources used in fit)",
             fontsize=9,
         )
     fig1.tight_layout()  # Need this below suptitle()
     fig1.savefig(
-        Path(__file__).parent / f"reid_MCMC_chains_{like_type}_{prior_set}_{num_samples}_samples.jpg",
+        Path(__file__).parent / f"MCMC_chains_{like_type}_{prior_set}_{num_samples}_samples.jpg",
         format="jpg",
         dpi=300,
         bbox_inches="tight",
