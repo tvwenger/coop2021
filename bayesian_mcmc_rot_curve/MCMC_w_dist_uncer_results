@@ -161,3 +161,25 @@ c) Similar
 - # parallax samples = 5 (i.e. sampled each parallax source 5 times from a Gaussian)
 1st ITERATION: Sivia & Skilling's 2006 PDF to fit parameters
 # sources = 158 (Standard filtering. Threw away sources with R < 4 kpc, e_plx/plx > 0.2)
+        mean     sd  hdi_3%  hdi_97%  mcse_mean  mcse_sd  ess_mean  ess_sd  ess_bulk  ess_tail  r_hat
+Upec   2.855  3.484  -3.613    9.246      0.083    0.063    1782.0  1544.0    1784.0    1878.0    1.0
+Vpec  -2.375  4.979 -11.447    7.038      0.147    0.104    1146.0  1146.0    1144.0    1656.0    1.0
+R0     8.221  0.248   7.776    8.709      0.007    0.005    1427.0  1420.0    1446.0    2119.0    1.0
+Usun   7.647  3.472   1.526   14.399      0.082    0.060    1773.0  1696.0    1770.0    1865.0    1.0
+Vsun  13.716  5.404   4.734   24.427      0.160    0.115    1136.0  1111.0    1134.0    1748.0    1.0
+Wsun   8.067  1.099   6.040   10.159      0.016    0.011    4820.0  4820.0    4824.0    3202.0    1.0
+a2     1.005  0.082   0.864    1.172      0.002    0.001    1703.0  1703.0    1709.0    2057.0    1.0
+a3     1.624  0.032   1.569    1.691      0.001    0.001    1107.0  1107.0    1105.0    1585.0    1.0
+2nd ITERATION: Gaussian PDF to fit parameters
+# sources = 139 (-19) (Filtered data with proper motions or vlsr > 3 sigma from predicted)
+        mean     sd  hdi_3%  hdi_97%  mcse_mean  mcse_sd  ess_mean  ess_sd  ess_bulk  ess_tail  r_hat
+Upec   4.681  2.242   0.403    8.775      0.053    0.038    1812.0  1767.0    1816.0    1999.0    1.0
+Vpec  -2.276  4.797 -11.374    6.363      0.160    0.121     900.0   783.0     906.0     962.0    1.0
+R0     8.638  0.134   8.377    8.877      0.003    0.002    2151.0  2151.0    2141.0    2299.0    1.0
+Usun   9.607  2.127   5.631   13.630      0.049    0.035    1869.0  1869.0    1872.0    2023.0    1.0
+Vsun  13.262  5.025   3.206   21.853      0.167    0.118     904.0   904.0     910.0     923.0    1.0
+Wsun   7.795  0.647   6.620    9.056      0.009    0.007    4641.0  4613.0    4663.0    3139.0    1.0
+a2     1.123  0.037   1.055    1.190      0.001    0.001    2484.0  2484.0    2495.0    2878.0    1.0
+a3     1.666  0.021   1.626    1.706      0.001    0.000    1224.0  1224.0    1227.0    1491.0    1.0
+3rd ITERATION: Gaussian PDF to fit parameters
+# sources = 136 (-3) (Filtered data with proper motions or vlsr > 3 sigma from predicted)
