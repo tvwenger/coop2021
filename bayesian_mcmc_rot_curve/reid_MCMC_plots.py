@@ -12,8 +12,8 @@ def plot_MCMC(trace, prior_set, like_type, num_sources):
     """
     Plots walkers and corner plot from trace. Returns None
     """
-    if like_type != "gaussian" and like_type != "cauchy":
-        raise ValueError("Invalid like_type. Please select 'gaussian' or 'cauchy'.")
+    if like_type != "gauss" and like_type != "cauchy" and like_type != 'sivia':
+        raise ValueError("Invalid like_type. Allowed: 'gauss', 'cauchy', or 'sivia'.")
 
     sample_lst = []
     varnames = []
@@ -28,13 +28,13 @@ def plot_MCMC(trace, prior_set, like_type, num_sources):
 
     num_iters = len(trace)
     num_chains = len(trace.chains)
-    print("varnames:", varnames)
-    print("samples shape", np.shape(samples))
+    # print("varnames:", varnames)
+    # print("samples shape", np.shape(samples))
 
     # === Plot MCMC chains for each parameter ===
     # Reshape to (# params, # chains, # iter per chain)
     param_lst = [param.reshape((num_chains, num_iters)) for param in samples]
-    print("param_lst shape", np.shape(param_lst))
+    # print("param_lst shape", np.shape(param_lst))
 
     # Make # subplots same as # params & make figure twice as tall as is wide
     fig1, axes1 = plt.subplots(np.shape(param_lst)[0], figsize=plt.figaspect(2))
@@ -47,30 +47,28 @@ def plot_MCMC(trace, prior_set, like_type, num_sources):
         ax.tick_params(axis="both", which="major", labelsize=5)
         ax.tick_params(axis="both", which="minor", labelsize=3)
 
-    if like_type == "gaussian":
+    if like_type == "gauss":
         fig1.suptitle(
-            f"MCMC walkers: {num_chains} chains each with {num_iters} iterations\n(Gaussian PDF with {prior_set} priors. {num_sources} sources used in fit)",
+            f"MCMC walkers: {num_chains} chains each with {num_iters} iterations\n(Gaussian (+ SS 2006) PDF with {prior_set} priors. {num_sources} sources used in fit)",
             fontsize=9,
         )
-        fig1.tight_layout()  # Need this below suptitle()
-        fig1.savefig(
-            Path(__file__).parent / f"reid_MCMC_chains_gauss_{prior_set}.jpg",
-            format="jpg",
-            dpi=300,
-            bbox_inches="tight",
-        )
-    else:  # like_type == "cauchy"
+    elif like_type == "cauchy":
         fig1.suptitle(
-            f"MCMC walkers: {num_chains} chains each with {num_iters} iterations\n(Lorentzian PDF with {prior_set} priors. {num_sources} sources used in fit)",
+            f"MCMC walkers: {num_chains} chains each with {num_iters} iterations\n(Cauchy PDF with {prior_set} priors. {num_sources} sources used in fit)",
             fontsize=9,
         )
-        fig1.tight_layout()  # Need this below suptitle()
-        fig1.savefig(
-            Path(__file__).parent / f"reid_MCMC_chains_lorentz_{prior_set}.jpg",
-            format="jpg",
-            dpi=300,
-            bbox_inches="tight",
+    else:  # like_type == "sivia"
+        fig1.suptitle(
+            f"MCMC walkers: {num_chains} chains each with {num_iters} iterations\n(Sivia & Skilling (2006) PDF with {prior_set} priors. {num_sources} sources used in fit)",
+            fontsize=9,
         )
+    fig1.tight_layout()  # Need this below suptitle()
+    fig1.savefig(
+        Path(__file__).parent / f"reid_MCMC_chains_{like_type}_{prior_set}.jpg",
+        format="jpg",
+        dpi=300,
+        bbox_inches="tight",
+    )
     plt.show()
 
     # Plot histogram of parameters
@@ -81,20 +79,12 @@ def plot_MCMC(trace, prior_set, like_type, num_sources):
         show_titles=True,
         title_fmt=".2f",
     )
-    if like_type == "gaussian":
-        fig2.savefig(
-            Path(__file__).parent / f"reid_MCMC_histogram_gauss_{prior_set}.jpg",
-            format="jpg",
-            dpi=300,
-            bbox_inches="tight",
-        )
-    else:  # like_type == "cauchy"
-        fig2.savefig(
-            Path(__file__).parent / f"reid_MCMC_histogram_lorentz_{prior_set}.jpg",
-            format="jpg",
-            dpi=300,
-            bbox_inches="tight",
-        )
+    fig2.savefig(
+        Path(__file__).parent / f"reid_MCMC_histogram_{like_type}_{prior_set}.jpg",
+        format="jpg",
+        dpi=300,
+        bbox_inches="tight",
+    )
     plt.show()
 
 
@@ -109,7 +99,7 @@ def main():
         file = dill.load(f)
         trace = file["trace"]
         prior_set = file["prior_set"]  # "A1", "A5", "B", "C", "D"
-        like_type = file["like_type"]  # "gaussian" or "cauchy"
+        like_type = file["like_type"]  # "gauss", "cauchy", or "sivia"
         num_sources = file["num_sources"]
         print("prior_set:", prior_set)
         print("like_type:", like_type)
