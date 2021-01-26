@@ -18,6 +18,7 @@ from universal_rotcurve import urc
 
 # Useful constants
 _RAD_TO_DEG = 57.29577951308232  # 180/pi (Don't forget to % 360 after)
+_KM_PER_KPC_S_TO_MAS_PER_YR = 0.21094952656969873  # (mas/yr) / (km/kpc/s)
 
 
 def cleanup_data(data, trace):
@@ -42,19 +43,9 @@ def cleanup_data(data, trace):
     Usun = np.median(trace["Usun"])  # km/s
     Wsun = np.median(trace["Wsun"])  # km/s
     Upec = np.median(trace["Upec"])  # km/s
-    # Upec = 6.1  # km/s, force Upec to this value since my current number of iterations does not do that
     Vpec = np.median(trace["Vpec"])  # km/s
-    # Vpec = -2.1  # km/s, force Vpec to this value
     a2 = np.median(trace["a2"])  # dimensionless
     a3 = np.median(trace["a3"])  # dimensionless
-    # R0 = 8.15  # kpc
-    # Usun = 10.5  # km/s
-    # Vsun = 10.7  # km/s
-    # Wsun = 7.6  # km/s
-    # Upec = 6.0  # km/s
-    # Vpec = -4.3  # km/s
-    # a2 = 0.96  # dimensionless
-    # a3 = 1.62  # dimensionless
 
     # === Get data ===
     # Slice data into components (using np.asarray to prevent PyMC3 error with pandas)
@@ -81,9 +72,10 @@ def cleanup_data(data, trace):
     # Galactocentric Cartesian frame to galactocentric cylindrical frame
     gcen_cyl_dist = np.sqrt(gcen_x * gcen_x + gcen_y * gcen_y)  # kpc
     azimuth = (np.arctan2(gcen_y, -gcen_x) * _RAD_TO_DEG) % 360  # deg in [0,360)
-    v_circ_pred = urc(gcen_cyl_dist, a2=a2, a3=a3, R0=R0) + Upec  # km/s
-    v_rad = Vpec  # km/s
+    v_circ_pred = urc(gcen_cyl_dist, a2=a2, a3=a3, R0=R0) + Vpec  # km/s
+    v_rad = -Upec  # km/s
     v_vert = 0.0  # km/s, zero vertical velocity in URC
+    Theta0 = urc(R0, a2=a2, a3=a3, R0=R0)  # km/s, LSR circular rotation speed
 
     # Go in reverse!
     # Galactocentric cylindrical to equatorial proper motions & LSR velocity
@@ -98,14 +90,33 @@ def cleanup_data(data, trace):
         Usun=Usun,
         Vsun=Vsun,
         Wsun=Wsun,
+        Theta0=Theta0,
         use_theano=False,
     )
 
-    # Throw away data with proper motions or vlsr > 3 sigma
+    # Calculating uncertainties for data cleaning
+    print("Using Reid et al. (2014) definitions of weights/uncertainties")
+    # 1D Virial dispersion for stars in HMSFR w/ mass ~ 10^4 Msun w/in radius of ~ 1 pc
+    sigma_vir = 5.0  # km/s
+    sigma_eqmux = np.sqrt(
+        e_eqmux * e_eqmux
+        + sigma_vir * sigma_vir
+        * plx * plx
+        * _KM_PER_KPC_S_TO_MAS_PER_YR * _KM_PER_KPC_S_TO_MAS_PER_YR
+    )
+    sigma_eqmuy = np.sqrt(
+        e_eqmuy * e_eqmuy
+        + sigma_vir * sigma_vir
+        * plx * plx
+        * _KM_PER_KPC_S_TO_MAS_PER_YR * _KM_PER_KPC_S_TO_MAS_PER_YR
+    )
+    sigma_vlsr = np.sqrt(e_vlsr * e_vlsr + sigma_vir * sigma_vir)
+
+    # Throw away data with proper motion or vlsr residuals > 3 sigma
     bad_sigma = (
-        (np.array(abs(eqmux_pred - eqmux) / e_eqmux) > 3)
-        + (np.array(abs(eqmuy_pred - eqmuy) / e_eqmuy) > 3)
-        + (np.array(abs(vlsr_pred - vlsr) / e_vlsr) > 3)
+        (np.array(abs(eqmux_pred - eqmux) / sigma_eqmux) > 3)
+        + (np.array(abs(eqmuy_pred - eqmuy) / sigma_eqmuy) > 3)
+        + (np.array(abs(vlsr_pred - vlsr) / sigma_vlsr) > 3)
     )
 
     # Refilter data
@@ -158,7 +169,7 @@ def main():
         model_obj = file["model_obj"]
         trace = file["trace"]
         prior_set = file["prior_set"]  # "A1", "A5", "B", "C", "D"
-        like_type = file["like_type"]  # "gaussian" or "cauchy"
+        like_type = file["like_type"]  # "gauss" or "cauchy"
         num_sources = file["num_sources"]
         print("prior_set:", prior_set)
         print("like_type:", like_type)
