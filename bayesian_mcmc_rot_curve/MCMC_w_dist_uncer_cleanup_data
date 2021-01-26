@@ -21,6 +21,20 @@ _RAD_TO_DEG = 57.29577951308232  # 180/pi (Don't forget to % 360 after)
 _KM_PER_KPC_S_TO_MAS_PER_YR = 0.21094952656969873  # (mas/yr) / (km/kpc/s)
 
 
+def plx_to_peak_dist(plx, e_plx):
+    """
+    Computes peak of distance distribution given the
+    parallax & the uncertainty in the parallax (assuming the parallax is Gaussian)
+
+    TODO: finish docstring
+    ! Test this function
+    """
+
+    dist = 1 / plx
+    sigma_sq = e_plx * e_plx
+    return (np.sqrt(8 * sigma_sq * dist * dist + 1) - 1) / (4 * sigma_sq * dist)
+
+
 def cleanup_data(data, trace):
     """
     Cleans up data from pickle file
