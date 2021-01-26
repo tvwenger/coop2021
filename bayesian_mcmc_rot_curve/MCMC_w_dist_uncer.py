@@ -84,7 +84,7 @@ def run_MCMC(
     """
 
     # Binary file to store MCMC output
-    outfile = Path(__file__).parent / "reid_MCMC_outfile.pkl"
+    outfile = Path(__file__).parent / "MCMC_w_dist_uncer_outfile.pkl"
 
     if is_database_data:  # data is from database, need to filter data
         print("Starting with fresh data from database")
@@ -162,23 +162,8 @@ def run_MCMC(
     # Zero vertical velocity in URC
     v_vert = 0.0
 
-    # Calculating uncertainties for likelihood function
     # 1D Virial dispersion for stars in HMSFR w/ mass ~ 10^4 Msun w/in radius of ~ 1 pc
     sigma_vir = 5.0  # km/s
-    # Using Reid et al. (2014) weights as uncertainties
-    weight_eqmux = np.sqrt(
-        e_eqmux * e_eqmux
-        + sigma_vir * sigma_vir
-        * plx * plx
-        * _KM_PER_KPC_S_TO_MAS_PER_YR * _KM_PER_KPC_S_TO_MAS_PER_YR
-    )
-    weight_eqmuy = np.sqrt(
-        e_eqmuy * e_eqmuy
-        + sigma_vir * sigma_vir
-        * plx * plx
-        * _KM_PER_KPC_S_TO_MAS_PER_YR * _KM_PER_KPC_S_TO_MAS_PER_YR
-    )
-    weight_vlsr = np.sqrt(e_vlsr * e_vlsr + sigma_vir * sigma_vir)
 
     # 8 parameters from Reid et al. (2019): (see Section 4 & Table 3)
     #   R0, Usun, Vsun, Wsun, Upec, Vpec, a2, a3
@@ -256,7 +241,23 @@ def run_MCMC(
         )
 
         # === Likelihood components (sigma values are from observed data) ===
-        # Returns array of likelihood values evaluated at data points
+        # Calculating uncertainties for likelihood function
+        # Using Reid et al. (2014) weights as uncertainties
+        weight_eqmux = tt.sqrt(
+            e_eqmux * e_eqmux
+            + sigma_vir * sigma_vir
+            * plx * plx
+            * _KM_PER_KPC_S_TO_MAS_PER_YR * _KM_PER_KPC_S_TO_MAS_PER_YR
+        )
+        weight_eqmuy = tt.sqrt(
+            e_eqmuy * e_eqmuy
+            + sigma_vir * sigma_vir
+            * plx * plx
+            * _KM_PER_KPC_S_TO_MAS_PER_YR * _KM_PER_KPC_S_TO_MAS_PER_YR
+        )
+        weight_vlsr = tt.sqrt(e_vlsr * e_vlsr + sigma_vir * sigma_vir)
+
+        # Making array of likelihood values evaluated at data points
         if like_type == "gauss":
             # GAUSSIAN MIXTURE PDF
             print("Using Gaussian PDF")
@@ -319,11 +320,10 @@ def run_MCMC(
                     "prior_set": prior_set,
                     "like_type": like_type,
                     "num_sources": num_sources,
+                    "num_samples": _NUM_SAMPLES,
                 },
                 f,
             )
-
-    # return trace, num_sources
 
 
 def main():
@@ -364,9 +364,6 @@ def main():
 
         with open(infile, "rb") as f:
             data = dill.load(f)["data"]
-
-    # Get data + put into DataFrame
-    # print(data.to_markdown())
 
     # Run simulation
     run_MCMC(
