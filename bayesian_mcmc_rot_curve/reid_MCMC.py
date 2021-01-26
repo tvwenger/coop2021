@@ -165,7 +165,7 @@ def run_MCMC(
             Upec = pm.Normal("Upec", mu=3.0, sigma=10.0)  # km/s
             Vpec = pm.Normal("Vpec", mu=-3.0, sigma=10.0)  # km/s
             a2 = pm.Uniform("a2", lower=0.5, upper=1.5)  # dimensionless
-            a3 = pm.Uniform("a3", lower=1.5, upper=1.7)  # dimensionless
+            a3 = pm.Uniform("a3", lower=1.5, upper=1.8)  # dimensionless
         elif prior_set == "B":
             # R0 = pm.Uniform("R0", lower=0, upper=500.)  # kpc
             R0 = pm.Uniform("R0", lower=7.0, upper=10.0)  # kpc
@@ -175,27 +175,27 @@ def run_MCMC(
             Upec = pm.Uniform("Upec", lower=-500.0, upper=500.0)  # km/s
             Vpec = pm.Uniform("Vpec", lower=-500.0, upper=500.0)  # km/s
             a2 = pm.Uniform("a2", lower=0.5, upper=1.5)  # dimensionless
-            a3 = pm.Uniform("a3", lower=1.5, upper=1.7)  # dimensionless
+            a3 = pm.Uniform("a3", lower=1.5, upper=1.8)  # dimensionless
         elif prior_set == "C":
             R0 = pm.Uniform("R0", lower=0, upper=500.0)  # kpc
             # R0 = pm.Uniform("R0", lower=7.0, upper=10.0)  # kpc
-            Usun = pm.Uniform("Usun", lower=0, upper=500.0)  # km/s
-            Vsun = pm.Uniform("Vsun", lower=-5.0, sigma=35.0)  # km/s
-            Wsun = pm.Uniform("Wsun", lower=0, upper=500.0)  # km/s
-            Upec = pm.Normal("Upec", mu=3.5, sigma=5.0)  # km/s
+            Usun = pm.Uniform("Usun", lower=-500., upper=500.)  # km/s
+            Vsun = pm.Uniform("Vsun", lower=-500., upper=500.)  # km/s
+            Wsun = pm.Uniform("Wsun", lower=-500., upper=500.)  # km/s
+            Upec = pm.Normal("Upec", mu=3.0, sigma=5.0)  # km/s
             Vpec = pm.Normal("Vpec", mu=-3.0, sigma=5.0)  # km/s
             a2 = pm.Uniform("a2", lower=0.5, upper=1.5)  # dimensionless
-            a3 = pm.Uniform("a3", lower=1.5, upper=1.7)  # dimensionless
+            a3 = pm.Uniform("a3", lower=1.5, upper=1.8)  # dimensionless
         elif prior_set == "D":
             R0 = pm.Uniform("R0", lower=0, upper=500.0)  # kpc
             # R0 = pm.Uniform("R0", lower=7.0, upper=10.0)  # kpc
-            Usun = pm.Uniform("Usun", lower=0, upper=500.0)  # km/s
-            Vsun = pm.Uniform("Vsun", lower=-5.0, sigma=35.0)  # km/s
-            Wsun = pm.Uniform("Wsun", lower=0, upper=500.0)  # km/s
-            Upec = pm.Uniform("Upec", lower=0, upper=500.0)  # kpc
+            Usun = pm.Uniform("Usun", lower=-500., upper=500.)  # km/s
+            Vsun = pm.Uniform("Vsun", lower=-5.0, upper=35.0)  # km/s
+            Wsun = pm.Uniform("Wsun", lower=-500., upper=500.)  # km/s
+            Upec = pm.Uniform("Upec", lower=-500., upper=500.)  # kpc
             Vpec = pm.Uniform("Vpec", lower=-23.0, upper=17.0)  # km/s
             a2 = pm.Uniform("a2", lower=0.5, upper=1.5)  # dimensionless
-            a3 = pm.Uniform("a3", lower=1.5, upper=1.7)  # dimensionless
+            a3 = pm.Uniform("a3", lower=1.5, upper=1.8)  # dimensionless
         else:
             raise ValueError("Illegal prior_set. Choose 'A1', 'A5', 'B', 'C', or 'D'.")
         print("Using prior set", prior_set)
