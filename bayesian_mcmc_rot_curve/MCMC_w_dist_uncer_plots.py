@@ -8,7 +8,7 @@ import corner
 import dill
 
 
-def plot_MCMC(trace, prior_set, like_type, num_sources, num_samples):
+def plot_MCMC(trace, prior_set, like_type, num_sources, num_samples, filter_type):
     """
     Plots walkers and corner plot from trace. Returns None
     """
@@ -20,7 +20,7 @@ def plot_MCMC(trace, prior_set, like_type, num_sources, num_samples):
 
     # Get names of variables & data associated with each variable
     for varname in trace.varnames:
-        if "interval" in varname:
+        if "interval" in varname or "lnlike" in varname:
             continue  # do not want to include non user-defined parameters
         varnames.append(varname)
         sample_lst.append(trace[varname])
@@ -49,7 +49,7 @@ def plot_MCMC(trace, prior_set, like_type, num_sources, num_samples):
 
     if like_type == "gauss":
         fig1.suptitle(
-            f"MCMC walkers: {num_chains} chains with {num_iters} iters each. Each parallax sampled {num_samples}×.\n(Gaussian (+ SS 2006) PDF with {prior_set} priors. {num_sources} sources used in fit)",
+            f"MCMC walkers: {num_chains} chains with {num_iters} iters each. Each parallax sampled {num_samples}×.\nGaussian (+ SS 2006) PDF with {prior_set} priors\n{num_sources} sources used in fit. Used {filter_type} to reject outliers",
             fontsize=9,
         )
     elif like_type == "cauchy":
@@ -59,7 +59,7 @@ def plot_MCMC(trace, prior_set, like_type, num_sources, num_samples):
         )
     else:  # like_type == "sivia"
         fig1.suptitle(
-            f"MCMC walkers: {num_chains} chains with {num_iters} iters each. Each parallax sampled {num_samples}×.\n(Sivia & Skilling (2006) PDF with {prior_set} priors. {num_sources} sources used in fit)",
+            f"MCMC walkers: {num_chains} chains with {num_iters} iters each. Each parallax sampled {num_samples}×.\nSivia & Skilling (2006) PDF with {prior_set} priors\n{num_sources} sources used in fit. Used {filter_type} to reject outliers",
             fontsize=9,
         )
     fig1.tight_layout()  # Need this below suptitle()
@@ -106,8 +106,9 @@ def main():
         print("like_type:", like_type)
         print("num_sources:", num_sources)
         print("num_samples:", num_samples)
+        _FILTER_TYPE = "ln(likelihood)"  # "3 sigma" or "ln(likelihood)"
 
-        plot_MCMC(trace, prior_set, like_type, num_sources, num_samples)
+        plot_MCMC(trace, prior_set, like_type, num_sources, num_samples, _FILTER_TYPE)
 
 
 if __name__ == "__main__":
