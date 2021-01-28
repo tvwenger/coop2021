@@ -222,3 +222,120 @@ a3     1.637  0.029   1.588    1.696      0.001    0.001     980.0   978.0     9
 # sources = 149 (-34 if comparing with Lorentzian-like distribution (ln_threshold=-2.2))
 # sources = 181 (-2 if comparing with Gaussian distribution (ln_threshold=-4.5))
 # sources = 151 (-32 if using sigma values to reject outliers. That is, throwing away sources with proper motions or vlsr > 3 sigma from predicted)
+
+==== NO FILTERING OF E_PLX/PLX > 20% ====
+==== SET A5 PRIORS ====
+- # parallax samples = 5 (i.e. sampled each parallax source 5 times from a Gaussian)
+1st ITERATION: Sivia & Skilling's 2006 PDF to fit parameters
+# sources = 183 (Only threw away sources with R < 4 kpc)
+        mean     sd  hdi_3%  hdi_97%  mcse_mean  mcse_sd  ess_mean  ess_sd  ess_bulk  ess_tail  r_hat
+Usun  10.927  1.158   8.590   12.904      0.020    0.014    3368.0  3353.0    3371.0    3132.0    1.0
+Vsun  14.670  6.819   2.519   27.970      0.278    0.197     600.0   600.0     593.0     685.0    1.0
+Wsun   7.595  0.757   6.112    9.031      0.011    0.008    4991.0  4900.0    5003.0    3014.0    1.0
+Upec   6.877  1.809   3.429   10.243      0.032    0.022    3297.0  3238.0    3295.0    2810.0    1.0
+Vpec  -1.516  6.618 -14.158   10.676      0.271    0.197     598.0   567.0     592.0     666.0    1.0
+R0     8.529  0.177   8.198    8.856      0.004    0.003    2358.0  2352.0    2358.0    2660.0    1.0
+a2     1.051  0.065   0.933    1.172      0.001    0.001    1864.0  1849.0    1846.0    1990.0    1.0
+a3     1.640  0.028   1.590    1.692      0.001    0.001     771.0   768.0     767.0    1321.0    1.0
+2nd ITERATION: Gaussian PDF to fit parameters
+# sources = 152 (-31) (Filtered by comparing median ln(likelihood) with ln(Lorentzian-like distribution). i.e., ln_threshold=-2.2)
+Usun   7.015  1.032   5.101    8.946      0.019    0.013    2922.0  2922.0    2916.0    2740.0   1.00
+Vsun  29.925  5.710  19.080   40.229      0.252    0.178     512.0   512.0     511.0     732.0   1.00
+Wsun   7.838  0.560   6.794    8.903      0.008    0.006    5037.0  5006.0    5049.0    2865.0   1.00
+Upec   2.298  1.299  -0.115    4.740      0.024    0.017    2883.0  2883.0    2866.0    2647.0   1.00
+Vpec  13.447  5.568   2.071   22.786      0.246    0.174     512.0   512.0     510.0     715.0   1.01
+R0     8.973  0.114   8.754    9.187      0.002    0.002    2252.0  2252.0    2253.0    2172.0   1.00
+a2     1.160  0.029   1.110    1.200      0.001    0.000    1762.0  1750.0    1493.0    1440.0   1.00
+a3     1.632  0.021   1.589    1.668      0.001    0.001     624.0   623.0     621.0    1112.0   1.00
+3rd ITERATION: Gaussian PDF to fit parameters
+# sources = 0 (-152) (Filtered by comparing median ln(likelihood) with ln(Gaussian distribution). i.e., ln_threshold=-4.5)
+- BUG IN PROGRAM! --> multiplied by (\sigma * \sqrt(2\pi)) instead of adding (\ln(\sigma * \sqrt(2\pi)))
+
+==== SET A5 PRIORS ====
+- # parallax samples = 5 (i.e. sampled each parallax source 5 times from a Gaussian)
+1st ITERATION: Sivia & Skilling's 2006 PDF to fit parameters
+# sources = 183 (Only threw away sources with R < 4 kpc)
+        mean     sd  hdi_3%  hdi_97%  mcse_mean  mcse_sd  ess_mean  ess_sd  ess_bulk  ess_tail  r_hat
+Usun  10.720  1.155   8.687   12.872      0.021    0.015    3042.0  3042.0    3032.0    2998.0    1.0
+Vsun  16.505  6.285   5.462   28.473      0.251    0.179     627.0   619.0     628.0     945.0    1.0
+Wsun   7.668  0.756   6.296    9.100      0.010    0.007    5298.0  5298.0    5295.0    2978.0    1.0
+Upec   6.627  1.783   3.369   10.051      0.034    0.024    2695.0  2695.0    2709.0    2037.0    1.0
+Vpec   0.112  6.045 -10.430   11.758      0.241    0.171     628.0   628.0     629.0     938.0    1.0
+R0     8.594  0.190   8.235    8.937      0.004    0.003    2332.0  2324.0    2330.0    2309.0    1.0
+a2     1.059  0.064   0.941    1.174      0.001    0.001    1914.0  1896.0    1821.0    1953.0    1.0
+a3     1.645  0.027   1.597    1.695      0.001    0.001     820.0   820.0     805.0     999.0    1.0
+2nd ITERATION: Gaussian PDF to fit parameters
+# sources = 148 (-35) (Filtered by comparing median ln(likelihood) with ln(Lorentzian-like distribution). i.e., ln_threshold=-2.2)
+        mean     sd  hdi_3%  hdi_97%  mcse_mean  mcse_sd  ess_mean  ess_sd  ess_bulk  ess_tail  r_hat
+Usun  10.354  1.073   8.404   12.489      0.022    0.015    2417.0  2417.0    2433.0    2690.0    1.0
+Vsun  23.200  5.925  12.450   34.007      0.312    0.221     361.0   360.0     358.0     440.0    1.0
+Wsun   7.821  0.577   6.730    8.911      0.008    0.006    5229.0  5229.0    5218.0    2839.0    1.0
+Upec   5.751  1.356   3.207    8.339      0.028    0.020    2419.0  2407.0    2419.0    2348.0    1.0
+Vpec   7.539  5.710  -3.225   17.791      0.299    0.211     365.0   365.0     363.0     452.0    1.0
+R0     8.717  0.110   8.512    8.923      0.002    0.001    2836.0  2833.0    2843.0    2984.0    1.0
+a2     1.089  0.041   1.013    1.165      0.001    0.001    1159.0  1156.0    1149.0    2035.0    1.0
+a3     1.633  0.023   1.587    1.672      0.001    0.001     449.0   449.0     451.0     672.0    1.0
+3rd ITERATION: Gaussian PDF to fit parameters
+# sources = 139 (-9 if comparing median ln(likelihood) with ln(Gaussian distribution). i.e., ln_threshold=-4.5)
+# sources = 144 (-4 if using sigma values to reject outliers. That is, throwing away sources with proper motions or vlsr > 3 sigma from predicted)
+- Used ln(likelihood) filtering for results below
+        mean     sd  hdi_3%  hdi_97%  mcse_mean  mcse_sd  ess_mean  ess_sd  ess_bulk  ess_tail  r_hat
+Usun   9.491  1.107   7.380   11.549      0.022    0.016    2536.0  2535.0    2537.0    2124.0   1.00
+Vsun  15.821  6.181   4.440   27.526      0.284    0.210     474.0   435.0     473.0     548.0   1.01
+Wsun   7.952  0.597   6.852    9.097      0.008    0.006    5276.0  5239.0    5267.0    2786.0   1.00
+Upec   4.319  1.423   1.649    6.995      0.027    0.020    2688.0  2561.0    2685.0    2330.0   1.00
+Vpec   0.876  5.959 -10.157   12.149      0.271    0.192     482.0   482.0     481.0     528.0   1.01
+R0     8.494  0.125   8.270    8.739      0.003    0.002    2416.0  2415.0    2417.0    2324.0   1.00
+a2     1.078  0.044   1.003    1.166      0.001    0.001    1384.0  1384.0    1386.0    2172.0   1.00
+a3     1.633  0.024   1.590    1.680      0.001    0.001     615.0   615.0     612.0     852.0   1.00
+3rd ITERATION: Gaussian PDF to fit parameters
+# sources = 135 (-4 if comparing median ln(likelihood) with ln(Gaussian distribution). i.e., ln_threshold=-4.5)
+# sources = 136 (-3 if using sigma values to reject outliers. That is, throwing away sources with proper motions or vlsr > 3 sigma from predicted)
+- Used sigma filtering for results below (mistake, meant to select ln(likelihood) instead)
+        mean     sd  hdi_3%  hdi_97%  mcse_mean  mcse_sd  ess_mean  ess_sd  ess_bulk  ess_tail  r_hat
+Usun  10.992  1.120   9.015   13.123      0.020    0.014    2992.0  2992.0    2999.0    2472.0   1.00
+Vsun  15.575  5.990   5.574   27.566      0.246    0.176     595.0   577.0     600.0     822.0   1.01
+Wsun   7.933  0.574   6.881    9.022      0.008    0.006    4791.0  4780.0    4808.0    2640.0   1.00
+Upec   5.853  1.427   3.382    8.643      0.027    0.019    2870.0  2870.0    2892.0    2333.0   1.00
+Vpec   0.377  5.782  -9.555   11.650      0.236    0.167     599.0   599.0     607.0     818.0   1.01
+R0     8.639  0.135   8.369    8.878      0.003    0.002    2017.0  2017.0    2023.0    2539.0   1.00
+a2     1.113  0.038   1.045    1.183      0.001    0.001    1445.0  1430.0    1395.0    1663.0   1.00
+a3     1.660  0.022   1.623    1.700      0.001    0.001     690.0   688.0     667.0     805.0   1.00
+4th ITERATION: Gaussian PDF to fit parameters
+# sources = 135 (-1 if comparing median ln(likelihood) with ln(Gaussian distribution). i.e., ln_threshold=-4.5)
+# sources = 136 (no change if using sigma values to reject outliers. That is, throwing away sources with proper motions or vlsr > 3 sigma from predicted)
+- Used ln(likelihood) filtering for results below
+        mean     sd  hdi_3%  hdi_97%  mcse_mean  mcse_sd  ess_mean  ess_sd  ess_bulk  ess_tail  r_hat
+Usun   9.631  1.152   7.451   11.734      0.024    0.017    2399.0  2398.0    2397.0    2226.0    1.0
+Vsun  16.650  6.043   5.194   27.694      0.226    0.162     717.0   698.0     722.0     854.0    1.0
+Wsun   8.041  0.601   6.926    9.134      0.008    0.006    5355.0  5335.0    5351.0    3075.0    1.0
+Upec   4.490  1.453   1.724    7.106      0.030    0.022    2312.0  2279.0    2314.0    2139.0    1.0
+Vpec   1.515  5.827 -10.014   11.686      0.217    0.153     722.0   722.0     727.0     888.0    1.0
+R0     8.570  0.144   8.295    8.834      0.003    0.002    1978.0  1968.0    1984.0    2077.0    1.0
+a2     1.084  0.044   1.004    1.167      0.001    0.001    1686.0  1664.0    1638.0    1671.0    1.0
+a3     1.645  0.024   1.599    1.690      0.001    0.001     853.0   852.0     844.0    1312.0    1.0
+5th ITERATION: Gaussian PDF to fit parameters
+# sources = 133 (-2 if comparing median ln(likelihood) with ln(Gaussian distribution). i.e., ln_threshold=-4.5)
+# sources = 135 (no change if using sigma values to reject outliers. That is, throwing away sources with proper motions or vlsr > 3 sigma from predicted)
+- Used ln(likelihood) filtering for results below
+Usun  10.497  1.132   8.447   12.682      0.022    0.016    2579.0  2579.0    2578.0    2338.0    1.0
+Vsun  13.848  5.911   3.853   25.262      0.256    0.185     532.0   514.0     541.0     757.0    1.0
+Wsun   8.048  0.586   7.006    9.192      0.008    0.006    5006.0  5003.0    4991.0    2643.0    1.0
+Upec   5.541  1.436   2.836    8.170      0.028    0.019    2724.0  2724.0    2740.0    2463.0    1.0
+Vpec  -1.089  5.700 -10.965    9.629      0.247    0.174     534.0   534.0     544.0     708.0    1.0
+R0     8.686  0.135   8.432    8.935      0.003    0.002    1873.0  1868.0    1880.0    2018.0    1.0
+a2     1.124  0.037   1.058    1.193      0.001    0.001    1461.0  1442.0    1338.0    1283.0    1.0
+a3     1.665  0.021   1.630    1.700      0.001    0.001     694.0   694.0     661.0     795.0    1.0
+        mean     sd  hdi_3%  hdi_97%  mcse_mean  mcse_sd  ess_mean  ess_sd  ess_bulk  ess_tail  r_hat
+Usun   9.997  1.115   7.819   11.980      0.020    0.014    2997.0  2997.0    2992.0    2657.0    1.0
+Vsun  13.777  5.618   3.040   23.363      0.220    0.163     652.0   593.0     665.0     653.0    1.0
+Wsun   8.046  0.602   6.960    9.216      0.010    0.007    4003.0  3882.0    4010.0    2512.0    1.0
+Upec   5.348  1.396   2.828    8.070      0.026    0.019    2816.0  2816.0    2809.0    2452.0    1.0
+Vpec  -1.014  5.433 -11.437    8.196      0.214    0.157     645.0   603.0     658.0     624.0    1.0
+R0     8.761  0.144   8.476    9.018      0.003    0.002    1975.0  1975.0    1977.0    2004.0    1.0
+a2     1.148  0.033   1.091    1.200      0.001    0.001    1643.0  1640.0    1529.0    1440.0    1.0
+a3     1.665  0.021   1.629    1.700      0.001    0.001     774.0   774.0     787.0     896.0    1.0
+6th ITERATION: Gaussian PDF to fit parameters
+# sources = 131 (-2 if comparing median ln(likelihood) with ln(Gaussian distribution). i.e., ln_threshold=-4.5)
+# sources = 133 (no change if using sigma values to reject outliers. That is, throwing away sources with proper motions or vlsr > 3 sigma from predicted)
+- Gave up after this. Decided to run actually meaningful simulations...
