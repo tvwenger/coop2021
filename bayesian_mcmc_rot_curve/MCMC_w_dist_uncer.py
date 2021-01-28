@@ -34,6 +34,7 @@ _AU_PER_YR_TO_KM_PER_S = 4.740470463533348  # from astropy (uses tropical year)
 _KM_PER_KPC_S_TO_MAS_PER_YR = 0.21094952656969873  # (mas/yr) / (km/kpc/s)
 _KPC_TO_KM = 3.085677581e16
 _KM_TO_KPC = 3.24077929e-17
+_LN_SQRT_2PI = 0.918938533
 
 
 def get_data(db_file):
@@ -140,6 +141,7 @@ def run_MCMC(
         print("Starting with fresh data from database")
         # Create condition to filter data
         all_radii = trans.get_gcen_cyl_radius(data["glong"], data["glat"], data["plx"])
+
         # Bad data criteria (N.B. casting to array prevents "+" not supported warnings)
         if filter_parallax:  # Standard filtering used by Reid et al. (2019)
             print("Filter sources w/ R < 4 kpc & e_plx > 20%")
@@ -229,8 +231,8 @@ def run_MCMC(
             Wsun = pm.Normal("Wsun", mu=7.2, sigma=1.1)  # km/s
             Upec = pm.Normal("Upec", mu=3.0, sigma=10.0)  # km/s
             Vpec = pm.Normal("Vpec", mu=-3.0, sigma=10.0)  # km/s
-            a2 = pm.Uniform("a2", lower=0.8, upper=1.2)  # dimensionless
-            a3 = pm.Uniform("a3", lower=1.5, upper=1.7)  # dimensionless
+            a2 = pm.Uniform("a2", lower=0.7, upper=1.5)  # dimensionless
+            a3 = pm.Uniform("a3", lower=1.5, upper=1.8)  # dimensionless
         elif prior_set == "B":
             # R0 = pm.Uniform("R0", lower=0, upper=500.)  # kpc
             R0 = pm.Uniform("R0", lower=7.0, upper=10.0)  # kpc
@@ -322,27 +324,24 @@ def run_MCMC(
             lnlike_vlsr = pm.Normal.dist(mu=vlsr_pred, sigma=weight_vlsr).logp(vlsr)
             # Save exponential part of log-likelihood distributions to trace
             lnlike_eqmux_dist = pm.Deterministic(
-                "lnlike_eqmux_dist", lnlike_eqmux * e_eqmux * tt.sqrt(2 * np.pi)
+                "lnlike_eqmux_dist", lnlike_eqmux + tt.log(e_eqmux) + _LN_SQRT_2PI
             )
             lnlike_eqmuy_dist = pm.Deterministic(
-                "lnlike_eqmuy_dist", lnlike_eqmuy * e_eqmuy * tt.sqrt(2 * np.pi)
+                "lnlike_eqmuy_dist", lnlike_eqmuy + tt.log(e_eqmuy) + _LN_SQRT_2PI
             )
             lnlike_vlsr_dist = pm.Deterministic(
-                "lnlike_vlsr_dist", lnlike_vlsr * e_vlsr * tt.sqrt(2 * np.pi)
+                "lnlike_vlsr_dist", lnlike_vlsr + tt.log(e_vlsr) + _LN_SQRT_2PI
             )
         elif like_type == "cauchy":
             # CAUCHY PDF
             print("Using Cauchy PDF")
             hwhm = tt.sqrt(2 * tt.log(2))  # half width at half maximum
             lnlike_eqmux = pm.Cauchy.dist(
-                alpha=eqmux_pred, beta=hwhm * weight_eqmux
-            ).logp(eqmux)
+                alpha=eqmux_pred, beta=hwhm * weight_eqmux).logp(eqmux)
             lnlike_eqmuy = pm.Cauchy.dist(
-                alpha=eqmuy_pred, beta=hwhm * weight_eqmuy
-            ).logp(eqmuy)
-            lnlike_vlsr = pm.Cauchy.dist(alpha=vlsr_pred, beta=hwhm * weight_vlsr).logp(
-                vlsr
-            )
+                alpha=eqmuy_pred, beta=hwhm * weight_eqmuy).logp(eqmuy)
+            lnlike_vlsr = pm.Cauchy.dist(
+                alpha=vlsr_pred, beta=hwhm * weight_vlsr).logp(vlsr)
         elif like_type == "sivia":
             # SIVIA & SKILLING (2006) "LORENTZIAN-LIKE" CONSERVATIVE PDF
             print("Using Sivia & Skilling (2006) PDF")
@@ -409,11 +408,11 @@ def main():
     # Specify Bayesian MCMC parameters
     _NUM_ITERS = 2000  # number of iterations per chain
     _NUM_TUNE = 2000  # number of tuning iterations (will be thrown away)
-    _NUM_CORES = 10  # number of CPU cores to use for MCMC
-    _NUM_CHAINS = 10  # number of parallel chains to run
+    _NUM_CORES = 2  # number of CPU cores to use for MCMC
+    _NUM_CHAINS = 2  # number of parallel chains to run
     _PRIOR_SET = "A5"  # Prior set from Reid et al. (2019)
-    _LIKELIHOOD_TYPE = "sivia"  # "gauss", "cauchy", or "sivia"
-    _NUM_SAMPLES = 1000  # number of times to sample each parallax
+    _LIKELIHOOD_TYPE = "gauss"  # "gauss", "cauchy", or "sivia"
+    _NUM_SAMPLES = 5  # number of times to sample each parallax
     _FILTER_PARALLAX = False  # only matters if _LIKELIHOOD_TYPE == "sivia" or "cauchy"
                             # If False, only remove database sources w/ R < 4 kpc
 
