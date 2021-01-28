@@ -406,13 +406,13 @@ def run_MCMC(
 
 def main():
     # Specify Bayesian MCMC parameters
-    _NUM_ITERS = 2000  # number of iterations per chain
-    _NUM_TUNE = 2000  # number of tuning iterations (will be thrown away)
-    _NUM_CORES = 2  # number of CPU cores to use for MCMC
-    _NUM_CHAINS = 2  # number of parallel chains to run
+    _NUM_ITERS = 10000  # number of iterations per chain
+    _NUM_TUNE = 3000  # number of tuning iterations (will be thrown away)
+    _NUM_CORES = 10  # number of CPU cores to use for MCMC
+    _NUM_CHAINS = 10  # number of parallel chains to run
     _PRIOR_SET = "A5"  # Prior set from Reid et al. (2019)
-    _LIKELIHOOD_TYPE = "gauss"  # "gauss", "cauchy", or "sivia"
-    _NUM_SAMPLES = 5  # number of times to sample each parallax
+    _LIKELIHOOD_TYPE = "sivia"  # "gauss", "cauchy", or "sivia"
+    _NUM_SAMPLES = 1000  # number of times to sample each parallax
     _FILTER_PARALLAX = False  # only matters if _LIKELIHOOD_TYPE == "sivia" or "cauchy"
                             # If False, only remove database sources w/ R < 4 kpc
 
