@@ -183,3 +183,42 @@ a2     1.123  0.037   1.055    1.190      0.001    0.001    2484.0  2484.0    24
 a3     1.666  0.021   1.626    1.706      0.001    0.000    1224.0  1224.0    1227.0    1491.0    1.0
 3rd ITERATION: Gaussian PDF to fit parameters
 # sources = 136 (-3) (Filtered data with proper motions or vlsr > 3 sigma from predicted)
+
+
+==== USING PEAK OF DISTANCE DISTRIBUTION INSTEAD OF PARALLAX TO FILTER DATA ===
+==== SET A5 PRIORS ====
+- # parallax samples = 5 (i.e. sampled each parallax source 5 times from a Gaussian)
+1st ITERATION: Sivia & Skilling's 2006 PDF to fit parameters
+# sources = 158 (Standard filtering. Threw away sources with R < 4 kpc, e_plx/plx > 0.2)
+        mean     sd  hdi_3%  hdi_97%  mcse_mean  mcse_sd  ess_mean  ess_sd  ess_bulk  ess_tail  r_hat
+Usun  10.666  1.159   8.537   12.902      0.020    0.014    3379.0  3371.0    3383.0    3132.0    1.0
+Vsun  15.405  7.057   2.727   28.890      0.299    0.212     557.0   557.0     561.0     577.0    1.0
+Wsun   7.653  0.779   6.145    9.119      0.010    0.007    5561.0  5467.0    5546.0    3157.0    1.0
+Upec   5.738  1.882   2.167    9.340      0.035    0.025    2871.0  2736.0    2870.0    2619.0    1.0
+Vpec   0.034  6.829 -12.459   12.989      0.289    0.210     559.0   529.0     562.0     580.0    1.0
+R0     8.430  0.208   8.027    8.811      0.004    0.003    2552.0  2546.0    2559.0    2279.0    1.0
+a2     1.036  0.074   0.901    1.176      0.002    0.001    2083.0  2083.0    2091.0    2466.0    1.0
+a3     1.637  0.032   1.580    1.699      0.001    0.001     805.0   802.0     806.0    1019.0    1.0
+2nd ITERATION: Gaussian PDF to fit parameters
+# sources = 139 (-19) (Filtered data with proper motions or vlsr > 3 sigma from predicted)
+- Result: no change compared to filtering using parallax
+
+
+==== COMPARING DATA FILTERING METHODS ===
+==== SET A5 PRIORS ====
+- # parallax samples = 5 (i.e. sampled each parallax source 5 times from a Gaussian)
+1st ITERATION: Sivia & Skilling's 2006 PDF to fit parameters
+# sources = 183 (Only threw away sources with R < 4 kpc)
+        mean     sd  hdi_3%  hdi_97%  mcse_mean  mcse_sd  ess_mean  ess_sd  ess_bulk  ess_tail  r_hat
+Usun  10.780  1.166   8.654   13.035      0.019    0.013    3927.0  3882.0    3921.0    2985.0    1.0
+Vsun  14.594  6.546   1.839   26.636      0.238    0.170     758.0   739.0     761.0     874.0    1.0
+Wsun   7.729  0.757   6.312    9.095      0.011    0.008    4802.0  4753.0    4802.0    2796.0    1.0
+Upec   6.518  1.806   3.274   10.053      0.030    0.022    3514.0  3455.0    3513.0    2934.0    1.0
+Vpec  -1.340  6.301 -12.901   10.854      0.229    0.162     755.0   755.0     757.0     852.0    1.0
+R0     8.508  0.201   8.130    8.868      0.004    0.003    2213.0  2208.0    2205.0    2222.0    1.0
+a2     1.052  0.067   0.936    1.184      0.002    0.001    1889.0  1876.0    1833.0    2124.0    1.0
+a3     1.637  0.029   1.588    1.696      0.001    0.001     980.0   978.0     960.0    1020.0    1.0
+2nd ITERATION: Gaussian PDF to fit parameters
+# sources = 149 (-34 if comparing with Lorentzian-like distribution (ln_threshold=-2.2))
+# sources = 181 (-2 if comparing with Gaussian distribution (ln_threshold=-4.5))
+# sources = 151 (-32 if using sigma values to reject outliers. That is, throwing away sources with proper motions or vlsr > 3 sigma from predicted)
