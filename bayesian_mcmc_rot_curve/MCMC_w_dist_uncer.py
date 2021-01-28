@@ -55,6 +55,55 @@ def get_data(db_file):
     return data
 
 
+def plx_to_peak_dist(plx, e_plx):
+    """
+    Computes peak (i.e. mode) of the distance distribution given the
+    parallax & the uncertainty in the parallax (assuming the parallax is Gaussian)
+
+    TODO: finish docstring
+    """
+
+    mean_dist = 1 / plx
+    sigma_sq = e_plx * e_plx
+    numerator = np.sqrt(8 * sigma_sq * mean_dist * mean_dist + 1) - 1
+    denominator = 4 * sigma_sq * mean_dist
+
+    return (numerator / denominator)
+
+
+def get_weights(plx, e_plx, e_mux, e_muy, e_vlsr):
+    """
+    Calculates sigma values for proper motions and LSR velocity
+    using Reid et al. (2014) weights
+
+    Returns: sigma_mux, sigma_muy, sigma_vlsr
+
+    TODO: finish docstring
+    """
+
+    # 1D Virial dispersion for stars in HMSFR w/ mass ~ 10^4 Msun w/in radius of ~ 1 pc
+    sigma_vir = 5.0  # km/s
+
+    # Parallax to peak distance
+    dist = plx_to_peak_dist(plx, e_plx)
+
+    weight_mux = tt.sqrt(
+        e_mux * e_mux
+        + sigma_vir * sigma_vir
+        / (dist * dist)
+        * _KM_PER_KPC_S_TO_MAS_PER_YR * _KM_PER_KPC_S_TO_MAS_PER_YR
+    )
+    weight_muy = tt.sqrt(
+        e_muy * e_muy
+        + sigma_vir * sigma_vir
+        / (dist * dist)
+        * _KM_PER_KPC_S_TO_MAS_PER_YR * _KM_PER_KPC_S_TO_MAS_PER_YR
+    )
+    weight_vlsr = tt.sqrt(e_vlsr * e_vlsr + sigma_vir * sigma_vir)
+
+    return weight_mux, weight_muy, weight_vlsr
+
+
 def ln_siviaskilling(x, mean, weight):
     """
     Returns the natural log of Sivia & Skilling's (2006) "Lorentzian-like" PDF.
@@ -68,7 +117,8 @@ def ln_siviaskilling(x, mean, weight):
 
 
 def run_MCMC(
-    data, num_iters, num_tune, num_chains, prior_set, like_type, num_samples, is_database_data
+    data, num_iters, num_tune, num_cores, num_chains,
+    prior_set, like_type, num_samples, is_database_data, filter_parallax
 ):
     """
     Runs Bayesian MCMC. Returns trace & number of sources used in fit.
@@ -91,7 +141,12 @@ def run_MCMC(
         # Create condition to filter data
         all_radii = trans.get_gcen_cyl_radius(data["glong"], data["glat"], data["plx"])
         # Bad data criteria (N.B. casting to array prevents "+" not supported warnings)
-        bad = (np.array(all_radii) < 4.0) + (np.array(data["e_plx"] / data["plx"]) > 0.2)
+        if filter_parallax:  # Standard filtering used by Reid et al. (2019)
+            print("Filter sources w/ R < 4 kpc & e_plx > 20%")
+            bad = (np.array(all_radii) < 4.0) + (np.array(data["e_plx"] / data["plx"]) > 0.2)
+        else:  # Only filter sources closer than 4 kpc to galactic centre
+            print("Only filter sources w/ R < 4 kpc")
+            bad = (np.array(all_radii) < 4.0)
 
         # Slice data into components (using np.asarray to prevent PyMC3 error with pandas)
         ra = data["ra"][~bad]  # deg
@@ -145,24 +200,22 @@ def run_MCMC(
     # Making array of random parallaxes. Columns are samples of the same source
     # plx = np.array([plx, ] * num_samples)
     plx = np.random.normal(loc=plx, scale=e_plx, size=(num_samples, num_sources))
-    glon = np.array([glon, ] * num_samples)  # num_samples by num_sources
-    glat = np.array([glat, ] * num_samples)  # num_samples by num_sources
-    eqmux = np.array([eqmux, ] * num_samples)
-    eqmuy = np.array([eqmuy, ] * num_samples)
-    vlsr = np.array([vlsr, ] * num_samples)
-    e_eqmux = np.array([e_eqmux, ] * num_samples)
-    e_eqmuy = np.array([e_eqmuy, ] * num_samples)
-    e_vlsr = np.array([e_vlsr, ] * num_samples)
-    
+    e_plx = np.array([e_plx, ] * num_samples)
+    glon = np.array([glon,] * num_samples)  # num_samples by num_sources
+    glat = np.array([glat,] * num_samples)  # num_samples by num_sources
+    eqmux = np.array([eqmux,] * num_samples)
+    eqmuy = np.array([eqmuy,] * num_samples)
+    vlsr = np.array([vlsr,] * num_samples)
+    e_eqmux = np.array([e_eqmux,] * num_samples)
+    e_eqmuy = np.array([e_eqmuy,] * num_samples)
+    e_vlsr = np.array([e_vlsr,] * num_samples)
+
     # Parallax to distance
     gdist = trans.parallax_to_dist(plx)
     # Galactic to galactocentric Cartesian coordinates
     bary_x, bary_y, bary_z = trans.gal_to_bary(glon, glat, gdist)
     # Zero vertical velocity in URC
     v_vert = 0.0
-
-    # 1D Virial dispersion for stars in HMSFR w/ mass ~ 10^4 Msun w/in radius of ~ 1 pc
-    sigma_vir = 5.0  # km/s
 
     # 8 parameters from Reid et al. (2019): (see Section 4 & Table 3)
     #   R0, Usun, Vsun, Wsun, Upec, Vpec, a2, a3
@@ -176,8 +229,8 @@ def run_MCMC(
             Wsun = pm.Normal("Wsun", mu=7.2, sigma=1.1)  # km/s
             Upec = pm.Normal("Upec", mu=3.0, sigma=10.0)  # km/s
             Vpec = pm.Normal("Vpec", mu=-3.0, sigma=10.0)  # km/s
-            a2 = pm.Uniform("a2", lower=0.5, upper=1.5)  # dimensionless
-            a3 = pm.Uniform("a3", lower=1.5, upper=1.8)  # dimensionless
+            a2 = pm.Uniform("a2", lower=0.8, upper=1.2)  # dimensionless
+            a3 = pm.Uniform("a3", lower=1.5, upper=1.7)  # dimensionless
         elif prior_set == "B":
             # R0 = pm.Uniform("R0", lower=0, upper=500.)  # kpc
             R0 = pm.Uniform("R0", lower=7.0, upper=10.0)  # kpc
@@ -191,9 +244,9 @@ def run_MCMC(
         elif prior_set == "C":
             # R0 = pm.Uniform("R0", lower=0, upper=500.0)  # kpc
             R0 = pm.Uniform("R0", lower=7.0, upper=10.0)  # kpc
-            Usun = pm.Uniform("Usun", lower=-500., upper=500.)  # km/s
-            Vsun = pm.Uniform("Vsun", lower=-500., upper=500.)  # km/s
-            Wsun = pm.Uniform("Wsun", lower=-500., upper=500.)  # km/s
+            Usun = pm.Uniform("Usun", lower=-500.0, upper=500.0)  # km/s
+            Vsun = pm.Uniform("Vsun", lower=-500.0, upper=500.0)  # km/s
+            Wsun = pm.Uniform("Wsun", lower=-500.0, upper=500.0)  # km/s
             Upec = pm.Normal("Upec", mu=3.0, sigma=5.0)  # km/s
             Vpec = pm.Normal("Vpec", mu=-3.0, sigma=5.0)  # km/s
             a2 = pm.Uniform("a2", lower=0.5, upper=1.5)  # dimensionless
@@ -201,10 +254,10 @@ def run_MCMC(
         elif prior_set == "D":
             # R0 = pm.Uniform("R0", lower=0, upper=500.0)  # kpc
             R0 = pm.Uniform("R0", lower=7.0, upper=10.0)  # kpc
-            Usun = pm.Uniform("Usun", lower=-500., upper=500.)  # km/s
+            Usun = pm.Uniform("Usun", lower=-500.0, upper=500.0)  # km/s
             Vsun = pm.Uniform("Vsun", lower=-5.0, upper=35.0)  # km/s
-            Wsun = pm.Uniform("Wsun", lower=-500., upper=500.)  # km/s
-            Upec = pm.Uniform("Upec", lower=-500., upper=500.)  # kpc
+            Wsun = pm.Uniform("Wsun", lower=-500.0, upper=500.0)  # km/s
+            Upec = pm.Uniform("Upec", lower=-500.0, upper=500.0)  # kpc
             Vpec = pm.Uniform("Vpec", lower=-23.0, upper=17.0)  # km/s
             a2 = pm.Uniform("a2", lower=0.5, upper=1.5)  # dimensionless
             a3 = pm.Uniform("a3", lower=1.5, upper=1.8)  # dimensionless
@@ -242,19 +295,23 @@ def run_MCMC(
         # === Likelihood components (sigma values are from observed data) ===
         # Calculating uncertainties for likelihood function
         # Using Reid et al. (2014) weights as uncertainties
-        weight_eqmux = tt.sqrt(
-            e_eqmux * e_eqmux
-            + sigma_vir * sigma_vir
-            * plx * plx
-            * _KM_PER_KPC_S_TO_MAS_PER_YR * _KM_PER_KPC_S_TO_MAS_PER_YR
+        # sigma_vir = 5.0  # km/s
+        # weight_eqmux = tt.sqrt(
+        #     e_eqmux * e_eqmux
+        #     + sigma_vir * sigma_vir
+        #     * plx * plx
+        #     * _KM_PER_KPC_S_TO_MAS_PER_YR * _KM_PER_KPC_S_TO_MAS_PER_YR
+        # )
+        # weight_eqmuy = tt.sqrt(
+        #     e_eqmuy * e_eqmuy
+        #     + sigma_vir * sigma_vir
+        #     * plx * plx
+        #     * _KM_PER_KPC_S_TO_MAS_PER_YR * _KM_PER_KPC_S_TO_MAS_PER_YR
+        # )
+        # weight_vlsr = tt.sqrt(e_vlsr * e_vlsr + sigma_vir * sigma_vir)
+        weight_eqmux, weight_eqmuy, weight_vlsr = get_weights(
+            plx, e_plx, e_eqmux, e_eqmuy, e_vlsr
         )
-        weight_eqmuy = tt.sqrt(
-            e_eqmuy * e_eqmuy
-            + sigma_vir * sigma_vir
-            * plx * plx
-            * _KM_PER_KPC_S_TO_MAS_PER_YR * _KM_PER_KPC_S_TO_MAS_PER_YR
-        )
-        weight_vlsr = tt.sqrt(e_vlsr * e_vlsr + sigma_vir * sigma_vir)
 
         # Making array of likelihood values evaluated at data points
         if like_type == "gauss":
@@ -263,6 +320,16 @@ def run_MCMC(
             lnlike_eqmux = pm.Normal.dist(mu=eqmux_pred, sigma=weight_eqmux).logp(eqmux)
             lnlike_eqmuy = pm.Normal.dist(mu=eqmuy_pred, sigma=weight_eqmuy).logp(eqmuy)
             lnlike_vlsr = pm.Normal.dist(mu=vlsr_pred, sigma=weight_vlsr).logp(vlsr)
+            # Save exponential part of log-likelihood distributions to trace
+            lnlike_eqmux_dist = pm.Deterministic(
+                "lnlike_eqmux_dist", lnlike_eqmux * e_eqmux * tt.sqrt(2 * np.pi)
+            )
+            lnlike_eqmuy_dist = pm.Deterministic(
+                "lnlike_eqmuy_dist", lnlike_eqmuy * e_eqmuy * tt.sqrt(2 * np.pi)
+            )
+            lnlike_vlsr_dist = pm.Deterministic(
+                "lnlike_vlsr_dist", lnlike_vlsr * e_vlsr * tt.sqrt(2 * np.pi)
+            )
         elif like_type == "cauchy":
             # CAUCHY PDF
             print("Using Cauchy PDF")
@@ -273,28 +340,32 @@ def run_MCMC(
             lnlike_eqmuy = pm.Cauchy.dist(
                 alpha=eqmuy_pred, beta=hwhm * weight_eqmuy
             ).logp(eqmuy)
-            lnlike_vlsr = pm.Cauchy.dist(
-                alpha=vlsr_pred, beta=hwhm * weight_vlsr
-            ).logp(vlsr)
+            lnlike_vlsr = pm.Cauchy.dist(alpha=vlsr_pred, beta=hwhm * weight_vlsr).logp(
+                vlsr
+            )
         elif like_type == "sivia":
             # SIVIA & SKILLING (2006) "LORENTZIAN-LIKE" CONSERVATIVE PDF
             print("Using Sivia & Skilling (2006) PDF")
             lnlike_eqmux = ln_siviaskilling(eqmux, eqmux_pred, weight_eqmux)
             lnlike_eqmuy = ln_siviaskilling(eqmuy, eqmuy_pred, weight_eqmuy)
             lnlike_vlsr = ln_siviaskilling(vlsr, vlsr_pred, weight_vlsr)
+            # Save log-likelihood distributions to trace w/out impacting model
+            lnlike_eqmux_dist = pm.Deterministic("lnlike_eqmux_dist", lnlike_eqmux)
+            lnlike_eqmuy_dist = pm.Deterministic("lnlike_eqmuy_dist", lnlike_eqmuy)
+            lnlike_vlsr_dist = pm.Deterministic("lnlike_vlsr_dist", lnlike_vlsr)
         else:
             raise ValueError(
                 "Invalid like_type. Please input 'gauss', 'cauchy', or 'sivia'."
             )
 
-        # Average the likelihood of each source (i.e. avg each column)
-        lnlike_eqmux_avg = lnlike_eqmux.mean(axis=0)
-        lnlike_eqmuy_avg = lnlike_eqmuy.mean(axis=0)
-        lnlike_vlsr_avg = lnlike_vlsr.mean(axis=0)
+        # lnlike_tot = pm.Deterministic("lnlike_tot", lnlike_eqmux + lnlike_eqmuy + lnlike_vlsr)
 
         # === Full likelihood function (specified by log-probability) ===
         likelihood = pm.Potential(
-            "likelihood", lnlike_eqmux_avg + lnlike_eqmuy_avg + lnlike_vlsr_avg
+            "likelihood",
+            (lnlike_eqmux + lnlike_eqmuy + lnlike_vlsr).mean(
+                axis=0
+            ),  # Take avg of all samples per source
         )  # expects values instead of function
 
         # Run MCMC
@@ -302,13 +373,22 @@ def run_MCMC(
             num_iters,
             init="advi",
             tune=num_tune,
-            cores=2,
+            cores=num_cores,
             chains=num_chains,
             return_inferencedata=False,
         )  # walker
 
         # See results (calling within model to prevent FutureWarning)
-        print(pm.summary(trace))
+        print(
+            pm.summary(
+                trace,
+                var_names=[
+                    "~lnlike_eqmux_dist",
+                    "~lnlike_eqmuy_dist",
+                    "~lnlike_vlsr_dist",
+                ],
+            ).to_string()
+        )
         # Save results to pickle file
         with open(outfile, "wb") as f:
             dill.dump(
@@ -329,10 +409,13 @@ def main():
     # Specify Bayesian MCMC parameters
     _NUM_ITERS = 2000  # number of iterations per chain
     _NUM_TUNE = 2000  # number of tuning iterations (will be thrown away)
-    _NUM_CHAINS = 2  # number of parallel chains to run
-    _PRIOR_SET = "C"  # Prior set from Reid et al. (2019)
-    _LIKELIHOOD_TYPE = "gauss"  # "gauss", "cauchy", or "sivia"
-    _NUM_SAMPLES = 5  # number of times to sample each parallax
+    _NUM_CORES = 10  # number of CPU cores to use for MCMC
+    _NUM_CHAINS = 10  # number of parallel chains to run
+    _PRIOR_SET = "A5"  # Prior set from Reid et al. (2019)
+    _LIKELIHOOD_TYPE = "sivia"  # "gauss", "cauchy", or "sivia"
+    _NUM_SAMPLES = 1000  # number of times to sample each parallax
+    _FILTER_PARALLAX = False  # only matters if _LIKELIHOOD_TYPE == "sivia" or "cauchy"
+                            # If False, only remove database sources w/ R < 4 kpc
 
     # If data has already been filtered & using same prior set
     if _LIKELIHOOD_TYPE == "gauss":
@@ -368,13 +451,8 @@ def main():
     # Run simulation
     run_MCMC(
         data,
-        _NUM_ITERS,
-        _NUM_TUNE,
-        _NUM_CHAINS,
-        _PRIOR_SET,
-        _LIKELIHOOD_TYPE,
-        _NUM_SAMPLES,
-        _LOAD_DATABASE,
+        _NUM_ITERS, _NUM_TUNE, _NUM_CORES, _NUM_CHAINS,
+        _PRIOR_SET, _LIKELIHOOD_TYPE, _NUM_SAMPLES, _LOAD_DATABASE, _FILTER_PARALLAX,
     )
 
 
