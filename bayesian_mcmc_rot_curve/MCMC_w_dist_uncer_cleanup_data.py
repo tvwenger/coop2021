@@ -1,11 +1,13 @@
 """
 Cleans up Bayesian MCMC data from pickle file
 """
+from multiprocessing import Value
 import sys
 from pathlib import Path
 import numpy as np
 import pandas as pd
 import dill
+import matplotlib.pyplot as plt
 
 # Want to add my own programs as package:
 # Make a $PATH to coop2021 (twice parent folder of this file)
@@ -27,15 +29,61 @@ def plx_to_peak_dist(plx, e_plx):
     parallax & the uncertainty in the parallax (assuming the parallax is Gaussian)
 
     TODO: finish docstring
-    ! Test this function
     """
 
-    dist = 1 / plx
+    mean_dist = 1 / plx
     sigma_sq = e_plx * e_plx
-    return (np.sqrt(8 * sigma_sq * dist * dist + 1) - 1) / (4 * sigma_sq * dist)
+    return (np.sqrt(8 * sigma_sq * mean_dist * mean_dist + 1) - 1) / (
+        4 * sigma_sq * mean_dist
+    )
 
 
-def cleanup_data(data, trace):
+def get_sigmas(plx, e_plx, e_mux, e_muy, e_vlsr):
+    """
+    Calculates sigma values for proper motions and LSR velocity
+    using Reid et al. (2014) weights
+
+    Returns: sigma_mux, sigma_muy, sigma_vlsr
+
+    TODO: finish docstring
+    """
+
+    # 1D Virial dispersion for stars in HMSFR w/ mass ~ 10^4 Msun w/in radius of ~ 1 pc
+    sigma_vir = 5.0  # km/s
+
+    # Parallax to peak distance
+    dist = plx_to_peak_dist(plx, e_plx)
+
+    sigma_mux = np.sqrt(
+        e_mux * e_mux
+        + sigma_vir * sigma_vir
+        / (dist * dist)
+        * _KM_PER_KPC_S_TO_MAS_PER_YR * _KM_PER_KPC_S_TO_MAS_PER_YR
+    )
+    sigma_muy = np.sqrt(
+        e_muy * e_muy
+        + sigma_vir * sigma_vir
+        / (dist * dist)
+        * _KM_PER_KPC_S_TO_MAS_PER_YR * _KM_PER_KPC_S_TO_MAS_PER_YR
+    )
+    sigma_vlsr = np.sqrt(e_vlsr * e_vlsr + sigma_vir * sigma_vir)
+
+    return sigma_mux, sigma_muy, sigma_vlsr
+
+
+def ln_siviaskilling(x, mean, weight):
+    """
+    Returns the natural log of Sivia & Skilling's (2006) "Lorentzian-like" PDF.
+    N.B. That the PDF is _not_ normalized.
+
+    TODO: Finish docstring
+    """
+
+    residual = (x - mean) / weight
+    return np.log((1 - np.exp(-0.5 * residual * residual)) / (residual * residual))
+
+
+def cleanup_data(data, trace, like_type, filter_method):
     """
     Cleans up data from pickle file
     (i.e. removes any sources with proper motion or vlsr > 3 sigma from predicted values)
@@ -108,30 +156,47 @@ def cleanup_data(data, trace):
         use_theano=False,
     )
 
-    # Calculating uncertainties for data cleaning
-    # print("Using Reid et al. (2014) definitions of weights/uncertainties")
-    # 1D Virial dispersion for stars in HMSFR w/ mass ~ 10^4 Msun w/in radius of ~ 1 pc
-    sigma_vir = 5.0  # km/s
-    sigma_eqmux = np.sqrt(
-        e_eqmux * e_eqmux
-        + sigma_vir * sigma_vir
-        * plx * plx
-        * _KM_PER_KPC_S_TO_MAS_PER_YR * _KM_PER_KPC_S_TO_MAS_PER_YR
-    )
-    sigma_eqmuy = np.sqrt(
-        e_eqmuy * e_eqmuy
-        + sigma_vir * sigma_vir
-        * plx * plx
-        * _KM_PER_KPC_S_TO_MAS_PER_YR * _KM_PER_KPC_S_TO_MAS_PER_YR
-    )
-    sigma_vlsr = np.sqrt(e_vlsr * e_vlsr + sigma_vir * sigma_vir)
+    # Calculating conditions for data cleaning
+    # Reject all data w/ residuals larger than 3 sigma
+    if filter_method == "sigma":
+        print("Using Reid et al. (2014) weights to reject outliers")
+        sigma_eqmux, sigma_eqmuy, sigma_vlsr = get_sigmas(
+            plx, e_plx, e_eqmux, e_eqmuy, e_vlsr
+        )
 
-    # Throw away data with proper motion or vlsr residuals > 3 sigma
-    bad_sigma = (
-        (np.array(abs(eqmux_pred - eqmux) / sigma_eqmux) > 3)
-        + (np.array(abs(eqmuy_pred - eqmuy) / sigma_eqmuy) > 3)
-        + (np.array(abs(vlsr_pred - vlsr) / sigma_vlsr) > 3)
-    )
+        # Throw away data with proper motion or vlsr residuals > 3 sigma
+        bad_sigma = (
+            (np.array(abs(eqmux_pred - eqmux) / sigma_eqmux) > 3)
+            + (np.array(abs(eqmuy_pred - eqmuy) / sigma_eqmuy) > 3)
+            + (np.array(abs(vlsr_pred - vlsr) / sigma_vlsr) > 3)
+        )
+    elif filter_method == "lnlike":
+        print("Using log-likelihood to reject data")
+        # Take median of all likelihood values per source (i.e. median of a whole "sheet")
+        # Shape of distributions is (# MC iters, # samples, # sources)
+        ln_eqmux_pred = np.median(trace["lnlike_eqmux_dist"], axis=(0, 1))
+        ln_eqmuy_pred = np.median(trace["lnlike_eqmuy_dist"], axis=(0, 1))
+        ln_vlsr_pred = np.median(trace["lnlike_vlsr_dist"], axis=(0, 1))
+        # print("min ln_mux:", min(ln_eqmux_pred))
+        # print("min ln_muy:", min(ln_eqmuy_pred))
+        # print("min ln_vlsr:", min(ln_vlsr_pred))
+
+        if like_type == "gauss":  # Gaussian distribution of proper motions / vlsr
+            ln_threshold = -4.5  # ln(exponential part) = -(3^2)/2
+        elif like_type == "sivia":  # Lorentzian-like distribution of prop. motions / vlsr
+            ln_threshold = -2.2 # ln((1-exp(-(3^2)/2)) / (3^2))
+        else:
+            raise ValueError(
+                "Invalid like_type. Filtering only works with 'gauss' or 'sivia'."
+            )
+
+        bad_sigma = (
+            (ln_eqmux_pred < ln_threshold)
+            + (ln_eqmuy_pred < ln_threshold)
+            + (ln_vlsr_pred < ln_threshold)
+        )
+    else:
+        raise ValueError("Invalid filter_method. Please choose 'sigma' or 'lnlike'.")
 
     # Refilter data
     ra_good = ra[~bad_sigma]  # deg
@@ -146,6 +211,26 @@ def cleanup_data(data, trace):
     e_eqmuy_good = e_eqmuy[~bad_sigma]  # mas/y (equatorial frame)
     vlsr_good = vlsr[~bad_sigma]  # km/s
     e_vlsr_good = e_vlsr[~bad_sigma]  # km/s
+
+    # # === Compare sigma rejection vs ln(likelihood) rejection ===
+    # # Retrieve data for histogram
+    # lnlike_vlsr_dist = trace["lnlike_vlsr_dist"]
+    # # Calculate ln(likelihood) given by best-fit parameters and database parallaxes
+    # ln_vlsr_sigma = ln_siviaskilling(vlsr, vlsr_pred, sigma_vlsr)
+    # # Find indices of rejected sources
+    # bad_sigma_loc = np.asarray(np.where(bad_sigma))[0,:]
+    # print("Total number of rejected sources:", len(bad_sigma_loc))
+    # # Choose which rejected source to plot
+    # reject_to_plot = 0
+    # 
+    # reject_idx = bad_sigma_loc[reject_to_plot]  # index of rejected source in database
+    # reject_data = lnlike_vlsr_dist[:,:,reject_idx].flatten()  # histogram values for reject
+    # plt.hist(reject_data)
+    # plt.axvline(np.median(reject_data), color="r", label="lnlike from median")
+    # plt.axvline(np.asarray(ln_vlsr_sigma)[reject_idx], color="k", label="lnlike from sigma")
+    # plt.legend()
+    # plt.show()
+    # # ===========================================================
 
     # Store filtered data in DataFrame
     data_cleaned = pd.DataFrame(
@@ -183,7 +268,7 @@ def main():
         model_obj = file["model_obj"]
         trace = file["trace"]
         prior_set = file["prior_set"]  # "A1", "A5", "B", "C", "D"
-        like_type = file["like_type"]  # "gauss" or "cauchy"
+        like_type = file["like_type"]  # "gauss" or "cauchy" or "sivia"
         num_sources = file["num_sources"]
         num_samples = file["num_samples"]
         print("prior_set:", prior_set)
@@ -193,7 +278,10 @@ def main():
 
     # print(data.to_markdown())
     # Clean data
-    data_cleaned, num_sources_cleaned = cleanup_data(data, trace)
+    _FILTER_METHOD = "sigma"  # "sigma" or "lnlike"
+    data_cleaned, num_sources_cleaned = cleanup_data(
+        data, trace, like_type, _FILTER_METHOD
+    )
 
     # Save results to same pickle file
     with open(infile, "wb") as f:
