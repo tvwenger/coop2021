@@ -202,12 +202,13 @@ def run_MCMC(
     # Making array of random parallaxes. Columns are samples of the same source
     # plx = np.array([plx, ] * num_samples)
     plx = np.random.normal(loc=plx_orig, scale=e_plx, size=(num_samples, num_sources))
-    # print("# plx <= 0:", np.size(plx[plx<=0]))
+    # print("# plx <= 0 before correction:", np.count_nonzero(plx<=0))
     # Find indices where plx <= 0
     for idx1, idx2 in zip(np.where(plx<=0)[0], np.where(plx<=0)[1]):
         # Replace non-positive parallax with original (aka database) value
         plx[idx1, idx2] = plx_orig[idx2]
-    e_plx = np.array([e_plx, ] * num_samples)
+    # print("# plx <= 0 after correction:", np.count_nonzero(plx<=0))
+    e_plx = np.array([e_plx,] * num_samples)
     glon = np.array([glon,] * num_samples)  # num_samples by num_sources
     glat = np.array([glat,] * num_samples)  # num_samples by num_sources
     eqmux = np.array([eqmux,] * num_samples)
@@ -236,8 +237,8 @@ def run_MCMC(
             Wsun = pm.Normal("Wsun", mu=7.2, sigma=1.1)  # km/s
             Upec = pm.Normal("Upec", mu=3.0, sigma=10.0)  # km/s
             Vpec = pm.Normal("Vpec", mu=-3.0, sigma=10.0)  # km/s
-            a2 = pm.Uniform("a2", lower=0.7, upper=1.5)  # dimensionless
-            a3 = pm.Uniform("a3", lower=1.5, upper=1.8)  # dimensionless
+            a2 = pm.Uniform("a2", lower=0.8, upper=1.2)  # dimensionless
+            a3 = pm.Uniform("a3", lower=1.5, upper=1.7)  # dimensionless
         elif prior_set == "B":
             # R0 = pm.Uniform("R0", lower=0, upper=500.)  # kpc
             R0 = pm.Uniform("R0", lower=7.0, upper=10.0)  # kpc
