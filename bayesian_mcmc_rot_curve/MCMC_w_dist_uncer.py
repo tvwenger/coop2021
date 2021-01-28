@@ -155,7 +155,7 @@ def run_MCMC(
         dec = data["dec"][~bad]  # deg
         glon = data["glong"][~bad]  # deg
         glat = data["glat"][~bad]  # deg
-        plx = data["plx"][~bad]  # mas
+        plx_orig = np.asarray(data["plx"][~bad])  # mas
         e_plx = data["e_plx"][~bad]  # mas
         eqmux = np.asarray(data["mux"][~bad])  # mas/yr (equatorial frame)
         e_eqmux = np.asarray(data["e_mux"][~bad])  # mas/y (equatorial frame)
@@ -171,7 +171,7 @@ def run_MCMC(
                 "dec": dec,
                 "glong": glon,
                 "glat": glat,
-                "plx": plx,
+                "plx": plx_orig,
                 "e_plx": e_plx,
                 "mux": eqmux,
                 "e_mux": e_eqmux,
@@ -187,7 +187,7 @@ def run_MCMC(
         # dec = data["dec"]  # deg
         glon = data["glong"]  # deg
         glat = data["glat"]  # deg
-        plx = data["plx"]  # mas
+        plx_orig = np.asarray(data["plx"])  # mas
         e_plx = data["e_plx"]  # mas
         eqmux = np.asarray(data["mux"])  # mas/yr (equatorial frame)
         e_eqmux = np.asarray(data["e_mux"])  # mas/y (equatorial frame)
@@ -201,7 +201,12 @@ def run_MCMC(
 
     # Making array of random parallaxes. Columns are samples of the same source
     # plx = np.array([plx, ] * num_samples)
-    plx = np.random.normal(loc=plx, scale=e_plx, size=(num_samples, num_sources))
+    plx = np.random.normal(loc=plx_orig, scale=e_plx, size=(num_samples, num_sources))
+    # print("# plx <= 0:", np.size(plx[plx<=0]))
+    # Find indices where plx <= 0
+    for idx1, idx2 in zip(np.where(plx<=0)[0], np.where(plx<=0)[1]):
+        # Replace non-positive parallax with original (aka database) value
+        plx[idx1, idx2] = plx_orig[idx2]
     e_plx = np.array([e_plx, ] * num_samples)
     glon = np.array([glon,] * num_samples)  # num_samples by num_sources
     glat = np.array([glat,] * num_samples)  # num_samples by num_sources
