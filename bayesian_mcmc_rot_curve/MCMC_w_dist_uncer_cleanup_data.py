@@ -21,6 +21,7 @@ from universal_rotcurve import urc
 # Useful constants
 _RAD_TO_DEG = 57.29577951308232  # 180/pi (Don't forget to % 360 after)
 _KM_PER_KPC_S_TO_MAS_PER_YR = 0.21094952656969873  # (mas/yr) / (km/kpc/s)
+_LN_SQRT_2PI = 0.918938533
 
 
 def plx_to_peak_dist(plx, e_plx):
@@ -81,6 +82,14 @@ def ln_siviaskilling(x, mean, weight):
 
     residual = (x - mean) / weight
     return np.log((1 - np.exp(-0.5 * residual * residual)) / (residual * residual))
+
+
+def ln_gauss_exp_part(x, mean, sigma):
+    """
+    Calculates the ln of the exponential part of a normal distribution
+    i.e. returns -0.5 * (x-mean)^2/sigma^2
+    """
+    return -0.5 * (x - mean) * (x - mean) / sigma / sigma
 
 
 def cleanup_data(data, trace, like_type, filter_method):
@@ -177,9 +186,9 @@ def cleanup_data(data, trace, like_type, filter_method):
         ln_eqmux_pred = np.median(trace["lnlike_eqmux_dist"], axis=(0, 1))
         ln_eqmuy_pred = np.median(trace["lnlike_eqmuy_dist"], axis=(0, 1))
         ln_vlsr_pred = np.median(trace["lnlike_vlsr_dist"], axis=(0, 1))
-        # print("min ln_mux:", min(ln_eqmux_pred))
-        # print("min ln_muy:", min(ln_eqmuy_pred))
-        # print("min ln_vlsr:", min(ln_vlsr_pred))
+        print("min ln_mux:", min(ln_eqmux_pred))
+        print("min ln_muy:", min(ln_eqmuy_pred))
+        print("min ln_vlsr:", min(ln_vlsr_pred))
 
         if like_type == "gauss":  # Gaussian distribution of proper motions / vlsr
             ln_threshold = -4.5  # ln(exponential part) = -(3^2)/2
@@ -216,13 +225,17 @@ def cleanup_data(data, trace, like_type, filter_method):
     # # Retrieve data for histogram
     # lnlike_vlsr_dist = trace["lnlike_vlsr_dist"]
     # # Calculate ln(likelihood) given by best-fit parameters and database parallaxes
-    # ln_vlsr_sigma = ln_siviaskilling(vlsr, vlsr_pred, sigma_vlsr)
+    # if like_type == "gauss":
+    #     ln_vlsr_sigma = ln_gauss_exp_part(vlsr, vlsr_pred, sigma_vlsr)
+    # else:  # like_type == "sivia"
+    #     ln_vlsr_sigma = ln_siviaskilling(vlsr, vlsr_pred, sigma_vlsr)
     # # Find indices of rejected sources
     # bad_sigma_loc = np.asarray(np.where(bad_sigma))[0,:]
     # print("Total number of rejected sources:", len(bad_sigma_loc))
     # # Choose which rejected source to plot
-    # reject_to_plot = 0
-    # 
+    # reject_to_plot = 0  # any integer in [0, # rejected sources - 1]
+    # print(data[bad_sigma])
+    
     # reject_idx = bad_sigma_loc[reject_to_plot]  # index of rejected source in database
     # reject_data = lnlike_vlsr_dist[:,:,reject_idx].flatten()  # histogram values for reject
     # plt.hist(reject_data)
@@ -283,6 +296,12 @@ def main():
         data, trace, like_type, _FILTER_METHOD
     )
 
+    # Temporary file to preserve data
+    # (useful for comparing 'sigma' vs 'lnlike' filter methods)
+    infile2 = Path(
+        "/home/chengi/Documents/coop2021/bayesian_mcmc_rot_curve/MCMC_w_dist_uncer_outfile2.pkl"
+    )
+    
     # Save results to same pickle file
     with open(infile, "wb") as f:
         dill.dump(
