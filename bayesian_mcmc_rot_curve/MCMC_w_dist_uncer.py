@@ -117,11 +117,16 @@ def ln_siviaskilling(x, mean, weight):
     residual = (x - mean) / weight
     lnlike = tt.log((1 - tt.exp(-0.5 * residual * residual)) / (residual * residual))
 
+    # Find indices where residual < 1e-8
+    idxs = (lnlike < 0).nonzero()
     # Replace residuals near zero (i.e. near peak of ln(likelihood)
     # with value at peak of ln(likelihood) to prevent nans
-    lnlike = tt.switch(residual < 1e-8, -0.69315, lnlike)
+    lnlike_fixed = tt.set_subtensor(lnlike[idxs], -0.69315)
 
-    return lnlike
+    # FOR SOME REASON THE FOLLOWING CODE DOES NOT WORK
+    # lnlike_fixed = tt.switch(residual < 1e-8, -0.69315, lnlike)
+
+    return lnlike_fixed
 
 
 def run_MCMC(
@@ -212,6 +217,7 @@ def run_MCMC(
     # plx = np.array([plx_orig, ] * num_samples)
     plx = np.random.normal(loc=plx_orig, scale=e_plx, size=(num_samples, num_sources))
     # Replace non-positive parallax with small positive epsilon
+    print("Number of plx <= 0 replaced:", np.sum(plx<=0))
     plx[plx<=0] = 1e-9
 
     e_plx = np.array([e_plx,] * num_samples)
@@ -416,26 +422,43 @@ def run_MCMC(
 
 
 def main():
-    # Specify Bayesian MCMC parameters
-    # _NUM_ITERS = 10000  # number of iterations per chain
-    # _NUM_TUNE = 2500  # number of tuning iterations (will be thrown away)
-    # _NUM_CORES = 10  # number of CPU cores to use for MCMC
-    # _NUM_CHAINS = 10  # number of parallel chains to run
-    # _PRIOR_SET = "A5"  # Prior set from Reid et al. (2019)
-    # _LIKELIHOOD_TYPE = "sivia"  # "gauss", "cauchy", or "sivia"
-    # _NUM_SAMPLES = 1000  # number of times to sample each parallax
-    # _FILTER_PARALLAX = False  # only matters if _LIKELIHOOD_TYPE == "sivia" or "cauchy"
-    #                         # If False, only remove database sources w/ R < 4 kpc
+    # Specify Bayesian MCMC default parameters
+    _DEF_NUM_CORES = 10  # number of CPU cores to use for MCMC
+    _DEF_NUM_CHAINS = 10  # number of parallel chains to run
+    _DEF_NUM_TUNE = 2500  # number of tuning iterations (will be thrown away)
+    _DEF_NUM_ITERS = 10000  # number of iterations per chain
+    _DEF_PRIOR_SET = "A1"  # Prior set from Reid et al. (2019)
+    _DEF_LIKELIHOOD_TYPE = "sivia"  # "gauss", "cauchy", or "sivia"
+    _DEF_NUM_SAMPLES = 100  # number of times to sample each parallax
+    _DEF_FILTER_PARALLAX = False  # only matters if _LIKELIHOOD_TYPE == "sivia" or "cauchy"
+                                    # If False, only remove database sources w/ R < 4 kpc
 
     # Getting user inputs for MCMC model & sample parameters
     print("WARNING: I am not catching invalid inputs! Be careful when typing.")
-    num_cores = int(input("num cores to use (int): "))
-    num_chains = int(input("num chains to run (int): "))
-    num_tune = int(input("num tunings (int): "))
-    num_iters = int(input("num MCMC iterations (int): "))
-    num_samples = int(input("number of plx samples (int): "))
-    prior_set = input("prior set to use (A1, A5, B, C, D): ")
-    likelihood_type = input("likelihood PDF (gauss, sivia): ")
+    num_cores = input(f"num cores to use (int. Default = {_DEF_NUM_CORES}): ")
+    num_chains = input(f"num chains to run (int. Default = {_DEF_NUM_CHAINS}): ")
+    num_tune = input(f"num tunings (int. Default = {_DEF_NUM_TUNE}): ")
+    num_iters = input(f"num MCMC iterations (int. Default = {_DEF_NUM_ITERS}): ")
+    num_samples = input(f"number of plx samples (int. Default = {_DEF_NUM_SAMPLES}): ")
+    prior_set = input(f"prior set to use (A1, A5, B, C, D. Default = {_DEF_PRIOR_SET}): ")
+    likelihood_type = input(f"likelihood PDF (gauss, sivia. Default = {_DEF_LIKELIHOOD_TYPE}): ")
+
+    if "" in [num_cores, num_chains, num_tune, num_iters, num_samples, prior_set, likelihood_type]:
+        print("!!! At least one input above was empty. Using default values for all parameters above.")
+        num_cores = _DEF_NUM_CORES
+        num_chains = _DEF_NUM_CHAINS
+        num_tune = _DEF_NUM_TUNE
+        num_iters = _DEF_NUM_ITERS
+        num_samples = _DEF_NUM_SAMPLES
+        prior_set = _DEF_PRIOR_SET
+        likelihood_type = _DEF_LIKELIHOOD_TYPE
+    else:  # Use user-supplied values as parameters
+        num_cores = int(num_cores)
+        num_chains = int(num_chains)
+        num_tune = int(num_tune)
+        num_iters = int(num_iters)
+        num_samples = int(num_samples)
+        
     while True:
         filter_plx = input("Do you want to filter for e_plx/plx>0.2 (y/n): ")
         if filter_plx.lower() == "y" or filter_plx.lower() == "yes":
