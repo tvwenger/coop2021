@@ -151,7 +151,7 @@ def run_MCMC(
 
         # Bad data criteria (N.B. casting to array prevents "+" not supported warnings)
         if filter_parallax:  # Standard filtering used by Reid et al. (2019)
-            print("Filter sources w/ R < 4 kpc & e_plx > 20%")
+            print("Filter sources w/ R < 4 kpc & e_plx/plx > 20%")
             bad = (np.array(all_radii) < 4.0) + (np.array(data["e_plx"] / data["plx"]) > 0.2)
         else:  # Only filter sources closer than 4 kpc to galactic centre
             print("Only filter sources w/ R < 4 kpc")
@@ -417,28 +417,48 @@ def run_MCMC(
 
 def main():
     # Specify Bayesian MCMC parameters
-    _NUM_ITERS = 10000  # number of iterations per chain
-    _NUM_TUNE = 2500  # number of tuning iterations (will be thrown away)
-    _NUM_CORES = 10  # number of CPU cores to use for MCMC
-    _NUM_CHAINS = 10  # number of parallel chains to run
-    _PRIOR_SET = "A5"  # Prior set from Reid et al. (2019)
-    _LIKELIHOOD_TYPE = "sivia"  # "gauss", "cauchy", or "sivia"
-    _NUM_SAMPLES = 1000  # number of times to sample each parallax
-    _FILTER_PARALLAX = False  # only matters if _LIKELIHOOD_TYPE == "sivia" or "cauchy"
-                            # If False, only remove database sources w/ R < 4 kpc
+    # _NUM_ITERS = 10000  # number of iterations per chain
+    # _NUM_TUNE = 2500  # number of tuning iterations (will be thrown away)
+    # _NUM_CORES = 10  # number of CPU cores to use for MCMC
+    # _NUM_CHAINS = 10  # number of parallel chains to run
+    # _PRIOR_SET = "A5"  # Prior set from Reid et al. (2019)
+    # _LIKELIHOOD_TYPE = "sivia"  # "gauss", "cauchy", or "sivia"
+    # _NUM_SAMPLES = 1000  # number of times to sample each parallax
+    # _FILTER_PARALLAX = False  # only matters if _LIKELIHOOD_TYPE == "sivia" or "cauchy"
+    #                         # If False, only remove database sources w/ R < 4 kpc
+
+    # Getting user inputs for MCMC model & sample parameters
+    print("WARNING: I am not catching invalid inputs! Be careful when typing.")
+    num_cores = int(input("num cores to use (int): "))
+    num_chains = int(input("num chains to run (int): "))
+    num_tune = int(input("num tunings (int): "))
+    num_iters = int(input("num MCMC iterations (int): "))
+    num_samples = int(input("number of plx samples (int): "))
+    prior_set = input("prior set to use (A1, A5, B, C, D): ")
+    likelihood_type = input("likelihood PDF (gauss, sivia): ")
+    while True:
+        filter_plx = input("Do you want to filter for e_plx/plx>0.2 (y/n): ")
+        if filter_plx.lower() == "y" or filter_plx.lower() == "yes":
+            filter_parallax = True
+            break
+        elif filter_plx.lower() == "n" or filter_plx.lower() == "no":
+            filter_parallax = False
+            break
+        else:
+            print("Invalid input. Choose 'y' or 'n'.")
 
     # If data has already been filtered & using same prior set
-    if _LIKELIHOOD_TYPE == "gauss":
-        _LOAD_DATABASE = False  # Use data from pickle file
+    if likelihood_type == "gauss":
+        load_database = False  # Use data from pickle file
     # If data has not been filtered & using new prior set
-    elif _LIKELIHOOD_TYPE == "cauchy" or _LIKELIHOOD_TYPE == "sivia":
-        _LOAD_DATABASE = True  # Use data from database
+    elif likelihood_type == "cauchy" or likelihood_type == "sivia":
+        load_database = True  # Use data from database
     else:
         raise ValueError(
             "Invalid _LIKELIHOOD_TYPE. Please choose 'gauss', 'cauchy', or 'sivia'."
         )
 
-    if _LOAD_DATABASE:  # Load data from database file
+    if load_database:  # Load data from database file
         # # Specifying database file name & folder
         # filename = Path("data/hii_v2_20201203.db")
         # # Database folder in parent directory of this script (call .parent twice)
@@ -460,8 +480,8 @@ def main():
     # Run simulation
     run_MCMC(
         data,
-        _NUM_ITERS, _NUM_TUNE, _NUM_CORES, _NUM_CHAINS,
-        _PRIOR_SET, _LIKELIHOOD_TYPE, _NUM_SAMPLES, _LOAD_DATABASE, _FILTER_PARALLAX,
+        num_iters, num_tune, num_cores, num_chains,
+        prior_set, likelihood_type, num_samples, load_database, filter_parallax,
     )
 
 
