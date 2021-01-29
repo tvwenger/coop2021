@@ -116,7 +116,7 @@ def ln_siviaskilling(x, mean, weight):
 
     residual = (x - mean) / weight
     likelihood = tt.log((1 - tt.exp(-0.5 * residual * residual)) / (residual * residual))
-    likelihood = tt.switch(tt.lt(residual, 1e-3), -0.69315, likelihood)
+    likelihood = tt.switch(residual < 1e-3, -0.69315, likelihood)
     # # residual = np.asarray(residual)
     # # print(residual.shape)
     # # ! need to somehow to compare each residual w/ 1e-3 & replace only those values w/ -0.69315
