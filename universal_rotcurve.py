@@ -41,7 +41,7 @@ def urc(R, a2=_A_TWO, a3=_A_THREE, R0=_RSUN):
 
     v2 = (
         (0.72 + 0.44 * np.log10(lam))
-        * (1.97 * (rho) ** 1.22)
+        * (1.97 * rho ** 1.22)
         / (rho * rho + 0.61) ** 1.43
     )
 
@@ -53,18 +53,14 @@ def urc(R, a2=_A_TWO, a3=_A_THREE, R0=_RSUN):
 def urc_odr(a_vals, R):
     """
     Universal rotation curve from Persic et al. 1996.
-    This version has R after the parameter arguments for scipy.odr.
+    This version has the radius, R, after the parameter arguments, a_vals, for scipy.odr.
     
     Inputs:
+      a_vals : Tuple of scalars (unitless)
+        Parameters for the rotation curve. That is, a_vals = (a2, a3)
       R : Array of scalars (kpc)
         Galactocentric radius of object
         (i.e. perpendicular distance from z-axis in cylindrical coordinates)
-      a2 : Scalar (unitless)
-        Defined as R_opt/R_0 (ratio of optical radius to Galactocentric radius of the Sun)
-      a3 : Scalar (unitless)
-        Defined as 1.5*(L/L*)^0.2
-      R0 : Scalar (kpc)
-        Galactocentric radius of the Sun perp. to z-axis (i.e. in cylindrical coordinates)
     
     Returns:
       Theta : Array of scalars (km/s)
@@ -85,7 +81,7 @@ def urc_odr(a_vals, R):
 
     v2 = (
         (0.72 + 0.44 * np.log10(lam))
-        * (1.97 * (rho) ** 1.22)
+        * (1.97 * rho ** 1.22)
         / (rho * rho + 0.61) ** 1.43
     )
 
