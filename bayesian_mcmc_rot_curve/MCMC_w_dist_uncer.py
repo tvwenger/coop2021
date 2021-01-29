@@ -10,6 +10,7 @@ import pandas as pd
 import theano.tensor as tt
 import pymc3 as pm
 import dill
+import theano
 
 # Want to add my own programs as package:
 # Make a $PATH to coop2021 (twice parent folder of this file)
@@ -114,7 +115,28 @@ def ln_siviaskilling(x, mean, weight):
     """
 
     residual = (x - mean) / weight
-    return tt.log((1 - tt.exp(-0.5 * residual * residual)) / (residual * residual))
+    likelihood = tt.log((1 - tt.exp(-0.5 * residual * residual)) / (residual * residual))
+    likelihood = tt.switch(residual < 1e-3, -0.69315, likelihood)
+    # # residual = np.asarray(residual)
+    # # print(residual.shape)
+    # # ! need to somehow to compare each residual w/ 1e-3 & replace only those values w/ -0.69315
+    # # Curently there is a shape mismatch when taking the mean of the ln(likelihoods)
+    # # ValueError: Not enough dimensions on Elemwise{add,no_inplace}.0 to reduce on axis 0
+    # # 
+    # # Why is this code not working? Pretty sure it is comparing value by value &
+    # # just replacing those that fail the condition
+    # # print((tt.log((1 - tt.exp(-0.5 * residual * residual)) / (residual * residual))).type.dtype)  # Broadcastable: (False, False) --> float64 dmatrix
+    # if tt.lt(residual, 1e-3):
+    #     # print("okay")
+    #     # res = theano.shared(np.array([-0.69315], float), "res")  # Broadcastable: (False,) --> float64 dvector
+    #     # print((tt.log(0.5)).type.dtype)  # Result: () --> float 32 fscalar
+    #     # print(res.type.broadcastable)
+    #     # print(res.type.dtype)
+    #     return res
+    #     # return tt.as_tensor_variable(-0.69315, name="-0.69315")
+    #     # return -0.69315  # AttributeError: 'float' object has no attribute 'copy' (for pm.Deterministic)
+    # return tt.log((1 - tt.exp(-0.5 * residual * residual)) / (residual * residual))
+    return likelihood
 
 
 def run_MCMC(
@@ -138,7 +160,7 @@ def run_MCMC(
     outfile = Path(__file__).parent / "MCMC_w_dist_uncer_outfile.pkl"
 
     if is_database_data:  # data is from database, need to filter data
-        print("Starting with fresh data from database")
+        print("===\nStarting with fresh data from database")
         # Create condition to filter data
         all_radii = trans.get_gcen_cyl_radius(data["glong"], data["glat"], data["plx"])
 
@@ -182,6 +204,7 @@ def run_MCMC(
             }
         )
     else:  # do not need to filter data (data has been filtered)
+        print("===")
         # Slice data into components (using np.asarray to prevent PyMC3 error with pandas)
         # ra = data["ra"]  # deg
         # dec = data["dec"]  # deg
@@ -200,18 +223,29 @@ def run_MCMC(
     print("Number of data points used:", num_sources)
 
     # Making array of random parallaxes. Columns are samples of the same source
+    # num_samples = 10
+    print("===\nNumber of plx samples:", num_samples)
     # plx = np.array([plx_orig, ] * num_samples)
     plx = np.random.normal(loc=plx_orig, scale=e_plx, size=(num_samples, num_sources))
-    _PLX_BOUND = 0.049  # minimum parallax allowed
-    print(f"# plx <= {_PLX_BOUND} before correction:", np.count_nonzero(plx<=_PLX_BOUND))
-    # Find indices where plx <= _PLX_BOUND
-    for idx1, idx2 in zip(np.where(plx<=_PLX_BOUND)[0], np.where(plx<=_PLX_BOUND)[1]):
-        # ! CHECK THIS FUNCTION GAHHH
-        # Replace parallax <= _PLX_BOUND with original (aka database) value
-        plx[idx1, idx2] = plx_orig[idx2]
-    print("# plx <= {_PLX_BOUND} after correction:", np.count_nonzero(plx<=_PLX_BOUND))
-    print(np.count_nonzero(plx==0.049))
-    print("min plx after correction:", np.min(plx))
+    # print(plx.shape)
+    # _PLX_BOUND = 0.049  # minimum parallax allowed
+    # print(f"# plx <= {_PLX_BOUND} before correction:", np.count_nonzero(plx<=_PLX_BOUND))
+    
+    # # Find indices where plx <= _PLX_BOUND
+    # print("# nans before:", np.count_nonzero(np.isnan(plx)))
+    # # idx1_lst = np.where((plx<=_PLX_BOUND) | (plx>=2.421))[0]
+    # idx1_lst = np.where((plx<=_PLX_BOUND))[0]
+    # # print(len(idx1_lst), len(idx1_lst2))
+    # idx2_lst = np.where((plx<=_PLX_BOUND))[1]
+    # # print(plx[:,idx2_lst[0]])
+    # # for idx1, idx2 in zip(np.where(plx<=_PLX_BOUND)[0], np.where(plx<=_PLX_BOUND)[1]):
+    # # for idx1, idx2 in zip(idx1_lst, idx2_lst):
+    # #     # ! CHECK THIS FUNCTION GAHHH
+    # #     # Replace parallax <= _PLX_BOUND with original (aka database) value
+    # #     plx[idx1, idx2] = plx_orig[idx2]
+    plx[plx<=0] = np.nan
+    print("# nans after:", np.count_nonzero(np.isnan(plx)))
+
     e_plx = np.array([e_plx,] * num_samples)
     glon = np.array([glon,] * num_samples)  # num_samples by num_sources
     glat = np.array([glat,] * num_samples)  # num_samples by num_sources
@@ -225,7 +259,7 @@ def run_MCMC(
     # Parallax to distance
     gdist = trans.parallax_to_dist(plx)
     # Galactic to galactocentric Cartesian coordinates
-    bary_x, bary_y, bary_z = trans.gal_to_bary(glon, glat, gdist)
+    bary_x, bary_y, bary_z = trans.gal_to_bary(glon, glat, gdist)    
     # Zero vertical velocity in URC
     v_vert = 0.0
 
@@ -275,11 +309,12 @@ def run_MCMC(
             a3 = pm.Uniform("a3", lower=1.5, upper=1.8)  # dimensionless
         else:
             raise ValueError("Illegal prior_set. Choose 'A1', 'A5', 'B', 'C', or 'D'.")
-        print("Using prior set", prior_set)
+        print("===\nUsing prior set", prior_set)
 
         # === Predicted values (using data) ===
         # Barycentric Cartesian to galactocentric Cartesian coodinates
         gcen_x, gcen_y, gcen_z = trans.bary_to_gcen(bary_x, bary_y, bary_z, R0=R0)
+        # print(np.isnan(gcen_x.eval(R0)))
         # print(np.count_nonzero(tt.isnan(gcen_x)))
         # print(np.count_nonzero(tt.isnan(gcen_y)))
         # print(np.count_nonzero(tt.isnan(gcen_z)))
@@ -378,11 +413,16 @@ def run_MCMC(
         # lnlike_tot = pm.Deterministic("lnlike_tot", lnlike_eqmux + lnlike_eqmuy + lnlike_vlsr)
 
         # === Full likelihood function (specified by log-probability) ===
+        lnlike_tot = lnlike_eqmux + lnlike_eqmuy + lnlike_vlsr
+        is_nan = tt.isnan(lnlike_tot)
+        num_not_nans = tt.sum(~is_nan, axis=0)
+        lnlike_avg = tt.sum(lnlike_tot[~is_nan], axis=0) / num_not_nans
+        linelike_avg = tt.switch(num_not_nans == 0, -np.inf, lnlike_avg)
         likelihood = pm.Potential(
-            "likelihood",
-            (lnlike_eqmux + lnlike_eqmuy + lnlike_vlsr).mean(
-                axis=0
-            ),  # Take avg of all samples per source
+            "likelihood", lnlike_avg
+            # (lnlike_eqmux + lnlike_eqmuy + lnlike_vlsr).mean(
+            #     axis=0
+            # ),  # Take avg of all samples per source
         )  # expects values instead of function
 
         # Run MCMC
