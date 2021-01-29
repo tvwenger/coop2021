@@ -417,7 +417,7 @@ def run_MCMC(
         is_nan = tt.isnan(lnlike_tot)
         num_not_nans = tt.sum(~is_nan, axis=0)
         lnlike_avg = tt.sum(lnlike_tot[~is_nan], axis=0) / num_not_nans
-        lnlike_avg = tt.switch(tt.eq(num_not_nans, 0), -np.inf, lnlike_avg)
+        # lnlike_avg = tt.switch(tt.eq(num_not_nans, 0), -np.inf, lnlike_avg)
         likelihood = pm.Potential(
             "likelihood", lnlike_avg
             # (lnlike_eqmux + lnlike_eqmuy + lnlike_vlsr).mean(
