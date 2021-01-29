@@ -243,7 +243,7 @@ def run_MCMC(
     # #     # ! CHECK THIS FUNCTION GAHHH
     # #     # Replace parallax <= _PLX_BOUND with original (aka database) value
     # #     plx[idx1, idx2] = plx_orig[idx2]
-    plx[plx<=0] = np.nan
+    plx[plx<=0] = 1e-9
     print("# nans after:", np.count_nonzero(np.isnan(plx)))
 
     e_plx = np.array([e_plx,] * num_samples)
@@ -413,16 +413,16 @@ def run_MCMC(
         # lnlike_tot = pm.Deterministic("lnlike_tot", lnlike_eqmux + lnlike_eqmuy + lnlike_vlsr)
 
         # === Full likelihood function (specified by log-probability) ===
-        lnlike_tot = lnlike_eqmux + lnlike_eqmuy + lnlike_vlsr
-        is_nan = tt.isnan(lnlike_tot)
-        num_not_nans = tt.sum(~is_nan, axis=0)
-        lnlike_avg = tt.sum(lnlike_tot[~is_nan], axis=0) / num_not_nans
+        # lnlike_tot = lnlike_eqmux + lnlike_eqmuy + lnlike_vlsr
+        # is_nan = tt.isnan(lnlike_tot)
+        # num_not_nans = tt.sum(~is_nan, axis=0)
+        # lnlike_avg = tt.sum(lnlike_tot[~is_nan], axis=0) / num_not_nans
         # lnlike_avg = tt.switch(tt.eq(num_not_nans, 0), -np.inf, lnlike_avg)
         likelihood = pm.Potential(
-            "likelihood", lnlike_avg
-            # (lnlike_eqmux + lnlike_eqmuy + lnlike_vlsr).mean(
-            #     axis=0
-            # ),  # Take avg of all samples per source
+            "likelihood",
+            (lnlike_eqmux + lnlike_eqmuy + lnlike_vlsr).mean(
+                axis=0
+            ),  # Take avg of all samples per source
         )  # expects values instead of function
 
         # Run MCMC
