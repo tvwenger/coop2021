@@ -116,7 +116,7 @@ def ln_siviaskilling(x, mean, weight):
 
     residual = (x - mean) / weight
     likelihood = tt.log((1 - tt.exp(-0.5 * residual * residual)) / (residual * residual))
-    likelihood = tt.switch(residual < 1e-3, -0.69315, likelihood)
+    likelihood = tt.switch(tt.lt(residual, 1e-3), -0.69315, likelihood)
     # # residual = np.asarray(residual)
     # # print(residual.shape)
     # # ! need to somehow to compare each residual w/ 1e-3 & replace only those values w/ -0.69315
@@ -417,7 +417,7 @@ def run_MCMC(
         is_nan = tt.isnan(lnlike_tot)
         num_not_nans = tt.sum(~is_nan, axis=0)
         lnlike_avg = tt.sum(lnlike_tot[~is_nan], axis=0) / num_not_nans
-        linelike_avg = tt.switch(num_not_nans == 0, -np.inf, lnlike_avg)
+        linelike_avg = tt.switch(tt.eq(num_not_nans, 0), -np.inf, lnlike_avg)
         likelihood = pm.Potential(
             "likelihood", lnlike_avg
             # (lnlike_eqmux + lnlike_eqmuy + lnlike_vlsr).mean(
