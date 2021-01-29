@@ -200,14 +200,18 @@ def run_MCMC(
     print("Number of data points used:", num_sources)
 
     # Making array of random parallaxes. Columns are samples of the same source
-    # plx = np.array([plx, ] * num_samples)
+    # plx = np.array([plx_orig, ] * num_samples)
     plx = np.random.normal(loc=plx_orig, scale=e_plx, size=(num_samples, num_sources))
-    # print("# plx <= 0 before correction:", np.count_nonzero(plx<=0))
-    # Find indices where plx <= 0
-    for idx1, idx2 in zip(np.where(plx<=0)[0], np.where(plx<=0)[1]):
-        # Replace non-positive parallax with original (aka database) value
+    _PLX_BOUND = 0.049  # minimum parallax allowed
+    print(f"# plx <= {_PLX_BOUND} before correction:", np.count_nonzero(plx<=_PLX_BOUND))
+    # Find indices where plx <= _PLX_BOUND
+    for idx1, idx2 in zip(np.where(plx<=_PLX_BOUND)[0], np.where(plx<=_PLX_BOUND)[1]):
+        # ! CHECK THIS FUNCTION GAHHH
+        # Replace parallax <= _PLX_BOUND with original (aka database) value
         plx[idx1, idx2] = plx_orig[idx2]
-    # print("# plx <= 0 after correction:", np.count_nonzero(plx<=0))
+    print("# plx <= {_PLX_BOUND} after correction:", np.count_nonzero(plx<=_PLX_BOUND))
+    print(np.count_nonzero(plx==0.049))
+    print("min plx after correction:", np.min(plx))
     e_plx = np.array([e_plx,] * num_samples)
     glon = np.array([glon,] * num_samples)  # num_samples by num_sources
     glat = np.array([glat,] * num_samples)  # num_samples by num_sources
@@ -276,6 +280,14 @@ def run_MCMC(
         # === Predicted values (using data) ===
         # Barycentric Cartesian to galactocentric Cartesian coodinates
         gcen_x, gcen_y, gcen_z = trans.bary_to_gcen(bary_x, bary_y, bary_z, R0=R0)
+        # print(np.count_nonzero(tt.isnan(gcen_x)))
+        # print(np.count_nonzero(tt.isnan(gcen_y)))
+        # print(np.count_nonzero(tt.isnan(gcen_z)))
+        # print(gcen_z)
+        # print(tt.isnan(gcen_z))
+        # gcen_z = tt.switch(tt.isnan(gcen_z), tt.as_tensor_variable(0.1), gcen_z)
+        # print(tt.isnan(gcen_z))
+        # print(np.count_nonzero(tt.isnan(gcen_z)))
         # Galactocentric Cartesian frame to galactocentric cylindrical frame
         gcen_cyl_dist = tt.sqrt(gcen_x * gcen_x + gcen_y * gcen_y)  # kpc
         azimuth = (tt.arctan2(gcen_y, -gcen_x) * _RAD_TO_DEG) % 360  # deg in [0,360)
@@ -412,10 +424,10 @@ def run_MCMC(
 
 def main():
     # Specify Bayesian MCMC parameters
-    _NUM_ITERS = 10000  # number of iterations per chain
-    _NUM_TUNE = 3000  # number of tuning iterations (will be thrown away)
-    _NUM_CORES = 10  # number of CPU cores to use for MCMC
-    _NUM_CHAINS = 10  # number of parallel chains to run
+    _NUM_ITERS = 500  # number of iterations per chain
+    _NUM_TUNE = 2000  # number of tuning iterations (will be thrown away)
+    _NUM_CORES = 2  # number of CPU cores to use for MCMC
+    _NUM_CHAINS = 2  # number of parallel chains to run
     _PRIOR_SET = "A5"  # Prior set from Reid et al. (2019)
     _LIKELIHOOD_TYPE = "sivia"  # "gauss", "cauchy", or "sivia"
     _NUM_SAMPLES = 1000  # number of times to sample each parallax
