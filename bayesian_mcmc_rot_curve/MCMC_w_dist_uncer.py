@@ -115,28 +115,13 @@ def ln_siviaskilling(x, mean, weight):
     """
 
     residual = (x - mean) / weight
-    likelihood = tt.log((1 - tt.exp(-0.5 * residual * residual)) / (residual * residual))
-    likelihood = tt.switch(residual < 1e-3, -0.69315, likelihood)
-    # # residual = np.asarray(residual)
-    # # print(residual.shape)
-    # # ! need to somehow to compare each residual w/ 1e-3 & replace only those values w/ -0.69315
-    # # Curently there is a shape mismatch when taking the mean of the ln(likelihoods)
-    # # ValueError: Not enough dimensions on Elemwise{add,no_inplace}.0 to reduce on axis 0
-    # # 
-    # # Why is this code not working? Pretty sure it is comparing value by value &
-    # # just replacing those that fail the condition
-    # # print((tt.log((1 - tt.exp(-0.5 * residual * residual)) / (residual * residual))).type.dtype)  # Broadcastable: (False, False) --> float64 dmatrix
-    # if tt.lt(residual, 1e-3):
-    #     # print("okay")
-    #     # res = theano.shared(np.array([-0.69315], float), "res")  # Broadcastable: (False,) --> float64 dvector
-    #     # print((tt.log(0.5)).type.dtype)  # Result: () --> float 32 fscalar
-    #     # print(res.type.broadcastable)
-    #     # print(res.type.dtype)
-    #     return res
-    #     # return tt.as_tensor_variable(-0.69315, name="-0.69315")
-    #     # return -0.69315  # AttributeError: 'float' object has no attribute 'copy' (for pm.Deterministic)
-    # return tt.log((1 - tt.exp(-0.5 * residual * residual)) / (residual * residual))
-    return likelihood
+    lnlike = tt.log((1 - tt.exp(-0.5 * residual * residual)) / (residual * residual))
+
+    # Replace residuals near zero (i.e. near peak of ln(likelihood)
+    # with value at peak of ln(likelihood) to prevent nans
+    lnlike = tt.switch(residual < 1e-8, -0.69315, lnlike)
+
+    return lnlike
 
 
 def run_MCMC(
@@ -223,28 +208,11 @@ def run_MCMC(
     print("Number of data points used:", num_sources)
 
     # Making array of random parallaxes. Columns are samples of the same source
-    # num_samples = 10
     print("===\nNumber of plx samples:", num_samples)
     # plx = np.array([plx_orig, ] * num_samples)
     plx = np.random.normal(loc=plx_orig, scale=e_plx, size=(num_samples, num_sources))
-    # print(plx.shape)
-    # _PLX_BOUND = 0.049  # minimum parallax allowed
-    # print(f"# plx <= {_PLX_BOUND} before correction:", np.count_nonzero(plx<=_PLX_BOUND))
-    
-    # # Find indices where plx <= _PLX_BOUND
-    # print("# nans before:", np.count_nonzero(np.isnan(plx)))
-    # # idx1_lst = np.where((plx<=_PLX_BOUND) | (plx>=2.421))[0]
-    # idx1_lst = np.where((plx<=_PLX_BOUND))[0]
-    # # print(len(idx1_lst), len(idx1_lst2))
-    # idx2_lst = np.where((plx<=_PLX_BOUND))[1]
-    # # print(plx[:,idx2_lst[0]])
-    # # for idx1, idx2 in zip(np.where(plx<=_PLX_BOUND)[0], np.where(plx<=_PLX_BOUND)[1]):
-    # # for idx1, idx2 in zip(idx1_lst, idx2_lst):
-    # #     # ! CHECK THIS FUNCTION GAHHH
-    # #     # Replace parallax <= _PLX_BOUND with original (aka database) value
-    # #     plx[idx1, idx2] = plx_orig[idx2]
+    # Replace non-positive parallax with small positive epsilon
     plx[plx<=0] = 1e-9
-    print("# nans after:", np.count_nonzero(np.isnan(plx)))
 
     e_plx = np.array([e_plx,] * num_samples)
     glon = np.array([glon,] * num_samples)  # num_samples by num_sources
@@ -275,8 +243,8 @@ def run_MCMC(
             Wsun = pm.Normal("Wsun", mu=7.2, sigma=1.1)  # km/s
             Upec = pm.Normal("Upec", mu=3.0, sigma=10.0)  # km/s
             Vpec = pm.Normal("Vpec", mu=-3.0, sigma=10.0)  # km/s
-            a2 = pm.Uniform("a2", lower=0.8, upper=1.2)  # dimensionless
-            a3 = pm.Uniform("a3", lower=1.5, upper=1.7)  # dimensionless
+            a2 = pm.Uniform("a2", lower=0.8, upper=1.3)  # dimensionless
+            a3 = pm.Uniform("a3", lower=1.5, upper=1.8)  # dimensionless
         elif prior_set == "B":
             # R0 = pm.Uniform("R0", lower=0, upper=500.)  # kpc
             R0 = pm.Uniform("R0", lower=7.0, upper=10.0)  # kpc
@@ -314,15 +282,7 @@ def run_MCMC(
         # === Predicted values (using data) ===
         # Barycentric Cartesian to galactocentric Cartesian coodinates
         gcen_x, gcen_y, gcen_z = trans.bary_to_gcen(bary_x, bary_y, bary_z, R0=R0)
-        # print(np.isnan(gcen_x.eval(R0)))
-        # print(np.count_nonzero(tt.isnan(gcen_x)))
-        # print(np.count_nonzero(tt.isnan(gcen_y)))
-        # print(np.count_nonzero(tt.isnan(gcen_z)))
-        # print(gcen_z)
-        # print(tt.isnan(gcen_z))
-        # gcen_z = tt.switch(tt.isnan(gcen_z), tt.as_tensor_variable(0.1), gcen_z)
-        # print(tt.isnan(gcen_z))
-        # print(np.count_nonzero(tt.isnan(gcen_z)))
+
         # Galactocentric Cartesian frame to galactocentric cylindrical frame
         gcen_cyl_dist = tt.sqrt(gcen_x * gcen_x + gcen_y * gcen_y)  # kpc
         azimuth = (tt.arctan2(gcen_y, -gcen_x) * _RAD_TO_DEG) % 360  # deg in [0,360)
@@ -410,20 +370,13 @@ def run_MCMC(
                 "Invalid like_type. Please input 'gauss', 'cauchy', or 'sivia'."
             )
 
-        # lnlike_tot = pm.Deterministic("lnlike_tot", lnlike_eqmux + lnlike_eqmuy + lnlike_vlsr)
-
         # === Full likelihood function (specified by log-probability) ===
-        # lnlike_tot = lnlike_eqmux + lnlike_eqmuy + lnlike_vlsr
-        # is_nan = tt.isnan(lnlike_tot)
-        # num_not_nans = tt.sum(~is_nan, axis=0)
-        # lnlike_avg = tt.sum(lnlike_tot[~is_nan], axis=0) / num_not_nans
-        # lnlike_avg = tt.switch(tt.eq(num_not_nans, 0), -np.inf, lnlike_avg)
+        # N.B. pm.Potential expects values instead of functions
         likelihood = pm.Potential(
             "likelihood",
-            (lnlike_eqmux + lnlike_eqmuy + lnlike_vlsr).mean(
-                axis=0
-            ),  # Take avg of all samples per source
-        )  # expects values instead of function
+            # Take avg of all samples per source
+            (lnlike_eqmux + lnlike_eqmuy + lnlike_vlsr).mean(axis=0)
+        )
 
         # Run MCMC
         trace = pm.sample(
@@ -464,10 +417,10 @@ def run_MCMC(
 
 def main():
     # Specify Bayesian MCMC parameters
-    _NUM_ITERS = 500  # number of iterations per chain
-    _NUM_TUNE = 2000  # number of tuning iterations (will be thrown away)
-    _NUM_CORES = 2  # number of CPU cores to use for MCMC
-    _NUM_CHAINS = 2  # number of parallel chains to run
+    _NUM_ITERS = 10000  # number of iterations per chain
+    _NUM_TUNE = 2500  # number of tuning iterations (will be thrown away)
+    _NUM_CORES = 10  # number of CPU cores to use for MCMC
+    _NUM_CHAINS = 10  # number of parallel chains to run
     _PRIOR_SET = "A5"  # Prior set from Reid et al. (2019)
     _LIKELIHOOD_TYPE = "sivia"  # "gauss", "cauchy", or "sivia"
     _NUM_SAMPLES = 1000  # number of times to sample each parallax
@@ -485,7 +438,7 @@ def main():
             "Invalid _LIKELIHOOD_TYPE. Please choose 'gauss', 'cauchy', or 'sivia'."
         )
 
-    if _LOAD_DATABASE:
+    if _LOAD_DATABASE:  # Load data from database file
         # # Specifying database file name & folder
         # filename = Path("data/hii_v2_20201203.db")
         # # Database folder in parent directory of this script (call .parent twice)
@@ -495,8 +448,7 @@ def main():
         # (allows file to be run in multiple locations as long as database location does not move)
         db = Path("/home/chengi/Documents/coop2021/data/hii_v2_20201203.db")
         data = get_data(db)  # all data from Parallax table
-    else:
-        # Load data from pickle file
+    else:  # Load data from pickle file
         # infile = Path(__file__).parent / "MCMC_w_dist_uncer_outfile.pkl"
         infile = Path(
             "/home/chengi/Documents/coop2021/bayesian_mcmc_rot_curve/MCMC_w_dist_uncer_outfile.pkl"
