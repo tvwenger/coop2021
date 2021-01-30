@@ -123,7 +123,7 @@ def ln_siviaskilling(x, mean, weight):
     # with value at peak of ln(likelihood) to prevent nans
     lnlike_fixed = tt.set_subtensor(lnlike[idxs], -0.69315)
 
-    # FOR SOME REASON THE FOLLOWING CODE DOES NOT WORK
+    # FOR SOME REASON THE FOLLOWING DOESN'T WORK (produces crazy best-fit values)
     # lnlike_fixed = tt.switch(residual < 1e-8, -0.69315, lnlike)
 
     return lnlike_fixed
