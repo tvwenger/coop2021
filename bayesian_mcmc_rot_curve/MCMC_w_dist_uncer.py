@@ -117,14 +117,16 @@ def ln_siviaskilling(x, mean, weight):
     residual = (x - mean) / weight
     lnlike = tt.log((1 - tt.exp(-0.5 * residual * residual)) / (residual * residual))
 
-    # Find indices where residual < 1e-8
-    idxs = (lnlike < 0).nonzero()
     # Replace residuals near zero (i.e. near peak of ln(likelihood)
     # with value at peak of ln(likelihood) to prevent nans
-    lnlike_fixed = tt.set_subtensor(lnlike[idxs], -0.69315)
+    lnlike_fixed = tt.switch(abs(residual) < 1e-8, -0.69315, lnlike)
+    # This seems to be much slower than code below?
+    # TODO: compare runtimes
 
-    # FOR SOME REASON THE FOLLOWING DOESN'T WORK (produces crazy best-fit values)
-    # lnlike_fixed = tt.switch(residual < 1e-8, -0.69315, lnlike)
+    # # Alternate method:
+    # # Find indices where residual < 1e-8
+    # idxs = (abs(residual) < 1e-8).nonzero()
+    # lnlike_fixed = tt.set_subtensor(lnlike[idxs], -0.69315)
 
     return lnlike_fixed
 
@@ -434,6 +436,7 @@ def main():
                                     # If False, only remove database sources w/ R < 4 kpc
 
     # Getting user inputs for MCMC model & sample parameters
+    # TODO: Add proper default input checking
     print("WARNING: I am not catching invalid inputs! Be careful when typing.")
     num_cores = input(f"num cores to use (int. Default = {_DEF_NUM_CORES}): ")
     num_chains = input(f"num chains to run (int. Default = {_DEF_NUM_CHAINS}): ")
