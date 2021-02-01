@@ -134,14 +134,14 @@ def ln_siviaskilling(x, mean, weight):
 
     # Replace residuals near zero (i.e. near peak of ln(likelihood)
     # with value at peak of ln(likelihood) to prevent nans
-    lnlike_fixed = tt.switch(abs(residual) < 1e-8, -0.69315, lnlike)
+    # lnlike_fixed = tt.switch(abs(residual) < 1e-8, -0.69315, lnlike)
     # This seems to be much slower than code below?
     # TODO: compare runtimes
 
-    # # Alternate method:
-    # # Find indices where residual < 1e-8
-    # idxs = (abs(residual) < 1e-8).nonzero()
-    # lnlike_fixed = tt.set_subtensor(lnlike[idxs], -0.69315)
+    # Alternate method:
+    # Find indices where residual < 1e-8
+    idxs = (abs(residual) < 1e-8).nonzero()
+    lnlike_fixed = tt.set_subtensor(lnlike[idxs], -0.69315)
 
     return lnlike_fixed
 
@@ -164,7 +164,7 @@ def run_MCMC(
     """
 
     # Binary file to store MCMC output
-    outfile = Path(__file__).parent / f"mcmc_outfile_{num_round}.pkl"
+    outfile = Path(__file__).parent / f"mcmc_outfile_{prior_set}_{num_round}.pkl"
 
     if is_database_data:  # data is from database, need to filter data
         print("===\nStarting with fresh data from database")
@@ -442,7 +442,8 @@ def run_MCMC(
 
 
 def main(infile, num_cores=None, num_chains=None, num_tune=2500, num_iters=10000,
-        num_samples=100, prior_set="A1", like_type="gauss", filter_plx=False, num_rounds=0
+        num_samples=100, prior_set="A1", like_type="gauss",
+        filter_plx=False, num_rounds=1, filter_method="sigma", this_round=1
 ):
     if num_cores is None:
         num_cores = 2
@@ -453,19 +454,8 @@ def main(infile, num_cores=None, num_chains=None, num_tune=2500, num_iters=10000
     if num_rounds < 1:
         raise ValueError("num_rounds must be an integer greater than or equal to 1.")
 
-    print(f"=========\nQueueing {num_rounds} Baysian MCMC rounds")
-    this_round = 1
+    print(f"=========\nQueueing {num_rounds} Bayesian MCMC rounds")
     while this_round <= num_rounds:
-        # if infile[-3:] == ".db":
-        #     load_database = True
-        #     db = Path(infile)
-        #     data = get_data(db)
-        # elif infile[-4:] == ".pkl":
-        #     load_database = False
-        #     with open(infile, "rb") as f:
-        #         data = dill.load(f)["data"]
-        # else:
-        #     raise ValueError("Invalid file type. Please use a '.db' or '.pkl' file.")
         print(f"===\nRunning round {this_round}")
         if this_round == 1 and infile[-3:] == ".db":
             # Load database file
@@ -474,26 +464,27 @@ def main(infile, num_cores=None, num_chains=None, num_tune=2500, num_iters=10000
             data = get_data(db)
         else:
             # Load pickle file (same file as outfile in run_MCMC() method)
-            infile = Path(__file__).parent / f"mcmc_outfile_{this_round-1}.pkl"
+            infile = Path(__file__).parent / f"mcmc_outfile_{prior_set}_{this_round-1}.pkl"
             load_database = False
             with open(infile, "rb") as f:
                 data = dill.load(f)["data"]
             # Override like_type to "gauss"
             like_type = "gauss"
+
         run_MCMC(
             data,
             num_iters, num_tune, num_cores, num_chains, num_samples,
             prior_set, like_type, load_database, filter_plx, this_round
         )
-        # Outlier rejection
+
+        # Seeing if outlier rejection is necessary
         if this_round == num_rounds:
-            # No need to clean data after final MCMC run
-            break
-        else:
-            # Do outlier rejection
-            clean.main(this_round)
+            break  # No need to clean data after final MCMC run
+        # Else: do outlier rejection
+        clean.main(prior_set, this_round, filter_method)
         this_round += 1
-    print(f"===\n{num_rounds} Bayesian MCMC runs complete\n===")
+        
+    print(f"===\n{num_rounds} Bayesian MCMC runs complete\n=========")
 
 
 if __name__ == "__main__":
@@ -529,7 +520,7 @@ if __name__ == "__main__":
         "--prior_set",
         type=str,
         default="A5",
-        help="Prior set to use from Reid et al. 2019 (A1, A5, B, C, D)",
+        help="Prior set to use from Reid et al. 2019 (A1, A5, B, C, or D)",
     )
     parser.add_argument(
         "--like_type", type=str, default="gauss", help="Likelihood PDF (sivia or gauss)"
@@ -538,13 +529,25 @@ if __name__ == "__main__":
         "--filter_plx",
         type=str2bool,
         default=False,
-        help="Filter sources with e_plx/plx>20%",
+        help="Filter sources with e_plx/plx > 0.2",
     )
     parser.add_argument(
     "--num_rounds",
     type=int,
-    default=0,
+    default=1,
     help="Number of times to run Bayesian MCMC",
+    )
+    parser.add_argument(
+    "--filter_method",
+    type=str,
+    default="sigma",
+    help="Outlier rejection method for mcmc_cleanup.py (sigma or lnlike)",
+    )
+    parser.add_argument(
+    "--this_round",
+    type=int,
+    default=1,
+    help="Overrides default starting point for number of rounds. Useful if previous run failed & want to load from pickle file",
     )
     args = vars(parser.parse_args())
     main(
@@ -558,4 +561,6 @@ if __name__ == "__main__":
         like_type=args["like_type"],
         filter_plx=args["filter_plx"],
         num_rounds=args["num_rounds"],
+        filter_method=args["filter_method"],
+        this_round=args["this_round"],
     )
