@@ -134,14 +134,14 @@ def ln_siviaskilling(x, mean, weight):
 
     # Replace residuals near zero (i.e. near peak of ln(likelihood)
     # with value at peak of ln(likelihood) to prevent nans
-    # lnlike_fixed = tt.switch(abs(residual) < 1e-8, -0.69315, lnlike)
-    # This seems to be much slower than code below?
-    # TODO: compare runtimes
+    lnlike_fixed = tt.switch(abs(residual) < 1e-8, -0.69315, lnlike)
+    # This seems to be much slower than code below.
+    # Code below too fast? --> advi learning rate too fast?
 
-    # Alternate method:
-    # Find indices where residual < 1e-8
-    idxs = (abs(residual) < 1e-8).nonzero()
-    lnlike_fixed = tt.set_subtensor(lnlike[idxs], -0.69315)
+    # # Alternate method:
+    # # Find indices where residual < 1e-8
+    # idxs = (abs(residual) < 1e-8).nonzero()
+    # lnlike_fixed = tt.set_subtensor(lnlike[idxs], -0.69315)
 
     return lnlike_fixed
 
@@ -393,18 +393,18 @@ def run_MCMC(
                 "Invalid like_type. Please input 'gauss', 'cauchy', or 'sivia'."
             )
 
-        # Take avg of all samples per source
-        lnlike_avg = (lnlike_eqmux + lnlike_eqmuy + lnlike_vlsr).mean(axis=0)
-        # Remove nans (from logarithms?)
-        lnlike_avg_fixed = tt.switch(tt.isnan(lnlike_avg), 0.001, lnlike_avg)
+        # # Take avg of all samples per source
+        # lnlike_avg = (lnlike_eqmux + lnlike_eqmuy + lnlike_vlsr).mean(axis=0)
+        # # Remove nans (from logarithms?)
+        # lnlike_avg_fixed = tt.switch(tt.isnan(lnlike_avg), 0.001, lnlike_avg)
 
         # === Full likelihood function (specified by log-probability) ===
         # N.B. pm.Potential expects values instead of functions
         likelihood = pm.Potential(
             "likelihood",
             # Take avg of all samples per source
-            # (lnlike_eqmux + lnlike_eqmuy + lnlike_vlsr).mean(axis=0)
-            lnlike_avg_fixed
+            (lnlike_eqmux + lnlike_eqmuy + lnlike_vlsr).mean(axis=0)
+            # lnlike_avg_fixed
         )
 
         # Run MCMC
