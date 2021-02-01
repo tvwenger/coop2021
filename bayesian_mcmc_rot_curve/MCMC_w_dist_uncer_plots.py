@@ -8,7 +8,7 @@ import corner
 import dill
 
 
-def plot_MCMC(trace, prior_set, like_type, num_sources, num_samples, filter_type):
+def plot_MCMC(trace, prior_set, like_type, num_sources, num_samples, filter_type, num_rounds):
     """
     Plots walkers and corner plot from trace. Returns None
     """
@@ -64,7 +64,7 @@ def plot_MCMC(trace, prior_set, like_type, num_sources, num_samples, filter_type
         )
     fig1.tight_layout()  # Need this below suptitle()
     fig1.savefig(
-        Path(__file__).parent / f"MCMC_chains_{like_type}_{prior_set}_{num_samples}_samples.jpg",
+        Path(__file__).parent / f"MCMC_chains_{prior_set}_{num_rounds}.jpg",
         format="jpg",
         dpi=300,
         bbox_inches="tight",
@@ -80,7 +80,7 @@ def plot_MCMC(trace, prior_set, like_type, num_sources, num_samples, filter_type
         title_fmt=".2f",
     )
     fig2.savefig(
-        Path(__file__).parent / f"MCMC_hist_{like_type}_{prior_set}_{num_samples}_samples.jpg",
+        Path(__file__).parent / f"MCMC_hist_{prior_set}_{num_rounds}.jpg",
         format="jpg",
         dpi=300,
         bbox_inches="tight",
@@ -88,11 +88,11 @@ def plot_MCMC(trace, prior_set, like_type, num_sources, num_samples, filter_type
     plt.show()
 
 
-def main():
+def main(prior_set_file, num_rounds_file, filter_method):
     # Binary file to read
     # infile = Path(__file__).parent / "reid_MCMC_outfile.pkl"
     infile = Path(
-        "/home/chengi/Documents/coop2021/bayesian_mcmc_rot_curve/MCMC_w_dist_uncer_outfile.pkl"
+        f"/home/chengi/Documents/coop2021/bayesian_mcmc_rot_curve/mcmc_outfile_{prior_set_file}_{num_rounds_file}.pkl"
     )
 
     with open(infile, "rb") as f:
@@ -102,14 +102,26 @@ def main():
         like_type = file["like_type"]  # "gauss", "cauchy", or "sivia"
         num_sources = file["num_sources"]
         num_samples = file["num_samples"]
-        print("prior_set:", prior_set)
-        print("like_type:", like_type)
-        print("num_sources:", num_sources)
-        print("num_samples:", num_samples)
-        _FILTER_TYPE = "ln(likelihood)"  # "3 sigma" or "ln(likelihood)"
+        num_rounds = file["num_round"]
 
-        plot_MCMC(trace, prior_set, like_type, num_sources, num_samples, _FILTER_TYPE)
+    print("prior_set:", prior_set)
+    print("like_type:", like_type)
+    print("num_sources:", num_sources)
+    print("num_samples:", num_samples)
+
+    if filter_method == "sigma":
+        _FILTER_TYPE = "3 sigma"
+    elif filter_method == "lnlike":
+        _FILTER_TYPE = "ln(likelihood)"
+    else:
+        raise ValueError("Invalid filter_method. Please choose sigma or lnlike.")
+
+    plot_MCMC(trace, prior_set, like_type, num_sources, num_samples, _FILTER_TYPE, num_rounds_file)
 
 
 if __name__ == "__main__":
-    main()
+    prior_set_file = input("prior_set of file (A1, A5, B, C, D): ")
+    num_rounds_file = int(input("total num_rounds of file (int): "))
+    filter_method = input("Outlier rejection method used (sigma or lnlike): ")
+
+    main(prior_set_file, num_rounds_file, filter_method)
