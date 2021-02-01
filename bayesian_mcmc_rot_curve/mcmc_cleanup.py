@@ -201,7 +201,6 @@ def cleanup_data(data, trace, like_type, filter_method, num_round):
         raise ValueError("Invalid filter_method. Please choose 'sigma' or 'lnlike'.")
 
     # Refilter data
-    print(f"Outlier rejection after round {num_round}")
     ra_good = ra[~bad_sigma]  # deg
     dec_good = dec[~bad_sigma]  # deg
     glon_good = glon[~bad_sigma]  # deg
@@ -262,12 +261,11 @@ def cleanup_data(data, trace, like_type, filter_method, num_round):
     return data_cleaned, num_sources_cleaned
 
 
-def main():
+def main(num_round=1):
     # Binary file to read
     # infile = Path(__file__).parent / "MCMC_w_dist_uncer_outfile.pkl"
-    # ? How to pass in num_round to load in proper file? argparse maybe?
     infile = Path(
-        "/home/chengi/Documents/coop2021/bayesian_mcmc_rot_curve/outfile.pkl"
+        f"/home/chengi/Documents/coop2021/bayesian_mcmc_rot_curve/mcmc_outfile_{num_round}.pkl"
     )
 
     with open(infile, "rb") as f:
@@ -279,11 +277,12 @@ def main():
         like_type = file["like_type"]  # "gauss" or "cauchy" or "sivia"
         num_sources = file["num_sources"]
         num_samples = file["num_samples"]
-        num_round = file["num_round"]
-        print("prior_set:", prior_set)
-        print("like_type:", like_type)
-        print("num parallax samples:", num_samples)
-        print("num sources before filtering:", num_sources)
+
+    print(f"===\nExecuting outlier rejection after round {num_round}")
+    print("prior_set:", prior_set)
+    print("like_type:", like_type)
+    print("num parallax samples:", num_samples)
+    print("num sources before filtering:", num_sources)
 
     # print(data.to_markdown())
     # Clean data
@@ -292,12 +291,6 @@ def main():
         data, trace, like_type, _FILTER_METHOD, num_round
     )
 
-    # Temporary file to preserve data
-    # (useful for comparing 'sigma' vs 'lnlike' filter methods)
-    infile2 = Path(
-        "/home/chengi/Documents/coop2021/bayesian_mcmc_rot_curve/outfile2.pkl"
-    )
-    
     # Save results to same pickle file
     with open(infile, "wb") as f:
         dill.dump(
@@ -316,4 +309,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main(num_round=1)
