@@ -1,6 +1,59 @@
 =========================================================================================
-== ALL MCMC RUN USING 2 chains, 2000 tunings + 2000 iterations each chain, init="advi" ==
+== FOLLOWING MCMC RUN w/ 10 chains, 2500 tunings + 10000 iterations each chain,
+== 100 parallax samples, and init="advi"
 =========================================================================================
+=========
+Queueing 1 Bayesian MCMC round
+===
+Running round 1
+===
+Starting with fresh data from database
+Only filter sources w/ R < 4 kpc
+Number of data points used: 183
+===
+Number of plx samples: 100
+Number of plx <= 0 replaced: 4
+===
+Using prior set A1
+Using Sivia & Skilling (2006) PDF
+Using 10 cores, 10 chains, 2500 tunings, and 10000 iterations.
+===
+Auto-assigning NUTS sampler...
+Initializing NUTS using advi...
+Convergence achieved at 10100 [10099/200000 04:20<1:21:37 Average Loss = 677.46]
+Interrupted at 10,099 [5%]: Average Loss = 686.32
+Multiprocess sampling (10 chains in 10 jobs)
+NUTS: [a3, a2, Vpec, Upec, Wsun, Vsun, Usun, R0]
+Sampling 10 chains for 2_500 tune and 10_000 draw iterations (25_000 + 100_000 draws total) took 6782 seconds.
+There were 730 divergences after tuning. Increase `target_accept` or reparameterize.
+There were 652 divergences after tuning. Increase `target_accept` or reparameterize.
+There were 642 divergences after tuning. Increase `target_accept` or reparameterize.
+There were 705 divergences after tuning. Increase `target_accept` or reparameterize.
+There were 730 divergences after tuning. Increase `target_accept` or reparameterize.
+There were 706 divergences after tuning. Increase `target_accept` or reparameterize.
+There were 639 divergences after tuning. Increase `target_accept` or reparameterize.
+There were 646 divergences after tuning. Increase `target_accept` or reparameterize.
+There were 632 divergences after tuning. Increase `target_accept` or reparameterize.
+There were 691 divergences after tuning. Increase `target_accept` or reparameterize.
+The number of effective samples is smaller than 25% for some parameters.
+        mean     sd  hdi_3%  hdi_97%  mcse_mean  mcse_sd  ess_mean    ess_sd  ess_bulk  ess_tail  r_hat
+Usun  10.739  1.153   8.561   12.892      0.004    0.003   72278.0   72278.0   72261.0   64125.0    1.0
+Vsun  14.825  6.804   2.111   27.545      0.065    0.046   11102.0   10897.0   11100.0   15037.0    1.0
+Wsun   7.670  0.756   6.212    9.062      0.002    0.002  117384.0  114841.0  117540.0   63414.0    1.0
+Upec   6.531  1.798   3.177    9.931      0.007    0.005   65549.0   64749.0   65564.0   64074.0    1.0
+Vpec  -1.329  6.582 -13.588   11.025      0.062    0.044   11128.0   11128.0   11123.0   15370.0    1.0
+R0     8.552  0.197   8.183    8.923      0.001    0.001   57686.0   57609.0   57777.0   58878.0    1.0
+a2     1.059  0.068   0.930    1.185      0.000    0.000   40000.0   40000.0   40298.0   50804.0    1.0
+a3     1.644  0.030   1.587    1.700      0.000    0.000   15754.0   15754.0   15758.0   26330.0    1.0
+===
+1 Bayesian MCMC runs complete
+=========
+
+
+
+==========================================================================================
+== FOLLOWING MCMC RUNS w/ 2 chains, 2000 tunings + 2000 iterations each chain, init="advi"
+==========================================================================================
 # sources in database = 202
 N.B. All sigma values used in likelihood functions & data cleaning
      are the Reid et al. weights from their 2014 paper.
