@@ -20,6 +20,7 @@ sys.path.append(_SCRIPT_DIR)
 
 import mytransforms as trans
 from universal_rotcurve import urc
+import mcmc_cleanup as clean
 
 # Universal rotation curve parameters (Persic et al. 1996)
 _A_TWO = 0.96  # (Reid et al. 2019)
@@ -163,7 +164,7 @@ def run_MCMC(
     """
 
     # Binary file to store MCMC output
-    outfile = Path(__file__).parent / f"outfile_{num_round}.pkl"
+    outfile = Path(__file__).parent / f"mcmc_outfile_{num_round}.pkl"
 
     if is_database_data:  # data is from database, need to filter data
         print("===\nStarting with fresh data from database")
@@ -441,33 +442,58 @@ def run_MCMC(
 
 
 def main(infile, num_cores=None, num_chains=None, num_tune=2500, num_iters=10000,
-        num_samples=100, prior_set="A1", like_type="gauss", filter_plx=False, num_round=0
+        num_samples=100, prior_set="A1", like_type="gauss", filter_plx=False, num_rounds=0
 ):
     if num_cores is None:
         num_cores = 2
     if num_chains is None:
         num_chains = num_cores
 
-    if infile[-3:] == ".db":
-        if num_round != 0:
-            raise ValueError("num_round must be zero if loading from database!")
-        load_database = True
-        db = Path(infile)
-        data = get_data(db)
-    elif infile[-4:] == ".pkl":
-        load_database = False
-        with open(infile, "rb") as f:
-            data = dill.load(f)["data"]
-    else:
-        raise ValueError("Invalid file type. Please use a '.db' or '.pkl' file.")
+    # Run simulation for num_rounds times
+    if num_rounds < 1:
+        raise ValueError("num_rounds must be an integer greater than or equal to 1.")
 
-    # Run simulation
-    print(f"Running round {num_round}")
-    run_MCMC(
-        data,
-        num_iters, num_tune, num_cores, num_chains, num_samples,
-        prior_set, like_type, load_database, filter_plx, num_round
-    )
+    print(f"=========\nQueueing {num_rounds} Baysian MCMC rounds")
+    this_round = 1
+    while this_round <= num_rounds:
+        # if infile[-3:] == ".db":
+        #     load_database = True
+        #     db = Path(infile)
+        #     data = get_data(db)
+        # elif infile[-4:] == ".pkl":
+        #     load_database = False
+        #     with open(infile, "rb") as f:
+        #         data = dill.load(f)["data"]
+        # else:
+        #     raise ValueError("Invalid file type. Please use a '.db' or '.pkl' file.")
+        print(f"===\nRunning round {this_round}")
+        if this_round == 1 and infile[-3:] == ".db":
+            # Load database file
+            load_database = True
+            db = Path(infile)
+            data = get_data(db)
+        else:
+            # Load pickle file (same file as outfile in run_MCMC() method)
+            infile = Path(__file__).parent / f"mcmc_outfile_{this_round-1}.pkl"
+            load_database = False
+            with open(infile, "rb") as f:
+                data = dill.load(f)["data"]
+            # Override like_type to "gauss"
+            like_type = "gauss"
+        run_MCMC(
+            data,
+            num_iters, num_tune, num_cores, num_chains, num_samples,
+            prior_set, like_type, load_database, filter_plx, this_round
+        )
+        # Outlier rejection
+        if this_round == num_rounds:
+            # No need to clean data after final MCMC run
+            break
+        else:
+            # Do outlier rejection
+            clean.main(this_round)
+        this_round += 1
+    print(f"===\n{num_rounds} Bayesian MCMC runs complete\n===")
 
 
 if __name__ == "__main__":
@@ -515,10 +541,10 @@ if __name__ == "__main__":
         help="Filter sources with e_plx/plx>20%",
     )
     parser.add_argument(
-    "--num_round",
+    "--num_rounds",
     type=int,
     default=0,
-    help="Number of times Bayesian MCMC has run beginning at zero",
+    help="Number of times to run Bayesian MCMC",
     )
     args = vars(parser.parse_args())
     main(
@@ -531,5 +557,5 @@ if __name__ == "__main__":
         prior_set=args["prior_set"],
         like_type=args["like_type"],
         filter_plx=args["filter_plx"],
-        num_round=args["num_round"],
+        num_rounds=args["num_rounds"],
     )
