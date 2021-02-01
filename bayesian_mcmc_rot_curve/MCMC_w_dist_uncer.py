@@ -250,7 +250,7 @@ def run_MCMC(
     # Parallax to distance
     gdist = trans.parallax_to_dist(plx)
     # Galactic to galactocentric Cartesian coordinates
-    bary_x, bary_y, bary_z = trans.gal_to_bary(glon, glat, gdist)    
+    bary_x, bary_y, bary_z = trans.gal_to_bary(glon, glat, gdist)
     # Zero vertical velocity in URC
     v_vert = 0.0
 
@@ -358,36 +358,36 @@ def run_MCMC(
             lnlike_eqmux = pm.Normal.dist(mu=eqmux_pred, sigma=weight_eqmux).logp(eqmux)
             lnlike_eqmuy = pm.Normal.dist(mu=eqmuy_pred, sigma=weight_eqmuy).logp(eqmuy)
             lnlike_vlsr = pm.Normal.dist(mu=vlsr_pred, sigma=weight_vlsr).logp(vlsr)
-            # Save exponential part of log-likelihood distributions to trace
-            lnlike_eqmux_dist = pm.Deterministic(
-                "lnlike_eqmux_dist", lnlike_eqmux + tt.log(e_eqmux) + _LN_SQRT_2PI
-            )
-            lnlike_eqmuy_dist = pm.Deterministic(
-                "lnlike_eqmuy_dist", lnlike_eqmuy + tt.log(e_eqmuy) + _LN_SQRT_2PI
-            )
-            lnlike_vlsr_dist = pm.Deterministic(
-                "lnlike_vlsr_dist", lnlike_vlsr + tt.log(e_vlsr) + _LN_SQRT_2PI
-            )
-        elif like_type == "cauchy":
-            # CAUCHY PDF
-            print("Using Cauchy PDF")
-            hwhm = tt.sqrt(2 * tt.log(2))  # half width at half maximum
-            lnlike_eqmux = pm.Cauchy.dist(
-                alpha=eqmux_pred, beta=hwhm * weight_eqmux).logp(eqmux)
-            lnlike_eqmuy = pm.Cauchy.dist(
-                alpha=eqmuy_pred, beta=hwhm * weight_eqmuy).logp(eqmuy)
-            lnlike_vlsr = pm.Cauchy.dist(
-                alpha=vlsr_pred, beta=hwhm * weight_vlsr).logp(vlsr)
+            # # Save exponential part of log-likelihood distributions to trace
+            # lnlike_eqmux_dist = pm.Deterministic(
+            #     "lnlike_eqmux_dist", lnlike_eqmux + tt.log(e_eqmux) + _LN_SQRT_2PI
+            # )
+            # lnlike_eqmuy_dist = pm.Deterministic(
+            #     "lnlike_eqmuy_dist", lnlike_eqmuy + tt.log(e_eqmuy) + _LN_SQRT_2PI
+            # )
+            # lnlike_vlsr_dist = pm.Deterministic(
+            #     "lnlike_vlsr_dist", lnlike_vlsr + tt.log(e_vlsr) + _LN_SQRT_2PI
+            # )
+        # elif like_type == "cauchy":
+        #     # CAUCHY PDF
+        #     print("Using Cauchy PDF")
+        #     hwhm = tt.sqrt(2 * tt.log(2))  # half width at half maximum
+        #     lnlike_eqmux = pm.Cauchy.dist(
+        #         alpha=eqmux_pred, beta=hwhm * weight_eqmux).logp(eqmux)
+        #     lnlike_eqmuy = pm.Cauchy.dist(
+        #         alpha=eqmuy_pred, beta=hwhm * weight_eqmuy).logp(eqmuy)
+        #     lnlike_vlsr = pm.Cauchy.dist(
+        #         alpha=vlsr_pred, beta=hwhm * weight_vlsr).logp(vlsr)
         elif like_type == "sivia":
             # SIVIA & SKILLING (2006) "LORENTZIAN-LIKE" CONSERVATIVE PDF
             print("Using Sivia & Skilling (2006) PDF")
             lnlike_eqmux = ln_siviaskilling(eqmux, eqmux_pred, weight_eqmux)
             lnlike_eqmuy = ln_siviaskilling(eqmuy, eqmuy_pred, weight_eqmuy)
             lnlike_vlsr = ln_siviaskilling(vlsr, vlsr_pred, weight_vlsr)
-            # Save log-likelihood distributions to trace w/out impacting model
-            lnlike_eqmux_dist = pm.Deterministic("lnlike_eqmux_dist", lnlike_eqmux)
-            lnlike_eqmuy_dist = pm.Deterministic("lnlike_eqmuy_dist", lnlike_eqmuy)
-            lnlike_vlsr_dist = pm.Deterministic("lnlike_vlsr_dist", lnlike_vlsr)
+            # # Save log-likelihood distributions to trace w/out impacting model
+            # lnlike_eqmux_dist = pm.Deterministic("lnlike_eqmux_dist", lnlike_eqmux)
+            # lnlike_eqmuy_dist = pm.Deterministic("lnlike_eqmuy_dist", lnlike_eqmuy)
+            # lnlike_vlsr_dist = pm.Deterministic("lnlike_vlsr_dist", lnlike_vlsr)
         else:
             raise ValueError(
                 "Invalid like_type. Please input 'gauss', 'cauchy', or 'sivia'."
@@ -403,7 +403,7 @@ def run_MCMC(
 
         # Run MCMC
         print(f"Using {num_cores} cores, {num_chains} chains, "
-              f"{num_tune} tunings, and {num_iters} iterations.")
+              f"{num_tune} tunings, and {num_iters} iterations.\n===")
         trace = pm.sample(
             num_iters,
             init="advi",
