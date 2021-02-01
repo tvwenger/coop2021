@@ -228,7 +228,7 @@ def cleanup_data(data, trace, like_type, filter_method, num_round):
     # # Choose which rejected source to plot
     # reject_to_plot = 0  # any integer in [0, # rejected sources - 1]
     # print(data[bad_sigma])
-    
+
     # reject_idx = bad_sigma_loc[reject_to_plot]  # index of rejected source in database
     # reject_data = lnlike_vlsr_dist[:,:,reject_idx].flatten()  # histogram values for reject
     # plt.hist(reject_data)
@@ -261,11 +261,11 @@ def cleanup_data(data, trace, like_type, filter_method, num_round):
     return data_cleaned, num_sources_cleaned
 
 
-def main(num_round=1):
+def main(prior_set, num_round, filter_method):
     # Binary file to read
     # infile = Path(__file__).parent / "MCMC_w_dist_uncer_outfile.pkl"
     infile = Path(
-        f"/home/chengi/Documents/coop2021/bayesian_mcmc_rot_curve/mcmc_outfile_{num_round}.pkl"
+        f"/home/chengi/Documents/coop2021/bayesian_mcmc_rot_curve/mcmc_outfile_{prior_set}_{num_round}.pkl"
     )
 
     with open(infile, "rb") as f:
@@ -286,9 +286,9 @@ def main(num_round=1):
 
     # print(data.to_markdown())
     # Clean data
-    _FILTER_METHOD = "lnlike"  # "sigma" or "lnlike"
+    # _FILTER_METHOD = "lnlike"  # "sigma" or "lnlike"
     data_cleaned, num_sources_cleaned = cleanup_data(
-        data, trace, like_type, _FILTER_METHOD, num_round
+        data, trace, like_type, filter_method, num_round
     )
 
     # Save results to same pickle file
@@ -309,4 +309,7 @@ def main(num_round=1):
 
 
 if __name__ == "__main__":
-    main(num_round=1)
+    prior_set_file = input("prior_set of file ('A1', 'A5', 'B, 'C', 'D': ")
+    num_round_file = int(input("round number of file (int): "))
+
+    main(prior_set_file, num_round_file)
