@@ -92,7 +92,7 @@ def ln_gauss_exp_part(x, mean, sigma):
     return -0.5 * (x - mean) * (x - mean) / sigma / sigma
 
 
-def cleanup_data(data, trace, like_type, filter_method, num_round):
+def cleanup_data(data, trace, like_type, filter_method):
     """
     Cleans up data from pickle file
     (i.e. removes any sources with proper motion or vlsr > 3 sigma from predicted values)
@@ -288,7 +288,7 @@ def main(prior_set, num_round, filter_method):
     # Clean data
     # _FILTER_METHOD = "lnlike"  # "sigma" or "lnlike"
     data_cleaned, num_sources_cleaned = cleanup_data(
-        data, trace, like_type, filter_method, num_round
+        data, trace, like_type, filter_method
     )
 
     # Save results to same pickle file
@@ -309,7 +309,8 @@ def main(prior_set, num_round, filter_method):
 
 
 if __name__ == "__main__":
-    prior_set_file = input("prior_set of file ('A1', 'A5', 'B, 'C', 'D': ")
+    prior_set_file = input("prior_set of file (A1, A5, B, C, D): ")
     num_round_file = int(input("round number of file (int): "))
+    filter_method = input("Outlier rejection method (sigma or lnlike): ")
 
-    main(prior_set_file, num_round_file)
+    main(prior_set_file, num_round_file, filter_method)
