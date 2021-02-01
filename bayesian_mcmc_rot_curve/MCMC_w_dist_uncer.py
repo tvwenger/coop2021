@@ -311,7 +311,7 @@ def run_MCMC(
         azimuth = (tt.arctan2(gcen_y, -gcen_x) * _RAD_TO_DEG) % 360  # deg in [0,360)
         v_circ_pred = urc(gcen_cyl_dist, a2=a2, a3=a3, R0=R0) + Vpec  # km/s
         v_rad = -1 * Upec  # km/s, negative bc toward GC
-        Theta0 = urc(R0, a2=a2, a3=a3, R0=R0)  # km/s, LSR circular rotation speed
+        Theta0 = urc(R0, a2=a2, a3=a3, R0=R0)  # km/s, circular rotation speed of Sun
 
         # Go in reverse!
         # Galactocentric cylindrical to equatorial proper motions & LSR velocity
@@ -393,12 +393,18 @@ def run_MCMC(
                 "Invalid like_type. Please input 'gauss', 'cauchy', or 'sivia'."
             )
 
+        # Take avg of all samples per source
+        lnlike_avg = (lnlike_eqmux + lnlike_eqmuy + lnlike_vlsr).mean(axis=0)
+        # Remove nans (from logarithms?)
+        lnlike_avg_fixed = tt.switch(tt.isnan(lnlike_avg), 0., lnlike_avg)
+
         # === Full likelihood function (specified by log-probability) ===
         # N.B. pm.Potential expects values instead of functions
         likelihood = pm.Potential(
             "likelihood",
             # Take avg of all samples per source
-            (lnlike_eqmux + lnlike_eqmuy + lnlike_vlsr).mean(axis=0)
+            # (lnlike_eqmux + lnlike_eqmuy + lnlike_vlsr).mean(axis=0)
+            lnlike_avg_fixed
         )
 
         # Run MCMC
