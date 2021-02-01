@@ -1,6 +1,7 @@
 """
 Bayesian MCMC using priors from Reid et al. (2019)
 """
+import argparse
 import sys
 from pathlib import Path
 import sqlite3
@@ -10,7 +11,6 @@ import pandas as pd
 import theano.tensor as tt
 import pymc3 as pm
 import dill
-import theano
 
 # Want to add my own programs as package:
 # Make a $PATH to coop2021 (twice parent folder of this file)
@@ -37,6 +37,62 @@ _KPC_TO_KM = 3.085677581e16
 _KM_TO_KPC = 3.24077929e-17
 _LN_SQRT_2PI = 0.918938533
 
+
+# def get_input_int(quantity, default):
+#     """
+#     Returns user input as integer.
+#     Inputs: quantity (string, e.g. "cores"), default (string or int)
+
+#     TODO: Finish docstring
+#     """
+
+#     is_run = True
+
+#     while is_run:
+#         user_in = input(f"num {quantity} to use (int. Default = {default}): ")
+#         if user_in == "":
+#             print(f"Setting num {quantity} to default = {default}")
+#             num_in = default
+#             break
+#         try:
+#             num_in = int(user_in)
+#             is_run = False
+#         except ValueError:
+#             print("Invalid input. Please input an integer!")
+#             is_run = True
+
+#     return num_in
+
+
+# def get_input_str(quantity, choices, default):
+#     """
+#     Gives a list of choices to user. Returns user input as string.
+#     Inputs: quantity (string), choices (list of strings), default (string)
+
+#     TODO: Finish docstring
+#     """
+
+#     choice_in = ""
+#     while choice_in not in choices:
+#         choice_in = input(f"{quantity} to use ({choices}. Default = {default}): ")
+#         if choice_in == "":
+#             choice_in = default
+#             break
+#     return choice_in
+
+def str2bool(string):
+    """
+    Parses a string into a boolean value
+    """
+
+    if isinstance(string, bool):
+        return string
+    if string.lower() in ['yes', 'true', 't', 'y', '1']:
+        return True
+    elif string.lower() in ['no', 'false', 'f', 'n', '0']:
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
 
 def get_data(db_file):
     """
@@ -196,7 +252,7 @@ def run_MCMC(
             }
         )
     else:  # do not need to filter data (data has been filtered)
-        print("===")
+        print("===\nUsing data from pickle file")
         # Slice data into components (using np.asarray to prevent PyMC3 error with pandas)
         # ra = data["ra"]  # deg
         # dec = data["dec"]  # deg
@@ -423,93 +479,80 @@ def run_MCMC(
             )
 
 
-def main():
-    # Specify Bayesian MCMC default parameters
-    _DEF_NUM_CORES = 10  # number of CPU cores to use for MCMC
-    _DEF_NUM_CHAINS = 10  # number of parallel chains to run
-    _DEF_NUM_TUNE = 2500  # number of tuning iterations (will be thrown away)
-    _DEF_NUM_ITERS = 10000  # number of iterations per chain
-    _DEF_PRIOR_SET = "A1"  # Prior set from Reid et al. (2019)
-    _DEF_LIKELIHOOD_TYPE = "sivia"  # "gauss", "cauchy", or "sivia"
-    _DEF_NUM_SAMPLES = 100  # number of times to sample each parallax
-    _DEF_FILTER_PARALLAX = False  # only matters if _LIKELIHOOD_TYPE == "sivia" or "cauchy"
-                                    # If False, only remove database sources w/ R < 4 kpc
+def main(infile, num_cores=None, num_chains=None, num_tune=2500, num_iters=10000, num_samples=100, prior_set="A1", like_type="gauss", filter_plx=False):
+    if num_cores is None:
+        num_cores = 2
+    if num_chains is None:
+        num_chains = num_cores
 
-    # Getting user inputs for MCMC model & sample parameters
-    # TODO: Add proper default input checking
-    print("WARNING: I am not catching invalid inputs! Be careful when typing.")
-    num_cores = input(f"num cores to use (int. Default = {_DEF_NUM_CORES}): ")
-    num_chains = input(f"num chains to run (int. Default = {_DEF_NUM_CHAINS}): ")
-    num_tune = input(f"num tunings (int. Default = {_DEF_NUM_TUNE}): ")
-    num_iters = input(f"num MCMC iterations (int. Default = {_DEF_NUM_ITERS}): ")
-    num_samples = input(f"number of plx samples (int. Default = {_DEF_NUM_SAMPLES}): ")
-    prior_set = input(f"prior set to use (A1, A5, B, C, D. Default = {_DEF_PRIOR_SET}): ")
-    likelihood_type = input(f"likelihood PDF (gauss, sivia. Default = {_DEF_LIKELIHOOD_TYPE}): ")
-
-    if "" in [num_cores, num_chains, num_tune, num_iters, num_samples, prior_set, likelihood_type]:
-        print("!!! At least one input above was empty. Using default values for all parameters above.")
-        num_cores = _DEF_NUM_CORES
-        num_chains = _DEF_NUM_CHAINS
-        num_tune = _DEF_NUM_TUNE
-        num_iters = _DEF_NUM_ITERS
-        num_samples = _DEF_NUM_SAMPLES
-        prior_set = _DEF_PRIOR_SET
-        likelihood_type = _DEF_LIKELIHOOD_TYPE
-    else:  # Use user-supplied values as parameters
-        num_cores = int(num_cores)
-        num_chains = int(num_chains)
-        num_tune = int(num_tune)
-        num_iters = int(num_iters)
-        num_samples = int(num_samples)
-        
-    while True:
-        filter_plx = input("Do you want to filter for e_plx/plx>0.2 (y/n): ")
-        if filter_plx.lower() == "y" or filter_plx.lower() == "yes":
-            filter_parallax = True
-            break
-        elif filter_plx.lower() == "n" or filter_plx.lower() == "no":
-            filter_parallax = False
-            break
-        else:
-            print("Invalid input. Choose 'y' or 'n'.")
-
-    # If data has already been filtered & using same prior set
-    if likelihood_type == "gauss":
-        load_database = False  # Use data from pickle file
-    # If data has not been filtered & using new prior set
-    elif likelihood_type == "cauchy" or likelihood_type == "sivia":
-        load_database = True  # Use data from database
-    else:
-        raise ValueError(
-            "Invalid _LIKELIHOOD_TYPE. Please choose 'gauss', 'cauchy', or 'sivia'."
-        )
-
-    if load_database:  # Load data from database file
-        # # Specifying database file name & folder
-        # filename = Path("data/hii_v2_20201203.db")
-        # # Database folder in parent directory of this script (call .parent twice)
-        # db = Path(__file__).parent.parent / filename
-
-        # Specifying absolute file path instead
-        # (allows file to be run in multiple locations as long as database location does not move)
-        db = Path("/home/chengi/Documents/coop2021/data/hii_v2_20201203.db")
-        data = get_data(db)  # all data from Parallax table
-    else:  # Load data from pickle file
-        # infile = Path(__file__).parent / "MCMC_w_dist_uncer_outfile.pkl"
-        infile = Path(
-            "/home/chengi/Documents/coop2021/bayesian_mcmc_rot_curve/MCMC_w_dist_uncer_outfile.pkl"
-        )
-
+    if infile[-3:] == ".db":
+        print("in .db")
+        load_database = True
+        db = Path(infile)
+        data = get_data(db)
+    elif infile[-4:] == ".pkl":
+        print("in .pkl")
+        load_database = False
         with open(infile, "rb") as f:
             data = dill.load(f)["data"]
+    else:
+        raise ValueError("Invalid file type. Please use a '.db' or '.pkl' file.")
 
     # Run simulation
+    print("Filter_plx:", filter_plx)
     run_MCMC(
         data,
         num_iters, num_tune, num_cores, num_chains,
-        prior_set, likelihood_type, num_samples, load_database, filter_parallax,
+        prior_set, like_type, num_samples, load_database, filter_plx,
     )
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(
+        description="MCMC stuff",
+        prog="MCMC_w_dist_uncer.py",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    parser.add_argument(
+        "infile",
+        type=str,
+        help="Either database file or pickle file containing all relevant data",
+    )
+    parser.add_argument(
+        "--num_cores", type=int, default=None, help="Maximum number of CPU cores"
+    )
+    parser.add_argument(
+        "--num_chains", type=int, default=None, help="Number of parallel MCMC chains"
+    )
+    parser.add_argument(
+        "--num_tune", type=int, default=2500, help="Number of tuning iterations"
+    )
+    parser.add_argument(
+        "--num_iters", type=int, default=10000, help="Number of actual MCMC iterations"
+    )
+    parser.add_argument(
+        "--prior_set",
+        type=str,
+        default="A5",
+        help="Prior set to use from Reid et al. 2019 (A1, A5, B, C, D)",
+    )
+    parser.add_argument(
+        "--like_type", type=str, default="gauss", help="Likelihood PDF (sivia or gauss)"
+    )
+    parser.add_argument(
+        "--filter_plx",
+        type=str2bool,
+        default=False,
+        help="Filter sources with e_plx/plx>20%",
+    )
+    args = vars(parser.parse_args())
+    main(
+        args["infile"],
+        num_cores=args["num_cores"],
+        num_chains=args["num_chains"],
+        num_tune=args["num_tune"],
+        num_iters=args["num_iters"],
+        prior_set=args["prior_set"],
+        like_type=args["like_type"],
+        filter_plx=args["filter_plx"],
+    )
