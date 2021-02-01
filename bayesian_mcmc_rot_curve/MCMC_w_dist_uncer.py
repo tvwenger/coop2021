@@ -38,48 +38,6 @@ _KM_TO_KPC = 3.24077929e-17
 _LN_SQRT_2PI = 0.918938533
 
 
-# def get_input_int(quantity, default):
-#     """
-#     Returns user input as integer.
-#     Inputs: quantity (string, e.g. "cores"), default (string or int)
-
-#     TODO: Finish docstring
-#     """
-
-#     is_run = True
-
-#     while is_run:
-#         user_in = input(f"num {quantity} to use (int. Default = {default}): ")
-#         if user_in == "":
-#             print(f"Setting num {quantity} to default = {default}")
-#             num_in = default
-#             break
-#         try:
-#             num_in = int(user_in)
-#             is_run = False
-#         except ValueError:
-#             print("Invalid input. Please input an integer!")
-#             is_run = True
-
-#     return num_in
-
-
-# def get_input_str(quantity, choices, default):
-#     """
-#     Gives a list of choices to user. Returns user input as string.
-#     Inputs: quantity (string), choices (list of strings), default (string)
-
-#     TODO: Finish docstring
-#     """
-
-#     choice_in = ""
-#     while choice_in not in choices:
-#         choice_in = input(f"{quantity} to use ({choices}. Default = {default}): ")
-#         if choice_in == "":
-#             choice_in = default
-#             break
-#     return choice_in
-
 def str2bool(string):
     """
     Parses a string into a boolean value
@@ -94,6 +52,7 @@ def str2bool(string):
     else:
         raise argparse.ArgumentTypeError('Boolean value expected.')
 
+
 def get_data(db_file):
     """
     Retrieves all relevant data in Parallax table
@@ -105,9 +64,8 @@ def get_data(db_file):
     """
 
     with closing(sqlite3.connect(db_file).cursor()) as cur:  # context manager, auto-close
-        cur.execute(
-            "SELECT ra, dec, glong, glat, plx, e_plx, mux, muy, vlsr, e_mux, e_muy, e_vlsr FROM Parallax"
-        )
+        cur.execute("SELECT ra, dec, glong, glat, plx, e_plx, "
+                    "mux, muy, vlsr, e_mux, e_muy, e_vlsr FROM Parallax")
         data = pd.DataFrame(cur.fetchall(), columns=[desc[0] for desc in cur.description])
 
     return data
@@ -188,8 +146,8 @@ def ln_siviaskilling(x, mean, weight):
 
 
 def run_MCMC(
-    data, num_iters, num_tune, num_cores, num_chains,
-    prior_set, like_type, num_samples, is_database_data, filter_parallax
+    data, num_iters, num_tune, num_cores, num_chains, num_samples,
+    prior_set, like_type, is_database_data, filter_parallax, num_round
 ):
     """
     Runs Bayesian MCMC. Returns trace & number of sources used in fit.
@@ -205,7 +163,7 @@ def run_MCMC(
     """
 
     # Binary file to store MCMC output
-    outfile = Path(__file__).parent / "MCMC_w_dist_uncer_outfile.pkl"
+    outfile = Path(__file__).parent / f"outfile_{num_round}.pkl"
 
     if is_database_data:  # data is from database, need to filter data
         print("===\nStarting with fresh data from database")
@@ -443,6 +401,8 @@ def run_MCMC(
         )
 
         # Run MCMC
+        print(f"Using {num_cores} cores, {num_chains} chains, "
+              f"{num_tune} tunings, and {num_iters} iterations.")
         trace = pm.sample(
             num_iters,
             init="advi",
@@ -474,24 +434,27 @@ def run_MCMC(
                     "like_type": like_type,
                     "num_sources": num_sources,
                     "num_samples": num_samples,
+                    "num_round": num_round,
                 },
                 f,
             )
 
 
-def main(infile, num_cores=None, num_chains=None, num_tune=2500, num_iters=10000, num_samples=100, prior_set="A1", like_type="gauss", filter_plx=False):
+def main(infile, num_cores=None, num_chains=None, num_tune=2500, num_iters=10000,
+        num_samples=100, prior_set="A1", like_type="gauss", filter_plx=False, num_round=0
+):
     if num_cores is None:
         num_cores = 2
     if num_chains is None:
         num_chains = num_cores
 
     if infile[-3:] == ".db":
-        print("in .db")
+        if num_round != 0:
+            raise ValueError("num_round must be zero if loading from database!")
         load_database = True
         db = Path(infile)
         data = get_data(db)
     elif infile[-4:] == ".pkl":
-        print("in .pkl")
         load_database = False
         with open(infile, "rb") as f:
             data = dill.load(f)["data"]
@@ -499,11 +462,11 @@ def main(infile, num_cores=None, num_chains=None, num_tune=2500, num_iters=10000
         raise ValueError("Invalid file type. Please use a '.db' or '.pkl' file.")
 
     # Run simulation
-    print("Filter_plx:", filter_plx)
+    print(f"Running round {num_round}")
     run_MCMC(
         data,
-        num_iters, num_tune, num_cores, num_chains,
-        prior_set, like_type, num_samples, load_database, filter_plx,
+        num_iters, num_tune, num_cores, num_chains, num_samples,
+        prior_set, like_type, load_database, filter_plx, num_round
     )
 
 
@@ -531,6 +494,12 @@ if __name__ == "__main__":
         "--num_iters", type=int, default=10000, help="Number of actual MCMC iterations"
     )
     parser.add_argument(
+        "--num_samples",
+        type=int,
+        default=100,
+        help="Number of times to sample each parallax",
+    )
+    parser.add_argument(
         "--prior_set",
         type=str,
         default="A5",
@@ -545,6 +514,12 @@ if __name__ == "__main__":
         default=False,
         help="Filter sources with e_plx/plx>20%",
     )
+    parser.add_argument(
+    "--num_round",
+    type=int,
+    default=0,
+    help="Number of times Bayesian MCMC has run beginning at zero",
+    )
     args = vars(parser.parse_args())
     main(
         args["infile"],
@@ -552,7 +527,9 @@ if __name__ == "__main__":
         num_chains=args["num_chains"],
         num_tune=args["num_tune"],
         num_iters=args["num_iters"],
+        num_samples=args["num_samples"],
         prior_set=args["prior_set"],
         like_type=args["like_type"],
         filter_plx=args["filter_plx"],
+        num_round=args["num_round"],
     )
