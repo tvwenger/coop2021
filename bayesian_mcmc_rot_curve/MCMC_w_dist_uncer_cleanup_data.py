@@ -92,7 +92,7 @@ def ln_gauss_exp_part(x, mean, sigma):
     return -0.5 * (x - mean) * (x - mean) / sigma / sigma
 
 
-def cleanup_data(data, trace, like_type, filter_method):
+def cleanup_data(data, trace, like_type, filter_method, num_round):
     """
     Cleans up data from pickle file
     (i.e. removes any sources with proper motion or vlsr > 3 sigma from predicted values)
@@ -102,13 +102,6 @@ def cleanup_data(data, trace, like_type, filter_method):
     """
 
     # === Get optimal parameters from MCMC trace ===
-    # # Bad idea: via dynamic variable creation
-    # opt_vals = {}
-    # for varname in trace.varnames:
-    #     if "interval" in varname:
-    #         continue  # do not want to include non user-defined parameters
-    #     opt_vals["{}".format(varname)] = np.median(trace[varname])
-    # print(opt_vals)
     R0 = np.median(trace["R0"])  # kpc
     Vsun = np.median(trace["Vsun"])  # km/s
     Usun = np.median(trace["Usun"])  # km/s
@@ -208,6 +201,7 @@ def cleanup_data(data, trace, like_type, filter_method):
         raise ValueError("Invalid filter_method. Please choose 'sigma' or 'lnlike'.")
 
     # Refilter data
+    print(f"Outlier rejection after round {num_round}")
     ra_good = ra[~bad_sigma]  # deg
     dec_good = dec[~bad_sigma]  # deg
     glon_good = glon[~bad_sigma]  # deg
@@ -271,8 +265,9 @@ def cleanup_data(data, trace, like_type, filter_method):
 def main():
     # Binary file to read
     # infile = Path(__file__).parent / "MCMC_w_dist_uncer_outfile.pkl"
+    # ? How to pass in num_round to load in proper file? argparse maybe?
     infile = Path(
-        "/home/chengi/Documents/coop2021/bayesian_mcmc_rot_curve/MCMC_w_dist_uncer_outfile.pkl"
+        "/home/chengi/Documents/coop2021/bayesian_mcmc_rot_curve/outfile.pkl"
     )
 
     with open(infile, "rb") as f:
@@ -284,6 +279,7 @@ def main():
         like_type = file["like_type"]  # "gauss" or "cauchy" or "sivia"
         num_sources = file["num_sources"]
         num_samples = file["num_samples"]
+        num_round = file["num_round"]
         print("prior_set:", prior_set)
         print("like_type:", like_type)
         print("num parallax samples:", num_samples)
@@ -291,15 +287,15 @@ def main():
 
     # print(data.to_markdown())
     # Clean data
-    _FILTER_METHOD = "sigma"  # "sigma" or "lnlike"
+    _FILTER_METHOD = "lnlike"  # "sigma" or "lnlike"
     data_cleaned, num_sources_cleaned = cleanup_data(
-        data, trace, like_type, _FILTER_METHOD
+        data, trace, like_type, _FILTER_METHOD, num_round
     )
 
     # Temporary file to preserve data
     # (useful for comparing 'sigma' vs 'lnlike' filter methods)
     infile2 = Path(
-        "/home/chengi/Documents/coop2021/bayesian_mcmc_rot_curve/MCMC_w_dist_uncer_outfile2.pkl"
+        "/home/chengi/Documents/coop2021/bayesian_mcmc_rot_curve/outfile2.pkl"
     )
     
     # Save results to same pickle file
@@ -313,6 +309,7 @@ def main():
                 "like_type": like_type,
                 "num_sources": num_sources_cleaned,
                 "num_samples": num_samples,
+                "num_round": num_round,
             },
             f,
         )
