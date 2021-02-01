@@ -396,7 +396,7 @@ def run_MCMC(
         # Take avg of all samples per source
         lnlike_avg = (lnlike_eqmux + lnlike_eqmuy + lnlike_vlsr).mean(axis=0)
         # Remove nans (from logarithms?)
-        lnlike_avg_fixed = tt.switch(tt.isnan(lnlike_avg), 0., lnlike_avg)
+        lnlike_avg_fixed = tt.switch(tt.isnan(lnlike_avg), 0.001, lnlike_avg)
 
         # === Full likelihood function (specified by log-probability) ===
         # N.B. pm.Potential expects values instead of functions
