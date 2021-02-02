@@ -37,6 +37,7 @@ _KM_PER_KPC_S_TO_MAS_PER_YR = 0.21094952656969873  # (mas/yr) / (km/kpc/s)
 _KPC_TO_KM = 3.085677581e16
 _KM_TO_KPC = 3.24077929e-17
 _LN_SQRT_2PI = 0.918938533
+_LN_HALF = -0.69314718
 
 
 def str2bool(string):
@@ -134,16 +135,16 @@ def ln_siviaskilling(x, mean, weight):
     # lnlike = tt.log((1 - tt.exp(-0.5 * residual * residual)) / (residual * residual))
     lnlike = tt.log(1 - tt.exp(-0.5 * residual * residual)) - 2 * tt.log(residual)
 
-    # # Replace residuals near zero (i.e. near peak of ln(likelihood)
-    # # with value at peak of ln(likelihood) to prevent nans
-    # lnlike_fixed = tt.switch(residual < 1e-8, -0.69315, lnlike)
-    # # This seems to be much slower than code below.
-    # # Code below too fast? --> advi learning rate too fast?
+    # Replace residuals near zero (i.e. near peak of ln(likelihood)
+    # with value at peak of ln(likelihood) to prevent nans
+    lnlike_fixed = tt.switch(residual < 1e-6, _LN_HALF, lnlike)
+    # This seems to be much slower than code below.
+    # Code below too fast? --> advi learning rate too fast?
 
-    # Alternate method:
-    # Find indices where residual < 1e-8
-    idxs = (residual < 1e-6).nonzero()
-    lnlike_fixed = tt.set_subtensor(lnlike[idxs], -0.69315)
+    # # Alternate method:
+    # # Find indices where residual < 1e-8
+    # idxs = (residual < 1e-6).nonzero()
+    # lnlike_fixed = tt.set_subtensor(lnlike[idxs], _LN_HALF)
 
     return lnlike_fixed
 
