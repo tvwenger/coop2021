@@ -129,19 +129,21 @@ def ln_siviaskilling(x, mean, weight):
     TODO: Finish docstring
     """
 
-    residual = (x - mean) / weight
-    lnlike = tt.log((1 - tt.exp(-0.5 * residual * residual)) / (residual * residual))
+    residual = abs((x - mean) / weight)
+    # residual_sq = residual * residual
+    # lnlike = tt.log((1 - tt.exp(-0.5 * residual * residual)) / (residual * residual))
+    lnlike = tt.log(1 - tt.exp(-0.5 * residual * residual)) - 2 * tt.log(residual)
 
-    # Replace residuals near zero (i.e. near peak of ln(likelihood)
-    # with value at peak of ln(likelihood) to prevent nans
-    lnlike_fixed = tt.switch(abs(residual) < 1e-8, -0.69315, lnlike)
-    # This seems to be much slower than code below.
-    # Code below too fast? --> advi learning rate too fast?
+    # # Replace residuals near zero (i.e. near peak of ln(likelihood)
+    # # with value at peak of ln(likelihood) to prevent nans
+    # lnlike_fixed = tt.switch(residual < 1e-8, -0.69315, lnlike)
+    # # This seems to be much slower than code below.
+    # # Code below too fast? --> advi learning rate too fast?
 
-    # # Alternate method:
-    # # Find indices where residual < 1e-8
-    # idxs = (abs(residual) < 1e-8).nonzero()
-    # lnlike_fixed = tt.set_subtensor(lnlike[idxs], -0.69315)
+    # Alternate method:
+    # Find indices where residual < 1e-8
+    idxs = (residual < 1e-8).nonzero()
+    lnlike_fixed = tt.set_subtensor(lnlike[idxs], -0.69315)
 
     return lnlike_fixed
 
