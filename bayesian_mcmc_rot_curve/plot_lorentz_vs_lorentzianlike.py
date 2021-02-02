@@ -3,7 +3,8 @@ import matplotlib.pyplot as plt
 
 def lorentzian(x, mean, sigma):
     residual = (x-mean)/sigma
-    return np.log((1-np.exp(-0.5 * residual * residual))/ (residual * residual))
+    return np.log(1 - np.exp(-0.5 * residual * residual)) - 2 * np.log(abs(residual))
+    # return np.log((1-np.exp(-0.5 * residual * residual))/ (residual * residual))
 
 def cauchy(x, mean ,hwhm):
     return np.log(1/(np.pi * hwhm) * (hwhm * hwhm / ((x - mean)**2 + hwhm * hwhm)))
