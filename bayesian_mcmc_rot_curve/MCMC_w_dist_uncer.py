@@ -141,7 +141,7 @@ def ln_siviaskilling(x, mean, weight):
     # This seems to be much slower than code below.
     # Code below too fast? --> advi learning rate too fast?
 
-    # # Alternate method:
+    # # Alternate method: (DOES NOT WORK UNFORTUNATELY)
     # # Find indices where residual < 1e-8
     # idxs = (residual < 1e-6).nonzero()
     # lnlike_fixed = tt.set_subtensor(lnlike[idxs], _LN_HALF)
@@ -166,7 +166,7 @@ def run_MCMC(
     TODO: finish docstring
     """
 
-    # Binary file to store MCMC output
+    # New binary file to store MCMC output
     outfile = Path(__file__).parent / f"mcmc_outfile_{prior_set}_{num_round}.pkl"
 
     if is_database_data:  # data is from database, need to filter data
@@ -238,7 +238,7 @@ def run_MCMC(
     plx = np.random.normal(loc=plx_orig, scale=e_plx, size=(num_samples, num_sources))
     # Replace non-positive parallax with small positive epsilon
     print("Number of plx <= 0 replaced:", np.sum(plx<=0))
-    plx[plx<=0] = 1e-9
+    plx[plx<=0] = np.nan
 
     e_plx = np.array([e_plx,] * num_samples)
     glon = np.array([glon,] * num_samples)  # num_samples by num_sources
@@ -397,17 +397,29 @@ def run_MCMC(
             )
 
         # # Take avg of all samples per source
+        lnlike_tot = lnlike_eqmux + lnlike_eqmuy + lnlike_vlsr
+        is_nan = tt.isnan(lnlike_tot)
+        # lnlike_avg = lnlike_tot[~is_nan].mean(axis=0)  # theano has no slicing
+        
         # lnlike_avg = (lnlike_eqmux + lnlike_eqmuy + lnlike_vlsr).mean(axis=0)
         # # Remove nans (from logarithms?)
-        # lnlike_avg_fixed = tt.switch(tt.isnan(lnlike_avg), 0.001, lnlike_avg)
+        lnlike_tot_fixed = tt.switch(tt.isnan(lnlike_tot), 0., lnlike_tot)
+        lnlike_sum = lnlike_tot_fixed.sum(axis=0)
+        lnlike_den = tt.invert(is_nan).sum(axis=0)
+        lnlike_avg_fixed = lnlike_sum / lnlike_den
+
+        # idxs = (tt.isnan(lnlike_tot)).nonzero()
+        # lnlike_tot_fixed = tt.set_subtensor(lnlike_tot[idxs], 0.)
+        # lnlike_avg_fixed = tt.isclose(lnlike_tot_fixed, 0., equal_nan=True).mean(axis=0)
+        # lnlike_avg_fixed = tt.neq(tt.isnan(lnlike_tot), tt.isnan(lnlike_tot)).mean(axis=0)
 
         # === Full likelihood function (specified by log-probability) ===
         # N.B. pm.Potential expects values instead of functions
         likelihood = pm.Potential(
             "likelihood",
             # Take avg of all samples per source
-            (lnlike_eqmux + lnlike_eqmuy + lnlike_vlsr).mean(axis=0)
-            # lnlike_avg_fixed
+            # (lnlike_eqmux + lnlike_eqmuy + lnlike_vlsr).mean(axis=0)
+            lnlike_avg_fixed
         )
 
         # Run MCMC
@@ -426,11 +438,11 @@ def run_MCMC(
         print(
             pm.summary(
                 trace,
-                var_names=[
-                    "~lnlike_eqmux_dist",
-                    "~lnlike_eqmuy_dist",
-                    "~lnlike_vlsr_dist",
-                ],
+                # var_names=[
+                #     "~lnlike_eqmux_dist",
+                #     "~lnlike_eqmuy_dist",
+                #     "~lnlike_vlsr_dist",
+                # ],
             ).to_string()
         )
         # Save results to pickle file
@@ -472,8 +484,8 @@ def main(infile, num_cores=None, num_chains=None, num_tune=2500, num_iters=10000
             db = Path(infile)
             data = get_data(db)
         else:
-            # Load pickle file (same file as outfile in run_MCMC() method)
-            infile = Path(__file__).parent / f"mcmc_outfile_{prior_set}_{this_round-1}.pkl"
+            # Load cleaned pickle file
+            infile = Path(__file__).parent / f"mcmc_outfile_{prior_set}_{this_round-1}_clean.pkl"
             load_database = False
             with open(infile, "rb") as f:
                 data = dill.load(f)["data"]
