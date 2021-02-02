@@ -142,7 +142,7 @@ def ln_siviaskilling(x, mean, weight):
 
     # Alternate method:
     # Find indices where residual < 1e-8
-    idxs = (residual < 1e-8).nonzero()
+    idxs = (residual < 1e-6).nonzero()
     lnlike_fixed = tt.set_subtensor(lnlike[idxs], -0.69315)
 
     return lnlike_fixed
