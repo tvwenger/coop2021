@@ -2,12 +2,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 def lorentzian(x, mean, sigma):
-    residual = (x-mean)/sigma
+    residual = (x - mean)/sigma
     return np.log(1 - np.exp(-0.5 * residual * residual)) - 2 * np.log(abs(residual))
     # return np.log((1-np.exp(-0.5 * residual * residual))/ (residual * residual))
 
 def cauchy(x, mean ,hwhm):
-    return np.log(1/(np.pi * hwhm) * (hwhm * hwhm / ((x - mean)**2 + hwhm * hwhm)))
+    return np.log(1 / (np.pi * hwhm) * (hwhm * hwhm / ((x - mean)**2 + hwhm * hwhm)))
 
 x = np.linspace(0,17,101)
 mean = 8
@@ -20,7 +20,7 @@ plt.legend()
 plt.show()
 
 
-# def plx_to_peak_dist(plx, e_plx):
+# def plx_to_peak_dist(mean_plx, e_plx):
 #     """
 #     Computes peak of distance distribution given the
 #     parallax & the uncertainty in the parallax (assuming the parallax is Gaussian)
@@ -28,7 +28,7 @@ plt.show()
 #     TODO: finish docstring
 #     """
 
-#     mean_dist = 1 / plx
+#     mean_dist = 1 / mean_plx
 #     sigma_sq = e_plx * e_plx
 #     return (np.sqrt(8 * sigma_sq * mean_dist * mean_dist + 1) - 1) / (
 #         4 * sigma_sq * mean_dist
@@ -42,12 +42,15 @@ plt.show()
 #     return term1 * term2
 
 
-# plx = np.random.normal(loc=1, scale=0.25, size=1000)
+# mean_plx = 0.5
+# std_plx = 0.2
+
+# plx = np.random.normal(loc=mean_plx, scale=std_plx, size=50000)
 # dist = 1 / plx
-# peak = plx_to_peak_dist(1, 0.25)
-# plt.hist(dist[dist<2], bins=50, density=True)
-# x = np.linspace(0.5,2,101)
-# y = dist_PDF(x, 1, 0.25)
+# peak = plx_to_peak_dist(mean_plx, std_plx)
+# plt.hist(dist[(dist<3/mean_plx) & (dist>0)], bins=50, density=True)
+# x = np.linspace(0.3 / mean_plx, 3 / mean_plx, 101)
+# y = dist_PDF(x, 1 / mean_plx, std_plx)
 # plt.plot(x, y, "r-")
 # plt.axvline(peak, color="k")
 # plt.show()
