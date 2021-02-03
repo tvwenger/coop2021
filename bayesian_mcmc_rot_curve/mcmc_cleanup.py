@@ -291,8 +291,11 @@ def main(prior_set, num_round, filter_method):
         data, trace, like_type, filter_method
     )
 
-    # Save results to same pickle file
-    with open(infile, "wb") as f:
+    outfile = Path(
+        f"/home/chengi/Documents/coop2021/bayesian_mcmc_rot_curve/mcmc_outfile_{prior_set}_{num_round}_clean.pkl"
+    )
+    # Save cleaned results to different pickle file
+    with open(outfile, "wb") as f:
         dill.dump(
             {
                 "data": data_cleaned,
