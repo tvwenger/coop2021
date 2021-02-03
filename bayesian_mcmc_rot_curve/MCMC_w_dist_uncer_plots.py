@@ -8,7 +8,7 @@ import corner
 import dill
 
 
-def plot_MCMC(trace, prior_set, like_type, num_sources, num_samples, filter_type, num_rounds):
+def plot_MCMC(trace, prior_set, like_type, num_sources, num_samples, reject_method, num_rounds):
     """
     Plots walkers and corner plot from trace. Returns None
     """
@@ -49,7 +49,7 @@ def plot_MCMC(trace, prior_set, like_type, num_sources, num_samples, filter_type
 
     if like_type == "gauss":
         fig1.suptitle(
-            f"MCMC walkers: {num_chains} chains with {num_iters} iters each. Each parallax sampled {num_samples}×.\nGaussian (+ SS 2006) PDF with {prior_set} priors\n{num_sources} sources used in fit. Used {filter_type} to reject outliers",
+            f"MCMC walkers: {num_chains} chains with {num_iters} iters each. Each parallax sampled {num_samples}×.\nGaussian (+ SS 2006) PDF with {prior_set} priors\n{num_sources} sources used in fit. Used {reject_method} to reject outliers",
             fontsize=9,
         )
     elif like_type == "cauchy":
@@ -59,7 +59,7 @@ def plot_MCMC(trace, prior_set, like_type, num_sources, num_samples, filter_type
         )
     else:  # like_type == "sivia"
         fig1.suptitle(
-            f"MCMC walkers: {num_chains} chains with {num_iters} iters each. Each parallax sampled {num_samples}×.\nSivia & Skilling (2006) PDF with {prior_set} priors\n{num_sources} sources used in fit. Used {filter_type} to reject outliers",
+            f"MCMC walkers: {num_chains} chains with {num_iters} iters each. Each parallax sampled {num_samples}×.\nSivia & Skilling (2006) PDF with {prior_set} priors\n{num_sources} sources used in fit. Used {reject_method} to reject outliers",
             fontsize=9,
         )
     fig1.tight_layout()  # Need this below suptitle()
@@ -88,7 +88,7 @@ def plot_MCMC(trace, prior_set, like_type, num_sources, num_samples, filter_type
     plt.show()
 
 
-def main(prior_set_file, num_rounds_file, filter_method):
+def main(prior_set, num_rounds, reject_method):
     # Binary file to read
     # infile = Path(__file__).parent / "reid_MCMC_outfile.pkl"
     infile = Path(
@@ -98,30 +98,31 @@ def main(prior_set_file, num_rounds_file, filter_method):
     with open(infile, "rb") as f:
         file = dill.load(f)
         trace = file["trace"]
-        prior_set = file["prior_set"]  # "A1", "A5", "B", "C", "D"
+        # prior_set = file["prior_set"]  # "A1", "A5", "B", "C", "D"
         like_type = file["like_type"]  # "gauss", "cauchy", or "sivia"
         num_sources = file["num_sources"]
         num_samples = file["num_samples"]
-        num_rounds = file["num_round"]
 
     print("prior_set:", prior_set)
     print("like_type:", like_type)
     print("num_sources:", num_sources)
     print("num_samples:", num_samples)
+    print("this_round:", num_rounds)
+    
 
-    if filter_method == "sigma":
+    if reject_method == "sigma":
         _FILTER_TYPE = "3 sigma"
-    elif filter_method == "lnlike":
+    elif reject_method == "lnlike":
         _FILTER_TYPE = "ln(likelihood)"
     else:
-        raise ValueError("Invalid filter_method. Please choose sigma or lnlike.")
+        raise ValueError("Invalid reject_method. Please choose sigma or lnlike.")
 
-    plot_MCMC(trace, prior_set, like_type, num_sources, num_samples, _FILTER_TYPE, num_rounds_file)
+    plot_MCMC(trace, prior_set, like_type, num_sources, num_samples, _FILTER_TYPE, num_rounds)
 
 
 if __name__ == "__main__":
     prior_set_file = input("prior_set of file (A1, A5, B, C, D): ")
-    num_rounds_file = int(input("total num_rounds of file (int): "))
-    filter_method = input("Outlier rejection method used (sigma or lnlike): ")
+    num_rounds_file = int(input("Number of times MCMC has run. i.e., this_round of file (int): "))
+    reject_method_file = input("Outlier rejection method used (sigma or lnlike): ")
 
-    main(prior_set_file, num_rounds_file, filter_method)
+    main(prior_set_file, num_rounds_file, reject_method_file)
