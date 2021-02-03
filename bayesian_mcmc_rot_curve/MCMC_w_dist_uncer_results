@@ -1,6 +1,7 @@
 =========================================================================================
 == FOLLOWING MCMC RUN w/ 10 chains, 2500 tunings + 10000 iterations each chain,
 == 100 parallax samples, and init="advi"
+!! USED WRONG LIKELIHOOD FUNCTION (we took the mean of the log-likelihood) !!
 =========================================================================================
 =========
 Queueing 1 Bayesian MCMC round
@@ -49,6 +50,42 @@ a3     1.644  0.030   1.587    1.700      0.000    0.000   15754.0   15754.0   1
 1 Bayesian MCMC runs complete
 =========
 
+=========
+Queueing 1 Bayesian MCMC rounds
+===
+Running round 1
+===
+Starting with fresh data from database
+Only filter sources w/ R < 4 kpc
+Number of data points used: 183
+===
+Number of plx samples: 1000
+Number of plx <= 0 replaced: 30
+===
+Using prior set A1
+Using Sivia & Skilling (2006) PDF
+Using 10 cores, 10 chains, 2500 tunings, and 5000 iterations.
+===
+Auto-assigning NUTS sampler...
+Initializing NUTS using advi...
+Convergence achieved at 10200-----------------------| 5.10% [10199/200000 50:38<15:42:30 Average Loss = 677.41]
+Interrupted at 10,199 [5%]: Average Loss = 686.26
+Multiprocess sampling (10 chains in 10 jobs)
+NUTS: [a3, a2, Vpec, Upec, Wsun, Vsun, Usun, R0]
+Sampling 10 chains for 2_500 tune and 5_000 draw iterations (25_000 + 50_000 draws total) took 40086 seconds.]]
+The number of effective samples is smaller than 25% for some parameters.
+        mean     sd  hdi_3%  hdi_97%  mcse_mean  mcse_sd  ess_mean   ess_sd  ess_bulk  ess_tail  r_hat
+Usun  10.744  1.150   8.606   12.921      0.006    0.004   43280.0  43024.0   43281.0   38926.0    1.0
+Vsun  14.936  6.887   1.921   27.754      0.081    0.057    7200.0   7200.0    7198.0    9428.0    1.0
+Wsun   7.651  0.749   6.238    9.055      0.003    0.002   65299.0  64946.0   65303.0   37916.0    1.0
+Upec   6.551  1.790   3.181    9.915      0.009    0.006   39654.0  38630.0   39659.0   35189.0    1.0
+Vpec  -1.157  6.673 -13.425   11.528      0.079    0.056    7212.0   7212.0    7211.0    9409.0    1.0
+R0     8.556  0.198   8.183    8.924      0.001    0.001   33352.0  33275.0   33468.0   31651.0    1.0
+a2     1.061  0.068   0.931    1.186      0.000    0.000   25761.0  25761.0   25989.0   29577.0    1.0
+a3     1.645  0.030   1.586    1.700      0.000    0.000   10204.0  10204.0   10210.0   15578.0    1.0
+===
+1 Bayesian MCMC runs complete
+=========
 
 
 ==========================================================================================
