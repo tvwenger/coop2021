@@ -3,7 +3,7 @@ MCMC_w_dist_uncer.py
 
 Bayesian MCMC with MC parallax distances using priors from Reid et al. (2019)
 
-Isaac Cheng - January 2021
+Isaac Cheng - February 2021
 """
 
 import argparse
@@ -30,7 +30,6 @@ import mcmc_cleanup as clean
 
 # Useful constants
 _RAD_TO_DEG = 57.29577951308232  # 180/pi (Don't forget to % 360 after)
-_KM_KPC_S_TO_MAS_YR = 0.21094952656969873  # (mas/yr) / (km/kpc/s)
 
 
 def get_data(db_file):
@@ -151,8 +150,8 @@ def dist_prob(dist, plx, e_plx):
     """
 
     mean_dist = 1 / plx
-    exp_part = -0.5 * (dist - mean_dist) * (dist - mean_dist) \
-               / (dist * dist * mean_dist * mean_dist * e_plx * e_plx)
+    exp_part = (-0.5 * (dist - mean_dist) * (dist - mean_dist)
+               / (dist * dist * mean_dist * mean_dist * e_plx * e_plx))
     coeff = 1 / (dist * dist * e_plx * np.sqrt(2*np.pi))
 
     return coeff * np.exp(exp_part)
@@ -161,7 +160,8 @@ def dist_prob(dist, plx, e_plx):
 def generate_dists(plx, e_plx, num_samples):
     """
     Generates a specified number of random distance samples
-    given a parallax and its uncertainty
+    given a parallax and its uncertainty.
+    Function taken verbatim from Dr. Trey Wenger (February 2021)
 
     Inputs:
       plx :: Array of scalars (mas)
@@ -180,7 +180,7 @@ def generate_dists(plx, e_plx, num_samples):
     dist_values = np.arange(0.001, 50.001, 0.001)
 
     # distance probability densities
-    # (shape: len(dist_values), num_sources)
+    # (shape: len(dist_values) = 50000, num_sources)
     dist_probs = dist_prob(dist_values[..., None], plx, e_plx)
 
     # normalize probabilities to area=1
@@ -188,7 +188,7 @@ def generate_dists(plx, e_plx, num_samples):
 
     # sample distance
     # (shape: num_samples, num_sources)
-    print("Number of distance samples: ", num_samples)
+    print("Number of distance samples:", num_samples)
     dists = np.array(
         [
             np.random.choice(dist_values, p=dist_probs[:, i], size=num_samples)
@@ -208,17 +208,34 @@ def get_weights(dist, e_mux, e_muy, e_vlsr):
     TODO: finish docstring
     """
 
+    km_per_kpc_s_to_mas_yr = 0.21094952656969873  # (mas/yr) / (km/kpc/s)
+
     # 1D Virial dispersion for stars in HMSFR w/ mass ~ 10^4 Msun w/in radius of ~ 1 pc
     sigma_vir_sq = 25.0  # km/s
 
     # Parallax to reciprocal of distance^2 (i.e. 1 / distance^2)
-    reciprocal_dist_sq = _KM_KPC_S_TO_MAS_YR * _KM_KPC_S_TO_MAS_YR / (dist * dist)
+    reciprocal_dist_sq = km_per_kpc_s_to_mas_yr * km_per_kpc_s_to_mas_yr / (dist * dist)
 
     weight_mux = tt.sqrt(e_mux * e_mux + sigma_vir_sq * reciprocal_dist_sq)
     weight_muy = tt.sqrt(e_muy * e_muy + sigma_vir_sq * reciprocal_dist_sq)
     weight_vlsr = tt.sqrt(e_vlsr * e_vlsr + sigma_vir_sq)
 
     return weight_mux, weight_muy, weight_vlsr
+
+
+# def ln_cauchy(x, peak, weight):
+#     """
+#     Returns natural log of the cauchy distribution. Here, peak = mean
+
+#     TODO: finish docstring
+#     """
+
+#     hwhm = 1.177410023  # half width at half maximum == sqrt(2 * ln(2))
+#     ln_hwhm_pi = 1.308047016  # ln(half width at half max * pi) = ln(sqrt(2*ln(2)) * pi)
+#     coeff = - ln_hwhm_pi - tt.log(weight)
+#     frac = (x - peak) / (hwhm * weight)
+
+#     return coeff - tt.log(1 + frac * frac)
 
 
 def ln_siviaskilling(x, mean, weight):
@@ -285,6 +302,15 @@ def run_MCMC(
     # Sample random distances from parallaxes
     dist = generate_dists(plx, e_plx, num_samples)
 
+    # # Making array of random parallaxes. Columns are samples of the same source
+    # print("===\nNumber of plx samples:", num_samples)
+    # # plx = np.array([plx_orig, ] * num_samples)
+    # plx = np.random.normal(loc=plx, scale=e_plx, size=(num_samples, num_sources))
+    # # Replace non-positive parallax with nan
+    # print("Number of plx <= 0 replaced:", np.sum(plx<=0))
+    # plx[plx<=0] = 1e-9
+    # dist = 1 / plx
+
     # Galactic to galactocentric Cartesian coordinates
     bary_x, bary_y, bary_z = trans.gal_to_bary(glon, glat, dist)
 
@@ -293,7 +319,7 @@ def run_MCMC(
     with pm.Model() as model:
         # === Define priors ===
         R0 = pm.Uniform("R0", lower=7.0, upper=10.0)  # kpc
-        a2 = pm.Uniform("a2", lower=0.8, upper=1.5)  # dimensionless
+        a2 = pm.Uniform("a2", lower=0.7, upper=1.5)  # dimensionless
         a3 = pm.Uniform("a3", lower=1.5, upper=1.8)  # dimensionless
         if prior_set == "A1" or prior_set == "A5":
             Usun = pm.Normal("Usun", mu=11.1, sigma=1.2)  # km/s
@@ -368,7 +394,7 @@ def run_MCMC(
         elif like_type == "cauchy":
             # CAUCHY PDF
             print("Using Cauchy PDF")
-            hwhm = 1.177410023  # half width at half maximum == sqrt(2 * ln(2))
+            hwhm = 1.177410023  # half width at half maximum = sqrt(2 * ln(2))
             lnlike_eqmux = pm.Cauchy.dist(
                 alpha=eqmux_pred, beta=hwhm * weight_eqmux).logp(eqmux)
             lnlike_eqmuy = pm.Cauchy.dist(
@@ -461,7 +487,19 @@ def main(infile, num_cores=None, num_chains=None, num_tune=2000, num_iters=5000,
         raise ValueError("num_rounds must be an integer greater than or equal to 1.")
 
     print(f"=========\nQueueing {num_rounds} Bayesian MCMC rounds w/ "
-          f"{prior_set} priors, {like_type} PDF, & reject_method = {reject_method}")
+          f"{prior_set} priors, {like_type} PDF", end="", flush=True)
+
+    if num_rounds == 1:
+        print()
+        if reject_method != "sigma":
+            # Override reject_method since no outlier cleaning will be done
+            # "sigma" is faster than "lnlike" since it does not require pm.Deterministic()
+            print("(Background task: overriding reject_method to 'sigma' "
+                "since no outlier cleaning will be done)")
+            reject_method = "sigma"
+    else:
+        print(f", & reject_method = {reject_method}")
+
     while this_round <= num_rounds:
         print(f"===\nRunning round {this_round}")
         if infile[-3:] == ".db":
@@ -476,8 +514,9 @@ def main(infile, num_cores=None, num_chains=None, num_tune=2000, num_iters=5000,
             load_database = False
             with open(infile, "rb") as f:
                 data = dill.load(f)["data"]
-            # Override like_type to "gauss"
-            like_type = "gauss"
+            if this_round != 1:
+                # Override like_type to "gauss"
+                like_type = "gauss"
 
         run_MCMC(
             data,
