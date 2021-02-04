@@ -1,5 +1,46 @@
 =========================================================================================
-== FOLLOWING MCMC RUN w/ 10 chains, 2500 tunings + 10000 iterations each chain,
+== FOLLOWING MCMC RUNS w/ 10 chains, 2500 tunings + 5000 iterations each chain,
+== 100 distance samples, and init="advi"
+=========================================================================================
+=========
+Queueing 1 Bayesian MCMC rounds w/ A1 priors, cauchy PDF, & reject_method = lnlike (reject_method not relevant)
+===
+Running round 1
+===
+Starting with fresh data from database
+Filter sources with R < 4 kpc & e_plx/plx > 20%
+Number of data points used: 158
+Number of distance samples:  100
+===
+Using prior set A1
+Using Cauchy PDF
+Using 10 cores, 10 chains, 2500 tunings, and 5000 iterations.
+===
+Auto-assigning NUTS sampler...
+Initializing NUTS using advi...
+Convergence achieved at 7100-------------------------| 3.55% [7097/200000 03:36<1:38:03 Average Loss = 1,509.1]
+Interrupted at 7,099 [3%]: Average Loss = 1,514.4
+Multiprocess sampling (10 chains in 10 jobs)
+NUTS: [Vpec, Upec, Wsun, Vsun, Usun, a3, a2, R0]
+Sampling 10 chains for 2_500 tune and 5_000 draw iterations (25_000 + 50_000 draws total) took 4855 seconds.es]
+The number of effective samples is smaller than 25% for some parameters.
+        mean     sd  hdi_3%  hdi_97%  mcse_mean  mcse_sd  ess_mean   ess_sd  ess_bulk  ess_tail  r_hat
+R0     7.798  0.212   7.387    8.188      0.001    0.001   48326.0  48326.0   48171.0   35886.0    1.0
+Usun  10.823  1.142   8.656   12.931      0.005    0.004   44713.0  43829.0   44731.0   38739.0    1.0
+Vsun  12.314  6.975  -0.875   25.257      0.082    0.058    7159.0   7159.0    7160.0    9053.0    1.0
+Wsun   7.353  0.918   5.614    9.071      0.004    0.003   65387.0  64873.0   65405.0   37434.0    1.0
+Upec   3.251  1.696   0.054    6.407      0.008    0.006   40332.0  36941.0   40327.0   35141.0    1.0
+Vpec  -3.331  6.959 -16.263    9.844      0.082    0.059    7160.0   6880.0    7160.0    9059.0    1.0
+a2     0.880  0.058   0.800    0.982      0.000    0.000   33842.0  33842.0   25332.0   16795.0    1.0
+a3     1.633  0.027   1.583    1.683      0.000    0.000   13522.0  13522.0   13535.0   22453.0    1.0
+===
+1 Bayesian MCMC runs complete
+=========
+
+
+
+=========================================================================================
+== FOLLOWING MCMC RUNS w/ 10 chains, 2500 tunings + 10000 iterations each chain,
 == 100 parallax samples, and init="advi"
 !! USED WRONG LIKELIHOOD FUNCTION (we took the mean of the log-likelihood) !!
 =========================================================================================
@@ -86,6 +127,7 @@ a3     1.645  0.030   1.586    1.700      0.000    0.000   10204.0  10204.0   10
 ===
 1 Bayesian MCMC runs complete
 =========
+
 
 
 ==========================================================================================
