@@ -1,7 +1,7 @@
 """
 Cleans up Bayesian MCMC data from pickle file
 """
-from multiprocessing import Value
+
 import sys
 from pathlib import Path
 import numpy as np
@@ -21,7 +21,6 @@ from universal_rotcurve import urc
 # Useful constants
 _RAD_TO_DEG = 57.29577951308232  # 180/pi (Don't forget to % 360 after)
 _KM_KPC_S_TO_MAS_YR = 0.21094952656969873  # (mas/yr) / (km/kpc/s)
-_LN_SQRT_2PI = 0.918938533
 
 
 def plx_to_peak_dist(plx, e_plx):
@@ -65,23 +64,28 @@ def get_sigmas(plx, e_mux, e_muy, e_vlsr):
 def ln_gauss_norm(x, mean, sigma):
     """
     Calculates the ln of the exponential part of a normal distribution
-    i.e. returns -0.5 * (x-mean)^2 / sigma^2
+    i.e. returns -0.5 * (x-mean)^2 / sigma^2.
+    Use this for plotting.
+
+    TODO: finish docstring
     """
 
     return -0.5 * (x - mean) * (x - mean) / sigma / sigma
 
 
-def ln_cauchy_norm(x, mean, sigma):
+def ln_cauchy_norm(x, x_peak, sigma):
     """
-    ! Need to debug
-    Calculates ln of Cauchy distribution where peak is normalized to 1
-    Returns: -ln[1+ ((x-mean) / (hwhm * sigma))^2]
+    Calculates ln of Cauchy distribution where peak probability is normalized to 1.
+    Here, x_peak = location of mean (on x-axis).
+    Use this for plotting.
+
+    Returns: -ln[1+ ((x - x_peak) / (hwhm * sigma))^2]
 
     TODO: finish docstring
     """
 
     hwhm = 1.177410023  # half width at half maximum == sqrt(2 * ln(2))
-    frac = (x - mean) / (hwhm * sigma)
+    frac = (x - x_peak) / (hwhm * sigma)
 
     return -np.log(1 + frac * frac)
 
@@ -89,7 +93,8 @@ def ln_cauchy_norm(x, mean, sigma):
 def ln_siviaskilling(x, mean, weight):
     """
     Returns the natural log of Sivia & Skilling's (2006) "Lorentzian-like" PDF.
-    N.B. That the PDF is _not_ normalized. Peak is at 0.5
+    N.B. That the PDF is _not_ normalized to a peak of 1 (peak is at 0.5).
+    Use this for plotting.
 
     TODO: Finish docstring
     """
@@ -106,6 +111,8 @@ def cleanup_data(data, trace, like_type, reject_method):
 
     Returns:
       pandas DataFrame with cleaned up data
+
+    TODO: finish docstring
     """
 
     # === Get optimal parameters from MCMC trace ===
@@ -175,44 +182,24 @@ def cleanup_data(data, trace, like_type, reject_method):
         ln_eqmux_pred = np.median(trace["lnlike_eqmux_norm"], axis=(0, 1))
         ln_eqmuy_pred = np.median(trace["lnlike_eqmuy_norm"], axis=(0, 1))
         ln_vlsr_pred = np.median(trace["lnlike_vlsr_norm"], axis=(0, 1))
-        print("min predicted ln_mux:", np.min(ln_eqmux_pred))
-        print("min predicted ln_muy:", np.min(ln_eqmuy_pred))
-        print("min predicted ln_vlsr:", np.min(ln_vlsr_pred))
+        print("    min predicted ln_mux:", np.min(ln_eqmux_pred))
+        print("    min predicted ln_muy:", np.min(ln_eqmuy_pred))
+        print("    min predicted ln_vlsr:", np.min(ln_vlsr_pred))
 
-        if like_type == "gauss":  # Gaussian distribution of proper motions / vlsr
+        if like_type == "gauss":
             ln_threshold = -4.5  # ln(exponential part) = -(3^2)/2
-            bad_sigma = (
-                (ln_eqmux_pred < ln_threshold)
-                + (ln_eqmuy_pred < ln_threshold)
-                + (ln_vlsr_pred < ln_threshold)
-            )
         elif like_type == "cauchy":
-            # ! Need to debug
-            sigma_eqmux, sigma_eqmuy, sigma_vlsr = get_sigmas(
-                plx, e_eqmux, e_eqmuy, e_vlsr)
-            ln_threshold_eqmux = ln_cauchy_norm(eqmux, eqmux_pred, sigma_eqmux)
-            ln_threshold_eqmuy = ln_cauchy_norm(eqmuy, eqmuy_pred, sigma_eqmuy)
-            ln_threshold_vlsr = ln_cauchy_norm(vlsr, vlsr_pred, sigma_vlsr)
-            bad_sigma = (
-                (ln_eqmux_pred < ln_threshold_eqmux)
-                + (ln_eqmuy_pred < ln_threshold_eqmuy)
-                + (ln_vlsr_pred < ln_threshold_vlsr)
-            )
-            print("min ln_threshold_eqmux:", np.min(ln_threshold_eqmux))
-            print("min ln_threshold_eqmuy:", np.min(ln_threshold_eqmuy))
-            print("min ln_threshold_vlsr:", np.min(ln_threshold_vlsr))
-            print(ln_threshold_eqmuy.shape)
-            print(ln_eqmuy_pred.shape)
-        elif like_type == "sivia":  # Lorentzian-like distribution of prop. motions / vlsr
-            ln_threshold = -2.2 # ln((1-exp(-(3^2)/2)) / (3^2))
-            bad_sigma = (
-                (ln_eqmux_pred < ln_threshold)
-                + (ln_eqmuy_pred < ln_threshold)
-                + (ln_vlsr_pred < ln_threshold)
-            )
+            ln_threshold = -2.0139  # -ln[1 + (3^2 / (2ln2))]
+        elif like_type == "sivia":
+            ln_threshold = -2.2084 # ln[(1-exp(-(3^2)/2)) / (3^2)]
         else:
             raise ValueError(
                 "Invalid like_type. Please choose 'gauss', 'cauchy', or 'sivia'.")
+        bad_sigma = (
+            (ln_eqmux_pred < ln_threshold)
+            + (ln_eqmuy_pred < ln_threshold)
+            + (ln_vlsr_pred < ln_threshold)
+        )
     else:
         raise ValueError("Invalid reject_method. Please choose 'sigma' or 'lnlike'.")
 
@@ -301,7 +288,6 @@ def main(prior_set, this_round, reject_method):
 
     # print(data.to_markdown())
     # Clean data
-    # _REJECT_METHOD = "lnlike"  # "sigma" or "lnlike"
     data_cleaned, num_sources_cleaned = cleanup_data(
         data, trace, like_type, reject_method)
 
