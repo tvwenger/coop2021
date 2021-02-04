@@ -92,7 +92,7 @@ def main():
     # Binary file to read
     # infile = Path(__file__).parent / "reid_MCMC_outfile.pkl"
     infile = Path(
-        "/home/chengi/Documents/coop2021/bayesian_mcmc_rot_curve/reid_MCMC_outfile.pkl"
+        "/home/chengi/Documents/coop2021/reid_mcmc/reid_MCMC_outfile.pkl"
     )
 
     with open(infile, "rb") as f:
