@@ -1,6 +1,11 @@
 """
-Bayesian MCMC using priors from Reid et al. (2019)
+MCMC_w_dist_uncer.py
+
+Bayesian MCMC with MC parallax distances using priors from Reid et al. (2019)
+
+Isaac Cheng - January 2021
 """
+
 import argparse
 import sys
 from pathlib import Path
@@ -26,24 +31,6 @@ import mcmc_cleanup as clean
 # Useful constants
 _RAD_TO_DEG = 57.29577951308232  # 180/pi (Don't forget to % 360 after)
 _KM_KPC_S_TO_MAS_YR = 0.21094952656969873  # (mas/yr) / (km/kpc/s)
-_LN_SQRT_2PI = 0.918938533  # ln(sqrt(2*pi))
-_LN_HWHM_PI = 1.308047016  # ln(half-width-half-maximum * pi) = ln(sqrt(2*ln(2)) * pi)
-_LN_HALF = -0.69314718
-
-
-# def str2bool(string):
-#     """
-#     Parses a string into a boolean value
-#     """
-
-#     if isinstance(string, bool):
-#         return string
-#     if string.lower() in ['yes', 'true', 't', 'y', '1']:
-#         return True
-#     elif string.lower() in ['no', 'false', 'f', 'n', '0']:
-#         return False
-#     else:
-#         raise argparse.ArgumentTypeError('Boolean value expected.')
 
 
 def get_data(db_file):
@@ -80,14 +67,23 @@ def get_data(db_file):
 #     return (numerator / denominator)
 
 
-def filter_data(data, filter_parallax):
+def filter_data(data, filter_e_plx):
     """
-    Filters sources < 4 kpc from galactic centre
-    (optional) Filters sources with e_plx/plx > 20%
+    Filters sources < 4 kpc from galactic centre and
+    (optionally) filters sources with e_plx/plx > 20%
 
-    Returns: filtered DataFrame
+    Inputs:
+      data :: pandas DataFrame
+        Contains maser galactic longitudes, latitudes, right ascensions, declinations,
+        parallaxes, equatorial proper motions, and LSR velocities
+        with all associated uncertainties
+      filter_e_plx :: boolean
+        If False, only filter sources closer than 4 kpc tp galactic centre
+        If True, also filter sources with parallax uncertainties > 20% of the parallax
 
-    TODO: finish docstring
+    Returns: filtered_data
+      filtered_data :: pandas DataFrame
+        Contains same data as input data DataFrame except with some sources removed
     """
     # Calculate galactocentric cylindrical radius
     #   N.B. We assume R0=8.15 kpc. This ensures we are rejecting the same set
@@ -95,7 +91,7 @@ def filter_data(data, filter_parallax):
     all_radii = trans.get_gcen_cyl_radius(data["glong"], data["glat"], data["plx"])
 
     # Bad data criteria (N.B. casting to array prevents "+" not supported warnings)
-    if filter_parallax:  # Standard filtering used by Reid et al. (2019)
+    if filter_e_plx:  # Filtering used by Reid et al. (2019)
         print("Filter sources with R < 4 kpc & e_plx/plx > 20%")
         bad = (np.array(all_radii) < 4.0) + \
               (np.array(data["e_plx"] / data["plx"]) > 0.2)
@@ -118,7 +114,7 @@ def filter_data(data, filter_parallax):
     e_vlsr = data["e_vlsr"][~bad]  # km/s
 
     # Store filtered data in DataFrame
-    data = pd.DataFrame(
+    filtered_data = pd.DataFrame(
         {
             "ra": ra,
             "dec": dec,
@@ -135,18 +131,18 @@ def filter_data(data, filter_parallax):
         }
     )
 
-    return data
+    return filtered_data
 
 
 def dist_prob(dist, plx, e_plx):
     """
-    Evaluate the probability density at a given distance for a
+    Evaluate the probability density of a given distance for a
     given observed parallax and parallax uncertainty.
 ​
     Inputs:
-      dist :: scalar (kpc)
+      dist :: Scalar (kpc)
         Distance at which to evaluate probability density
-      plx, e_plx :: scalar (mas)
+      plx, e_plx :: Scalar (mas)
         Observed parallax and (absolute value of) uncertainty
 ​
     Returns: prob
@@ -164,7 +160,20 @@ def dist_prob(dist, plx, e_plx):
 
 def generate_dists(plx, e_plx, num_samples):
     """
-    TODO: docstring
+    Generates a specified number of random distance samples
+    given a parallax and its uncertainty
+
+    Inputs:
+      plx :: Array of scalars (mas)
+        Parallaxes
+      e_plx :: Array of scalars (mas)
+        Uncertainty in the parallaxes. Strictly non-negative
+      num_samples :: Scalar
+        Number of distance samples to generate per parallax
+
+    Returns: dists
+      dists :: Array of scalars (kpc)
+        Galactic-frame distances sampled from the asymmetric parallax-to-distance PDF
     """
 
     # possible distance values (1 pc resolution)
@@ -187,29 +196,6 @@ def generate_dists(plx, e_plx, num_samples):
         ]).T
 
     return dists
-
-
-# def get_weights_sq(plx, e_mux, e_muy, e_vlsr):
-#     """
-#     Calculates sigma values for proper motions and LSR velocity
-#     using Reid et al. (2014) weights
-
-#     Returns: square of the weights (sigma_mux_sq, sigma_muy_sq, sigma_vlsr_sq)
-
-#     TODO: finish docstring
-#     """
-
-#     # 1D Virial dispersion for stars in HMSFR w/ mass ~ 10^4 Msun w/in radius of ~ 1 pc
-#     sigma_vir_sq = 25.0  # km/s
-
-#     # Parallax to reciprocal of distance^2 (i.e. 1 / distance^2)
-#     reciprocal_dist_sq = plx * plx * _KM_KPC_S_TO_MAS_YR * _KM_KPC_S_TO_MAS_YR
-
-#     weight_mux_sq = e_mux * e_mux + sigma_vir_sq * reciprocal_dist_sq
-#     weight_muy_sq = e_muy * e_muy + sigma_vir_sq * reciprocal_dist_sq
-#     weight_vlsr_sq = e_vlsr * e_vlsr + sigma_vir_sq
-
-#     return weight_mux_sq, weight_muy_sq, weight_vlsr_sq
 
 
 def get_weights(dist, e_mux, e_muy, e_vlsr):
@@ -235,23 +221,10 @@ def get_weights(dist, e_mux, e_muy, e_vlsr):
     return weight_mux, weight_muy, weight_vlsr
 
 
-# def ln_gaussian(x, mean, weight_sq):
-#     """
-#     Returns the natural log of a Normal distribution given
-#     data, mean of data, and square of the standard deviation
-
-#     TODO: finish docstring
-#     """
-
-#     residual_sq = (x - mean) * (x - mean) / weight_sq
-#     lnlike = -0.5 * (residual_sq + tt.log(weight_sq) + _LN_SQRT_2PI)
-#     return lnlike
-
-
 def ln_siviaskilling(x, mean, weight):
     """
     Returns the natural log of Sivia & Skilling's (2006) "Lorentzian-like" PDF.
-    N.B. That the PDF is _not_ normalized.
+    N.B. That the PDF is _not_ normalized. Peak is at 0.5
 
     TODO: Finish docstring
     """
@@ -260,8 +233,8 @@ def ln_siviaskilling(x, mean, weight):
     lnlike = tt.log(1 - tt.exp(-0.5 * residual * residual)) - 2 * tt.log(residual)
 
     # Replace residuals near zero (i.e. near peak of ln(likelihood))
-    # with value at peak of ln(likelihood) to prevent nans
-    lnlike = tt.switch(residual < 1e-7, _LN_HALF, lnlike)
+    # with value at peak of ln(likelihood) to prevent nans. Peak = ln(0.5) = -0.69314718
+    lnlike = tt.switch(residual < 1e-7, -0.69314718, lnlike)
 
     return lnlike
 
@@ -309,40 +282,16 @@ def run_MCMC(
     num_sources = len(eqmux)
     print("Number of data points used:", num_sources)
 
-    # # Making array of random parallaxes. Columns are samples of the same source
-    # print("===\nNumber of plx samples:", num_samples)
-    # # plx = np.array([plx_orig, ] * num_samples)
-    # plx = np.random.normal(loc=plx_orig, scale=e_plx, size=(num_samples, num_sources))
-    # # Replace non-positive parallax with nan
-    # print("Number of plx <= 0 replaced:", np.sum(plx<=0))
-    # plx[plx<=0] = np.nan
-    # # plx[0, 0] = np.nan
-    # # print(np.sum(np.isnan(plx)))
-    # # print(np.sum(~np.isfinite(plx)))
-
-    # e_plx = np.array([e_plx,] * num_samples)
-    # glon = np.array([glon,] * num_samples)  # num_samples by num_sources
-    # glat = np.array([glat,] * num_samples)  # num_samples by num_sources
-    # eqmux = np.array([eqmux,] * num_samples)
-    # eqmuy = np.array([eqmuy,] * num_samples)
-    # vlsr = np.array([vlsr,] * num_samples)
-    # e_eqmux = np.array([e_eqmux,] * num_samples)
-    # e_eqmuy = np.array([e_eqmuy,] * num_samples)
-    # e_vlsr = np.array([e_vlsr,] * num_samples)
-
-    # Generate random distances
+    # Sample random distances from parallaxes
     dist = generate_dists(plx, e_plx, num_samples)
 
-    # # Parallax to distance
-    # gdist = trans.parallax_to_dist(plx)
     # Galactic to galactocentric Cartesian coordinates
     bary_x, bary_y, bary_z = trans.gal_to_bary(glon, glat, dist)
 
     # 8 parameters from Reid et al. (2019): (see Section 4 & Table 3)
     #   R0, Usun, Vsun, Wsun, Upec, Vpec, a2, a3
-    model = pm.Model()
-    with model:
-        # Define priors
+    with pm.Model() as model:
+        # === Define priors ===
         R0 = pm.Uniform("R0", lower=7.0, upper=10.0)  # kpc
         a2 = pm.Uniform("a2", lower=0.8, upper=1.5)  # dimensionless
         a3 = pm.Uniform("a3", lower=1.5, upper=1.8)  # dimensionless
@@ -395,50 +344,30 @@ def run_MCMC(
             use_theano=True)
 
         # === Likelihood components (sigma values are from observed data) ===
-        # Calculating uncertainties for likelihood function
-        # Using Reid et al. (2014) weights as uncertainties
-        # sigma_vir = 5.0  # km/s
-        # weight_eqmux_sq = (
-        #     e_eqmux * e_eqmux
-        #     + sigma_vir * sigma_vir
-        #     * plx * plx
-        #     * _KM_KPC_S_TO_MAS_YR * _KM_KPC_S_TO_MAS_YR
-        # )
-        # weight_eqmuy_sq = (
-        #     e_eqmuy * e_eqmuy
-        #     + sigma_vir * sigma_vir
-        #     * plx * plx
-        #     * _KM_KPC_S_TO_MAS_YR * _KM_KPC_S_TO_MAS_YR
-        # )
-        # weight_vlsr_sq = e_vlsr * e_vlsr + sigma_vir * sigma_vir
-        # weight_eqmux_sq, weight_eqmuy_sq, weight_vlsr_sq = get_weights_sq(
-        #     plx, e_eqmux, e_eqmuy, e_vlsr
-        # )
+        # Calculate uncertainties for likelihood function
+        # (using Reid et al. (2014) weights as uncertainties)
         weight_eqmux, weight_eqmuy, weight_vlsr = get_weights(
             plx, e_eqmux, e_eqmuy, e_vlsr)
 
-        # Making array of likelihood values evaluated at data points
+        # Make array of likelihood values evaluated at data points
         if like_type == "gauss":
             # GAUSSIAN MIXTURE PDF
             print("Using Gaussian PDF")
-            # lnlike_eqmux = ln_gaussian(eqmux, eqmux_pred, weight_eqmux_sq)
-            # lnlike_eqmuy = ln_gaussian(eqmuy, eqmuy_pred, weight_eqmuy_sq)
-            # lnlike_vlsr = ln_gaussian(vlsr, vlsr_pred, weight_vlsr_sq)
             lnlike_eqmux = pm.Normal.dist(mu=eqmux_pred, sigma=weight_eqmux).logp(eqmux)
             lnlike_eqmuy = pm.Normal.dist(mu=eqmuy_pred, sigma=weight_eqmuy).logp(eqmuy)
             lnlike_vlsr = pm.Normal.dist(mu=vlsr_pred, sigma=weight_vlsr).logp(vlsr)
             if reject_method == 'lnlike':
+                ln_sqrt_2pi = 0.918938533  # ln(sqrt(2*pi))
                 # Normalize Gaussian to peak of 1 & save to trace
                 lnlike_eqmux_norm = pm.Deterministic(
-                    "lnlike_eqmux_norm", lnlike_eqmux + tt.log(e_eqmux) + _LN_SQRT_2PI)
+                    "lnlike_eqmux_norm", lnlike_eqmux + tt.log(e_eqmux) + ln_sqrt_2pi)
                 lnlike_eqmuy_norm = pm.Deterministic(
-                    "lnlike_eqmuy_norm", lnlike_eqmuy + tt.log(e_eqmuy) + _LN_SQRT_2PI)
+                    "lnlike_eqmuy_norm", lnlike_eqmuy + tt.log(e_eqmuy) + ln_sqrt_2pi)
                 lnlike_vlsr_norm = pm.Deterministic(
-                    "lnlike_vlsr_norm", lnlike_vlsr + tt.log(e_vlsr) + _LN_SQRT_2PI)
+                    "lnlike_vlsr_norm", lnlike_vlsr + tt.log(e_vlsr) + ln_sqrt_2pi)
         elif like_type == "cauchy":
             # CAUCHY PDF
             print("Using Cauchy PDF")
-            # hwhm = tt.sqrt(2 * tt.log(2))  # half width at half maximum
             hwhm = 1.177410023  # half width at half maximum == sqrt(2 * ln(2))
             lnlike_eqmux = pm.Cauchy.dist(
                 alpha=eqmux_pred, beta=hwhm * weight_eqmux).logp(eqmux)
@@ -447,13 +376,15 @@ def run_MCMC(
             lnlike_vlsr = pm.Cauchy.dist(
                 alpha=vlsr_pred, beta=hwhm * weight_vlsr).logp(vlsr)
             if reject_method == 'lnlike':
+                # ln(half width at half maximum * pi) = ln(sqrt(2*ln(2)) * pi)
+                ln_hwhm_pi = 1.308047016
                 # Normalize Cauchy to peak of 1 & save to trace
                 lnlike_eqmux_norm = pm.Deterministic(
-                    'lnlike_eqmux_norm', lnlike_eqmux + _LN_HWHM_PI + tt.log(weight_eqmux))
+                    'lnlike_eqmux_norm', lnlike_eqmux + ln_hwhm_pi + tt.log(weight_eqmux))
                 lnlike_eqmuy_norm = pm.Deterministic(
-                    'lnlike_eqmuy_norm', lnlike_eqmuy + _LN_HWHM_PI + tt.log(weight_eqmuy))
+                    'lnlike_eqmuy_norm', lnlike_eqmuy + ln_hwhm_pi + tt.log(weight_eqmuy))
                 lnlike_vlsr_norm = pm.Deterministic(
-                    'lnlike_eqvlsr_norm', lnlike_vlsr + _LN_HWHM_PI + tt.log(weight_vlsr))
+                    'lnlike_vlsr_norm', lnlike_vlsr + ln_hwhm_pi + tt.log(weight_vlsr))
         elif like_type == "sivia":
             # SIVIA & SKILLING (2006) "LORENTZIAN-LIKE" CONSERVATIVE PDF
             print("Using Sivia & Skilling (2006) PDF")
@@ -471,17 +402,6 @@ def run_MCMC(
                 "Invalid like_type. Please input 'gauss', 'cauchy', or 'sivia'.")
 
         # === Full likelihood function (specified by log-probability) ===
-        # # Joint likelihood
-        # lnlike_tot = lnlike_eqmux + lnlike_eqmuy + lnlike_vlsr
-        # # Marginalize over parallax
-        # is_nan = tt.isnan(lnlike_tot)
-        # lnlike_tot = tt.switch(is_nan, -np.inf, lnlike_tot)
-        # # (Calculate likelihood of each source)
-        # lnlike_sum = pm.logsumexp(lnlike_tot, axis=0)
-        # lnlike_avg = lnlike_sum - tt.log(tt.invert(is_nan).sum(axis=0))
-        # # Sum over data
-        # lnlike_final = lnlike_avg.sum()
-
         # Joint likelihood
         lnlike_tot = lnlike_eqmux + lnlike_eqmuy + lnlike_vlsr
         # Marginalize over each distance samples
@@ -552,10 +472,7 @@ def main(infile, num_cores=None, num_chains=None, num_tune=2000, num_iters=5000,
             db = Path(infile)
             data = get_data(db)
         else:
-            # if not override_infile:
-            #     # Load auto-generated cleaned pickle file
-            #     infile = Path(__file__).parent / f"mcmc_outfile_{prior_set}_{this_round-1}_clean.pkl"
-            # override_infile = False
+            # Load cleaned pickle file
             load_database = False
             with open(infile, "rb") as f:
                 data = dill.load(f)["data"]
@@ -647,9 +564,6 @@ if __name__ == "__main__":
         help="Filter sources with e_plx/plx > 0.2")
     args = vars(parser.parse_args())
 
-    # Variable to override loading of auto-generated infile if True
-    # is_clean_infile = args["this_round"] > 1
-
     main(
         args["infile"],
         num_cores=args["num_cores"],
@@ -662,6 +576,4 @@ if __name__ == "__main__":
         num_rounds=args["num_rounds"],
         reject_method=args["reject_method"],
         this_round=args["this_round"],
-        filter_plx=args["filter_plx"],
-        # override_infile=is_clean_infile
-        )
+        filter_plx=args["filter_plx"])
