@@ -50,6 +50,7 @@ def get_sigmas(plx, e_mux, e_muy, e_vlsr):
 
     # 1D Virial dispersion for stars in HMSFR w/ mass ~ 10^4 Msun w/in radius of ~ 1 pc
     sigma_vir_sq = 25.0  # km/s
+    # dist = plx_to_peak_dist(plx, e_plx)
 
     # Parallax to reciprocal of distance^2 (i.e. 1 / distance^2)
     reciprocal_dist_sq = _KM_KPC_S_TO_MAS_YR * _KM_KPC_S_TO_MAS_YR * plx * plx
@@ -72,8 +73,11 @@ def ln_gauss_norm(x, mean, sigma):
 
 def ln_cauchy_norm(x, mean, sigma):
     """
+    ! Need to debug
     Calculates ln of Cauchy distribution where peak is normalized to 1
     Returns: -ln[1+ ((x-mean) / (hwhm * sigma))^2]
+
+    TODO: finish docstring
     """
 
     hwhm = 1.177410023  # half width at half maximum == sqrt(2 * ln(2))
@@ -85,7 +89,7 @@ def ln_cauchy_norm(x, mean, sigma):
 def ln_siviaskilling(x, mean, weight):
     """
     Returns the natural log of Sivia & Skilling's (2006) "Lorentzian-like" PDF.
-    N.B. That the PDF is _not_ normalized.
+    N.B. That the PDF is _not_ normalized. Peak is at 0.5
 
     TODO: Finish docstring
     """
@@ -116,18 +120,18 @@ def cleanup_data(data, trace, like_type, reject_method):
 
     # === Get data ===
     # Slice data into components (using np.asarray to prevent PyMC3 error with pandas)
-    ra = data["ra"]  # deg
-    dec = data["dec"]  # deg
-    glon = data["glong"]  # deg
-    glat = data["glat"]  # deg
-    plx = data["plx"]  # mas
-    e_plx = data["e_plx"]  # mas
-    eqmux = data["mux"]  # mas/yr (equatorial frame)
-    e_eqmux = data["e_mux"]  # mas/y (equatorial frame)
-    eqmuy = data["muy"]  # mas/y (equatorial frame)
-    e_eqmuy = data["e_muy"]  # mas/y (equatorial frame)
-    vlsr = data["vlsr"]  # km/s
-    e_vlsr = data["e_vlsr"]  # km/s
+    ra = data["ra"].values  # deg
+    dec = data["dec"].values  # deg
+    glon = data["glong"].values  # deg
+    glat = data["glat"].values  # deg
+    plx = data["plx"].values  # mas
+    e_plx = data["e_plx"].values  # mas
+    eqmux = data["mux"].values  # mas/yr (equatorial frame)
+    e_eqmux = data["e_mux"].values  # mas/y (equatorial frame)
+    eqmuy = data["muy"].values  # mas/y (equatorial frame)
+    e_eqmuy = data["e_muy"].values  # mas/y (equatorial frame)
+    vlsr = data["vlsr"].values  # km/s
+    e_vlsr = data["e_vlsr"].values  # km/s
 
     # === Calculate predicted values from optimal parameters ===
     # Parallax to distance
@@ -171,9 +175,9 @@ def cleanup_data(data, trace, like_type, reject_method):
         ln_eqmux_pred = np.median(trace["lnlike_eqmux_norm"], axis=(0, 1))
         ln_eqmuy_pred = np.median(trace["lnlike_eqmuy_norm"], axis=(0, 1))
         ln_vlsr_pred = np.median(trace["lnlike_vlsr_norm"], axis=(0, 1))
-        print("min predicted ln_mux:", min(ln_eqmux_pred))
-        print("min predicted ln_muy:", min(ln_eqmuy_pred))
-        print("min predicted ln_vlsr:", min(ln_vlsr_pred))
+        print("min predicted ln_mux:", np.min(ln_eqmux_pred))
+        print("min predicted ln_muy:", np.min(ln_eqmuy_pred))
+        print("min predicted ln_vlsr:", np.min(ln_vlsr_pred))
 
         if like_type == "gauss":  # Gaussian distribution of proper motions / vlsr
             ln_threshold = -4.5  # ln(exponential part) = -(3^2)/2
@@ -183,6 +187,7 @@ def cleanup_data(data, trace, like_type, reject_method):
                 + (ln_vlsr_pred < ln_threshold)
             )
         elif like_type == "cauchy":
+            # ! Need to debug
             sigma_eqmux, sigma_eqmuy, sigma_vlsr = get_sigmas(
                 plx, e_eqmux, e_eqmuy, e_vlsr)
             ln_threshold_eqmux = ln_cauchy_norm(eqmux, eqmux_pred, sigma_eqmux)
@@ -193,6 +198,11 @@ def cleanup_data(data, trace, like_type, reject_method):
                 + (ln_eqmuy_pred < ln_threshold_eqmuy)
                 + (ln_vlsr_pred < ln_threshold_vlsr)
             )
+            print("min ln_threshold_eqmux:", np.min(ln_threshold_eqmux))
+            print("min ln_threshold_eqmuy:", np.min(ln_threshold_eqmuy))
+            print("min ln_threshold_vlsr:", np.min(ln_threshold_vlsr))
+            print(ln_threshold_eqmuy.shape)
+            print(ln_eqmuy_pred.shape)
         elif like_type == "sivia":  # Lorentzian-like distribution of prop. motions / vlsr
             ln_threshold = -2.2 # ln((1-exp(-(3^2)/2)) / (3^2))
             bad_sigma = (
@@ -314,7 +324,7 @@ def main(prior_set, this_round, reject_method):
 
 if __name__ == "__main__":
     prior_set_file = input("prior_set of file (A1, A5, B, C, D): ")
-    num_round_file = int(input("round number of file (int): "))
+    num_round_file = int(input("round number of file to clean (int): "))
     filter_method = input("Outlier rejection method (sigma or lnlike): ")
 
     main(prior_set_file, num_round_file, filter_method)
