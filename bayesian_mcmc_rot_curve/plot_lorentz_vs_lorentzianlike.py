@@ -6,8 +6,9 @@ def lorentzian(x, mean, sigma):
     return np.log(1 - np.exp(-0.5 * residual * residual)) - 2 * np.log(abs(residual))
     # return np.log((1-np.exp(-0.5 * residual * residual))/ (residual * residual))
 
-def cauchy(x, mean ,hwhm):
+def cauchy(x, mean, hwhm):
     return np.log(1 / (np.pi * hwhm) * (hwhm * hwhm / ((x - mean)**2 + hwhm * hwhm)))
+    # return -np.log(np.pi * hwhm * (1 + ((x-mean) / hwhm)**2))
 
 x = np.linspace(0,17,101)
 mean = 8
