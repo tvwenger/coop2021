@@ -939,7 +939,7 @@ def get_gcen_cyl_radius_and_circ_velocity(
     return perp_distance, v_tangent
 
 
-def get_gcen_cyl_radius(glon, glat, plx):
+def get_gcen_cyl_radius(glon, glat, plx, R0=_RSUN):
     """
     Convert galactic longitude, latitude, and parallax to
     galactocentric cylindrical distances
@@ -959,7 +959,7 @@ def get_gcen_cyl_radius(glon, glat, plx):
 
     # Transform from galactic to galactocentric Cartesian coordinates
     bary_x, bary_y, bary_z = gal_to_bary(glon, glat, gdist)  # kpc
-    gcen_x, gcen_y, gcen_z = bary_to_gcen(bary_x, bary_y, bary_z)  # kpc
+    gcen_x, gcen_y, gcen_z = bary_to_gcen(bary_x, bary_y, bary_z, R0=R0)  # kpc
 
     perp_distance = np.sqrt(gcen_x * gcen_x + gcen_y * gcen_y)  # kpc
 
