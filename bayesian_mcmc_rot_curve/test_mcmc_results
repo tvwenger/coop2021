@@ -1,0 +1,270 @@
+Initial parameters:
+    R0 = 8.15  # kpc
+    Usun = 10.6  # km/s
+    Vsun = 10.7  # km/s
+    Wsun = 7.6  # km/s
+    Upec = 6.1  # km/s
+    Vpec = -4.3  # km/s
+    a2 = 0.96  # dimensionless
+    a3 = 1.62  # dimensionless
+
+==== Testing simulated data with DISTANCES (i.e. using generate_dists function) ====
+=========
+Queueing 2 Bayesian MCMC rounds w/ A5 priors, cauchy PDF, & reject_method = lnlike
+===
+Running round 1
+===
+Using data from pickle file
+Number of data points used: 158
+Number of distance samples: 100
+===
+Using prior set A5
+Using Cauchy PDF
+Using 2 cores, 2 chains, 500 tunings, and 500 iterations.
+===
+Auto-assigning NUTS sampler...
+Initializing NUTS using advi...
+Convergence achieved at 10200------------------------------------------------------------------------| 5.10% [10198/200000 05:55<1:50:11 Average Loss = 1,401.7]
+Interrupted at 10,199 [5%]: Average Loss = 1,410.1
+Multiprocess sampling (2 chains in 2 jobs)
+NUTS: [Vpec, Upec, Wsun, Vsun, Usun, a3, a2, R0]
+Sampling 2 chains for 500 tune and 500 draw iterations (1_000 + 1_000 draws total) took 803 seconds.00% [2000/2000 13:20<00:00 Sampling 2 chains, 0 divergences]
+The estimated number of effective samples is smaller than 200 for some parameters.
+        mean     sd  hdi_3%  hdi_97%  mcse_mean  mcse_sd  ess_mean  ess_sd  ess_bulk  ess_tail  r_hat
+R0     8.245  0.200   7.863    8.609      0.006    0.004    1060.0  1057.0    1066.0     819.0   1.00
+Usun  10.904  1.100   8.934   12.919      0.037    0.026     887.0   887.0     886.0     912.0   1.00
+Vsun  12.172  6.711  -0.682   23.489      0.628    0.445     114.0   114.0     113.0     195.0   1.03
+Wsun   7.385  0.824   5.911    8.930      0.022    0.015    1430.0  1416.0    1441.0     848.0   1.00
+Upec   6.649  1.353   4.354    9.389      0.047    0.033     846.0   839.0     846.0     725.0   1.00
+Vpec  -2.654  6.649 -15.659    8.258      0.623    0.441     114.0   114.0     113.0     224.0   1.03
+a2     0.989  0.080   0.837    1.128      0.003    0.002     754.0   754.0     755.0     564.0   1.00
+a3     1.622  0.029   1.572    1.680      0.002    0.001     251.0   251.0     252.0     342.0   1.02
+===
+Executing outlier rejection after round 1
+prior_set: A5
+like_type: cauchy
+num parallax samples: 100
+num sources before filtering: 158
+Using log-likelihood to reject data
+        min predicted ln_mux: -0.012314499466709705
+        min predicted ln_muy: -0.014398998763900606
+        min predicted ln_vlsr: -1.9195427670835448
+num sources after filtering: 158
+===
+Running round 2
+===
+Using data from pickle file
+Number of data points used: 158
+Number of distance samples: 100
+===
+Using prior set A5
+Using Gaussian PDF
+Using 2 cores, 2 chains, 500 tunings, and 500 iterations.
+===
+Auto-assigning NUTS sampler...
+Initializing NUTS using advi...
+Convergence achieved at 10100-------------------------------------------------------------------------| 5.05% [10095/200000 04:43<1:28:54 Average Loss = 1,217]]
+Interrupted at 10,099 [5%]: Average Loss = 1,226.7
+Multiprocess sampling (2 chains in 2 jobs)
+NUTS: [Vpec, Upec, Wsun, Vsun, Usun, a3, a2, R0]
+Sampling 2 chains for 500 tune and 500 draw iterations (1_000 + 1_000 draws total) took 645 seconds.00% [2000/2000 10:42<00:00 Sampling 2 chains, 0 divergences]
+The estimated number of effective samples is smaller than 200 for some parameters.
+        mean     sd  hdi_3%  hdi_97%  mcse_mean  mcse_sd  ess_mean  ess_sd  ess_bulk  ess_tail  r_hat
+R0     8.241  0.190   7.888    8.601      0.006    0.005     881.0   881.0     881.0     808.0   1.00
+Usun  10.899  1.178   8.827   13.207      0.042    0.030     770.0   769.0     772.0     556.0   1.00
+Vsun  13.262  6.272   0.433   23.223      0.502    0.401     156.0   123.0     157.0     155.0   1.01
+Wsun   7.329  0.887   5.558    9.037      0.023    0.016    1481.0  1451.0    1454.0     743.0   1.00
+Upec   6.710  1.513   3.688    9.463      0.052    0.037     850.0   818.0     851.0     536.0   1.00
+Vpec  -1.500  6.213 -13.377    9.112      0.498    0.353     155.0   155.0     156.0     143.0   1.01
+a2     0.988  0.082   0.820    1.126      0.003    0.002     789.0   789.0     784.0     627.0   1.00
+a3     1.616  0.028   1.568    1.673      0.002    0.001     288.0   288.0     287.0     470.0   1.01
+===
+2 Bayesian MCMC runs complete
+=========
+
+==== Testing simulated data with PARALLAXES (i.e. generating random parallaxes) ====
+=========
+Queueing 2 Bayesian MCMC rounds w/ A5 priors, cauchy PDF, & reject_method = lnlike
+===
+Running round 1
+===
+Using data from pickle file
+Number of data points used: 158
+===
+Number of plx samples: 100
+Number of plx <= 0 replaced: 0
+===
+Using prior set A5
+Using Cauchy PDF
+Using 2 cores, 2 chains, 500 tunings, and 500 iterations.
+===
+Auto-assigning NUTS sampler...
+Initializing NUTS using advi...
+Convergence achieved at 10100------------------------------------------------------------------------| 5.05% [10094/200000 04:57<1:33:14 Average Loss = 1,399.5]
+Interrupted at 10,099 [5%]: Average Loss = 1,408.7
+Multiprocess sampling (2 chains in 2 jobs)
+NUTS: [Vpec, Upec, Wsun, Vsun, Usun, a3, a2, R0]
+Sampling 2 chains for 500 tune and 500 draw iterations (1_000 + 1_000 draws total) took 598 seconds.00% [2000/2000 09:55<00:00 Sampling 2 chains, 0 divergences]
+The estimated number of effective samples is smaller than 200 for some parameters.
+        mean     sd  hdi_3%  hdi_97%  mcse_mean  mcse_sd  ess_mean  ess_sd  ess_bulk  ess_tail  r_hat
+R0     8.033  0.165   7.685    8.310      0.005    0.004     988.0   988.0     985.0     594.0   1.00
+Usun  11.024  1.079   8.937   12.970      0.041    0.030     676.0   669.0     670.0     709.0   1.00
+Vsun  12.926  6.204   2.808   26.359      0.537    0.380     134.0   134.0     140.0     122.0   1.01
+Wsun   7.361  0.834   5.694    8.810      0.025    0.018    1107.0  1107.0    1099.0     694.0   1.01
+Upec   6.558  1.309   3.866    8.760      0.050    0.035     688.0   688.0     688.0     817.0   1.00
+Vpec  -1.814  6.144 -12.964   10.595      0.543    0.385     128.0   128.0     131.0     120.0   1.01
+a2     0.966  0.078   0.821    1.108      0.003    0.002     837.0   837.0     834.0     675.0   1.01
+a3     1.611  0.027   1.556    1.655      0.002    0.001     281.0   281.0     281.0     516.0   1.00
+===
+Executing outlier rejection after round 1
+prior_set: A5
+like_type: cauchy
+num parallax samples: 100
+num sources before filtering: 158
+Using log-likelihood to reject data
+    min predicted ln_mux: -0.01653732280196729
+    min predicted ln_muy: -0.012943753481678089
+    min predicted ln_vlsr: -2.2326209699778006
+num sources after filtering: 157
+===
+Running round 2
+===
+Using data from pickle file
+Number of data points used: 157
+===
+Number of plx samples: 100
+Number of plx <= 0 replaced: 0
+===
+Using prior set A5
+Using Gaussian PDF
+Using 2 cores, 2 chains, 500 tunings, and 500 iterations.
+===
+Auto-assigning NUTS sampler...
+Initializing NUTS using advi...
+Convergence achieved at 10600------------------------------------------------------------------------| 5.30% [10598/200000 04:52<1:27:10 Average Loss = 1,204.2]
+Interrupted at 10,599 [5%]: Average Loss = 1,214.1
+Multiprocess sampling (2 chains in 2 jobs)
+NUTS: [Vpec, Upec, Wsun, Vsun, Usun, a3, a2, R0]
+Sampling 2 chains for 500 tune and 500 draw iterations (1_000 + 1_000 draws total) took 591 seconds.00% [2000/2000 09:48<00:00 Sampling 2 chains, 0 divergences]
+The number of effective samples is smaller than 25% for some parameters.
+        mean     sd  hdi_3%  hdi_97%  mcse_mean  mcse_sd  ess_mean  ess_sd  ess_bulk  ess_tail  r_hat
+R0     7.968  0.180   7.634    8.311      0.006    0.004     840.0   837.0     841.0     800.0    1.0
+Usun  10.919  1.120   8.675   12.893      0.038    0.027     854.0   854.0     861.0     766.0    1.0
+Vsun  11.924  6.153   0.502   23.429      0.431    0.305     204.0   204.0     201.0     215.0    1.0
+Wsun   7.343  0.831   5.927    9.056      0.026    0.018    1038.0  1033.0    1045.0     782.0    1.0
+Upec   6.440  1.428   3.914    9.072      0.055    0.039     664.0   664.0     664.0     770.0    1.0
+Vpec  -2.746  6.115 -14.265    8.184      0.427    0.303     205.0   205.0     202.0     206.0    1.0
+a2     0.967  0.084   0.808    1.122      0.003    0.002     639.0   639.0     637.0     569.0    1.0
+a3     1.611  0.027   1.563    1.665      0.001    0.001     399.0   399.0     397.0     456.0    1.0
+===
+2 Bayesian MCMC runs complete
+=========
+
+==== Testing simulated data with DISTANCES (now using generate_dists function w/ area ?=? 1) ====
+=========
+Queueing 2 Bayesian MCMC rounds w/ A5 priors, cauchy PDF, & reject_method = lnlike
+===
+Running round 1
+===
+Using data from pickle file
+Number of data points used: 158
+Number of distance samples: 100
+===
+Using prior set A5
+Using Cauchy PDF
+Using 2 cores, 2 chains, 500 tunings, and 500 iterations.
+===
+Auto-assigning NUTS sampler...
+Initializing NUTS using advi...
+Convergence achieved at 9100--------------------------------------------------------------------------| 4.55% [9095/200000 05:04<1:46:21 Average Loss = 1,402.4]
+Interrupted at 9,099 [4%]: Average Loss = 1,411.2
+Multiprocess sampling (2 chains in 2 jobs)
+NUTS: [Vpec, Upec, Wsun, Vsun, Usun, a3, a2, R0]
+Sampling 2 chains for 500 tune and 500 draw iterations (1_000 + 1_000 draws total) took 770 seconds.00% [2000/2000 12:47<00:00 Sampling 2 chains, 0 divergences]
+The estimated number of effective samples is smaller than 200 for some parameters.
+        mean     sd  hdi_3%  hdi_97%  mcse_mean  mcse_sd  ess_mean  ess_sd  ess_bulk  ess_tail  r_hat
+R0     8.217  0.192   7.828    8.571      0.006    0.004    1003.0  1003.0    1004.0     795.0   1.00
+Usun  10.943  1.132   8.896   13.038      0.050    0.035     510.0   510.0     506.0     648.0   1.01
+Vsun  13.042  6.636   0.319   24.601      0.591    0.419     126.0   126.0     128.0     130.0   1.04
+Wsun   7.350  0.811   5.975    8.858      0.023    0.016    1243.0  1243.0    1232.0     809.0   1.00
+Upec   6.634  1.430   3.989    9.335      0.079    0.056     324.0   324.0     327.0     521.0   1.02
+Vpec  -1.801  6.578 -14.921    8.994      0.582    0.475     128.0    96.0     129.0     126.0   1.04
+a2     0.982  0.087   0.817    1.151      0.005    0.004     287.0   287.0     374.0     200.0   1.02
+a3     1.617  0.031   1.553    1.671      0.002    0.002     184.0   184.0     193.0     238.0   1.02
+===
+Executing outlier rejection after round 1
+prior_set: A5
+like_type: cauchy
+num parallax samples: 100
+num sources before filtering: 158
+Using log-likelihood to reject data
+    min predicted ln_mux: -0.014208162785057543
+    min predicted ln_muy: -0.016414333152256266
+    min predicted ln_vlsr: -2.437704825030912
+num sources after filtering: 156
+===
+Running round 2
+===
+Using data from pickle file
+Number of data points used: 156
+Number of distance samples: 100
+===
+Using prior set A5
+Using Gaussian PDF
+Using 2 cores, 2 chains, 500 tunings, and 500 iterations.
+===
+Auto-assigning NUTS sampler...
+Initializing NUTS using advi...
+Convergence achieved at 10000-------------------------------------------------------------------------| 5.00% [9997/200000 04:24<1:23:56 Average Loss = 1,194.2]
+Interrupted at 9,999 [4%]: Average Loss = 1,204
+Multiprocess sampling (2 chains in 2 jobs)
+NUTS: [Vpec, Upec, Wsun, Vsun, Usun, a3, a2, R0]
+Sampling 2 chains for 500 tune and 500 draw iterations (1_000 + 1_000 draws total) took 650 seconds.00% [2000/2000 10:47<00:00 Sampling 2 chains, 0 divergences]
+The estimated number of effective samples is smaller than 200 for some parameters.
+        mean     sd  hdi_3%  hdi_97%  mcse_mean  mcse_sd  ess_mean  ess_sd  ess_bulk  ess_tail  r_hat
+R0     8.206  0.184   7.855    8.545      0.006    0.004     923.0   923.0     926.0     619.0   1.00
+Usun  11.041  1.152   8.680   12.900      0.041    0.029     773.0   769.0     765.0     609.0   1.00
+Vsun  12.323  7.376  -0.583   27.129      0.652    0.473     128.0   122.0     129.0     199.0   1.02
+Wsun   7.309  0.935   5.446    8.940      0.026    0.018    1292.0  1292.0    1307.0     537.0   1.01
+Upec   6.814  1.513   4.207    9.697      0.058    0.041     687.0   666.0     682.0     666.0   1.00
+Vpec  -2.433  7.330 -15.326   12.343      0.646    0.458     129.0   129.0     129.0     196.0   1.02
+a2     0.982  0.089   0.818    1.152      0.004    0.003     424.0   424.0     480.0     211.0   1.00
+a3     1.618  0.031   1.561    1.673      0.002    0.001     212.0   212.0     212.0     344.0   1.01
+===
+2 Bayesian MCMC runs complete
+=========
+
+==== Testing simulated data with DISTANCES (i.e. using generate_dists function) ====
+=========
+Queueing 1 Bayesian MCMC rounds w/ A5 priors, cauchy PDF
+===
+Running round 1
+===
+Using data from pickle file
+Number of data points used: 158
+Number of distance samples: 100
+===
+Using prior set A5
+Using Cauchy PDF
+Using 2 cores, 2 chains, 2000 tunings, and 2000 iterations.
+===
+Auto-assigning NUTS sampler...
+Initializing NUTS using advi...
+Convergence achieved at 10200------------------------------------------------------------------------| 5.10% [10197/200000 06:16<1:56:40 Average Loss = 1,401.6]
+Interrupted at 10,199 [5%]: Average Loss = 1,409.8
+Multiprocess sampling (2 chains in 2 jobs)
+NUTS: [Vpec, Upec, Wsun, Vsun, Usun, a3, a2, R0]
+Sampling 2 chains for 2_000 tune and 2_000 draw iterations (4_000 + 4_000 draws total) took 3389 seconds.8000/8000 56:28<00:00 Sampling 2 chains, 0 divergences]
+The number of effective samples is smaller than 25% for some parameters.
+        mean     sd  hdi_3%  hdi_97%  mcse_mean  mcse_sd  ess_mean  ess_sd  ess_bulk  ess_tail  r_hat
+R0     8.223  0.187   7.870    8.568      0.003    0.002    3471.0  3471.0    3481.0    3290.0   1.00
+Usun  10.991  1.154   8.785   13.039      0.021    0.015    2998.0  2960.0    3001.0    2255.0   1.00
+Vsun  12.451  6.753   0.789   26.221      0.303    0.215     496.0   496.0     495.0     518.0   1.01
+Wsun   7.376  0.867   5.708    8.977      0.013    0.009    4536.0  4466.0    4531.0    2733.0   1.00
+Upec   6.692  1.448   3.846    9.233      0.027    0.020    2790.0  2732.0    2794.0    2247.0   1.00
+Vpec  -2.386  6.689 -14.547   10.540      0.299    0.215     499.0   487.0     500.0     489.0   1.01
+a2     0.985  0.080   0.822    1.126      0.002    0.001    2756.0  2756.0    2749.0    1997.0   1.00
+a3     1.619  0.029   1.567    1.675      0.001    0.001     921.0   921.0     924.0    1258.0   1.00
+===
+1 Bayesian MCMC runs complete
+=========
