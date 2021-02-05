@@ -208,6 +208,8 @@ def main():
     # print(data.to_markdown())
     # print(np.shape(data))
 
+    print("Finished generating data")
+
 
 if __name__ == "__main__":
     main()
