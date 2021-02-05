@@ -3,6 +3,51 @@
 == 100 distance samples, and init="advi"
 =========================================================================================
 =========
+Queueing 1 Bayesian MCMC rounds w/ A1 priors, sivia PDF, & reject_method = sigma (reject_method not relevant)
+===
+Running round 1
+===
+Starting with fresh data from database
+Filter sources with R < 4 kpc & e_plx/plx > 20%
+Number of data points used: 158
+Number of distance samples:  100
+===
+Using prior set A1
+Using Sivia & Skilling (2006) PDF
+Using 10 cores, 10 chains, 2500 tunings, and 5000 iterations.
+===
+Auto-assigning NUTS sampler...
+Initializing NUTS using advi...
+Convergence achieved at 7900-------------------------| 3.95% [7894/200000 03:34<1:27:02 Average Loss = 433.2]]
+Interrupted at 7,899 [3%]: Average Loss = 436.65
+Multiprocess sampling (10 chains in 10 jobs)
+NUTS: [Vpec, Upec, Wsun, Vsun, Usun, a3, a2, R0]
+Sampling 10 chains for 2_500 tune and 5_000 draw iterations (25_000 + 50_000 draws total) took 3934 seconds.es]
+There were 95 divergences after tuning. Increase `target_accept` or reparameterize.
+There were 78 divergences after tuning. Increase `target_accept` or reparameterize.
+There were 82 divergences after tuning. Increase `target_accept` or reparameterize.
+There were 87 divergences after tuning. Increase `target_accept` or reparameterize.
+There were 69 divergences after tuning. Increase `target_accept` or reparameterize.
+There were 86 divergences after tuning. Increase `target_accept` or reparameterize.
+There were 86 divergences after tuning. Increase `target_accept` or reparameterize.
+There were 76 divergences after tuning. Increase `target_accept` or reparameterize.
+There were 108 divergences after tuning. Increase `target_accept` or reparameterize.
+There were 76 divergences after tuning. Increase `target_accept` or reparameterize.
+The number of effective samples is smaller than 10% for some parameters.
+        mean     sd  hdi_3%  hdi_97%  mcse_mean  mcse_sd  ess_mean   ess_sd  ess_bulk  ess_tail  r_hat
+R0     7.919  0.252   7.448    8.397      0.001    0.001   40357.0  40357.0   40141.0   31836.0    1.0
+Usun  10.813  1.167   8.687   13.089      0.006    0.004   42529.0  42321.0   42490.0   34738.0    1.0
+Vsun  12.732  6.974  -0.341   25.758      0.099    0.070    4991.0   4991.0    4992.0    8335.0    1.0
+Wsun   7.223  0.999   5.354    9.098      0.008    0.005   16623.0  16623.0   16763.0   36445.0    1.0
+Upec   4.203  2.031   0.429    8.022      0.012    0.009   28209.0  28209.0   28277.0   33329.0    1.0
+Vpec  -2.948  6.945 -15.980   10.072      0.098    0.069    5030.0   5030.0    5033.0    7901.0    1.0
+a2     0.907  0.077   0.800    1.042      0.001    0.001    8741.0   8657.0   10526.0   15147.0    1.0
+a3     1.638  0.030   1.583    1.696      0.000    0.000    9451.0   9411.0    9428.0   21544.0    1.0
+===
+1 Bayesian MCMC runs complete
+=========
+
+=========
 Queueing 1 Bayesian MCMC rounds w/ A1 priors, cauchy PDF, & reject_method = lnlike (reject_method not relevant)
 ===
 Running round 1
