@@ -173,9 +173,12 @@ def main():
         use_theano=False)
 
     # Add noise to data
-    eqmux_pred += np.random.normal(loc=0, scale=0.5, size=eqmux_pred.shape)
-    eqmuy_pred += np.random.normal(loc=0, scale=0.5, size=eqmux_pred.shape)
-    vlsr_pred += np.random.normal(loc=0, scale=0.5, size=eqmux_pred.shape)
+    # eqmux_pred += np.random.normal(loc=0, scale=e_eqmux, size=eqmux_pred.shape)
+    # eqmuy_pred += np.random.normal(loc=0, scale=e_eqmuy, size=eqmux_pred.shape)
+    # vlsr_pred += np.random.normal(loc=0, scale=e_vlsr, size=eqmux_pred.shape)
+    eqmux_pred = np.random.normal(loc=eqmux_pred, scale=e_eqmux)
+    eqmuy_pred = np.random.normal(loc=eqmuy_pred, scale=e_eqmuy)
+    vlsr_pred = np.random.normal(loc=vlsr_pred, scale=e_vlsr)
 
     # Save data to new DataFrame
     data_new = pd.DataFrame(
