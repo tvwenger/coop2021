@@ -81,7 +81,7 @@ def plot_MCMC(trace, prior_set, like_type, num_sources, num_samples, reject_meth
         quantiles=[0.16, 0.5, 0.84],
         show_titles=True,
         title_fmt=".2f",
-        truths=[8.15, 10.6, 10.7, 7.6, 6.1, -4.3, 0.96, 1.62],
+        truths=[8.15, 10.6, 10.7, 7.6, 6.1, -4.3, 0.,  0.96, 1.62],
     )
     fig2.savefig(
         Path(__file__).parent / f"MCMC_hist_{prior_set}_{num_rounds}.jpg",
