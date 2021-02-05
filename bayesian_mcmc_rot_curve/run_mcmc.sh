@@ -10,7 +10,7 @@ echo "==== Testing simulated data ===="
 python MCMC_w_dist_uncer.py \
     /home/chengi/Documents/coop2021/bayesian_mcmc_rot_curve/mcmc_sim_data.pkl \
     --num_cores $num_cores --num_chains $num_cores --num_tune 1000 --num_iter 1000 \
-    --num_samples 100 --prior_set A1 --like_type cauchy \
+    --num_samples 100 --prior_set A5 --like_type cauchy \
     --num_rounds 2 --reject_method lnlike
 
 # Other params:
