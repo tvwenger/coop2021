@@ -320,6 +320,7 @@ def run_MCMC(
         R0 = pm.Uniform("R0", lower=7.0, upper=10.0)  # kpc
         a2 = pm.Uniform("a2", lower=0.7, upper=1.5)  # dimensionless
         a3 = pm.Uniform("a3", lower=1.5, upper=1.8)  # dimensionless
+        Wpec = pm.Normal("Wpec", mu=0, sigma=15)  # km/s
         if prior_set == "A1" or prior_set == "A5":
             Usun = pm.Normal("Usun", mu=11.1, sigma=1.2)  # km/s
             Vsun = pm.Normal("Vsun", mu=15.0, sigma=10.0)  # km/s
@@ -358,7 +359,7 @@ def run_MCMC(
         # Predicted galactocentric cylindrical velocity components
         v_circ = urc(gcen_cyl_dist, a2=a2, a3=a3, R0=R0) + Vpec  # km/s
         v_rad = -1 * Upec  # km/s, negative bc toward GC
-        v_vert = 0.0  # Zero vertical velocity in URC
+        v_vert = Wpec  # Zero vertical velocity in URC
         Theta0 = urc(R0, a2=a2, a3=a3, R0=R0)  # km/s, circular rotation speed of Sun
 
         # Go in reverse!
@@ -456,7 +457,7 @@ def run_MCMC(
         # === See results (calling within model to prevent FutureWarning) ===
         print(pm.summary(
             trace,
-            var_names = ['R0', 'Usun', 'Vsun', 'Wsun', 'Upec', 'Vpec', 'a2', 'a3']))
+            var_names = ['R0', 'Usun', 'Vsun', 'Wsun', 'Upec', 'Vpec', 'Wpec', 'a2', 'a3']))
 
         # === Save results to pickle file ===
         with open(outfile, "wb") as f:
