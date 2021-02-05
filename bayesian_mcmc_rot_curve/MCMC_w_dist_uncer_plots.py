@@ -19,7 +19,8 @@ def plot_MCMC(trace, prior_set, like_type, num_sources, num_samples, reject_meth
     varnames = []
 
     # Get names of variables & data associated with each variable
-    for varname in trace.varnames:
+    # for varname in trace.varnames:
+    for varname in ['R0', 'Usun', 'Vsun', 'Wsun', 'Upec', 'Vpec', 'a2', 'a3']:
         if "interval" in varname or "lnlike" in varname:
             continue  # do not want to include non user-defined parameters
         varnames.append(varname)
@@ -49,17 +50,17 @@ def plot_MCMC(trace, prior_set, like_type, num_sources, num_samples, reject_meth
 
     if like_type == "gauss":
         fig1.suptitle(
-            f"MCMC walkers: {num_chains} chains with {num_iters} iters each. Each parallax sampled {num_samples}×.\nGaussian (+ SS 2006) PDF with {prior_set} priors\n{num_sources} sources used in fit. Used {reject_method} to reject outliers",
+            f"MCMC walkers: {num_chains} chains with {num_iters} iters each. Each distance sampled {num_samples}×.\nGaussian (+ SS 2006) PDF with {prior_set} priors\n{num_sources} sources used in fit. Used {reject_method} to reject outliers",
             fontsize=9,
         )
     elif like_type == "cauchy":
         fig1.suptitle(
-            f"MCMC walkers: {num_chains} chains with {num_iters} iters each. Each parallax sampled {num_samples}×.\n(Cauchy PDF with {prior_set} priors. {num_sources} sources used in fit)",
+            f"MCMC walkers: {num_chains} chains with {num_iters} iters each. Each distance sampled {num_samples}×.\n(Cauchy PDF with {prior_set} priors. {num_sources} sources used in fit)",
             fontsize=9,
         )
     else:  # like_type == "sivia"
         fig1.suptitle(
-            f"MCMC walkers: {num_chains} chains with {num_iters} iters each. Each parallax sampled {num_samples}×.\nSivia & Skilling (2006) PDF with {prior_set} priors\n{num_sources} sources used in fit. Used {reject_method} to reject outliers",
+            f"MCMC walkers: {num_chains} chains with {num_iters} iters each. Each distance sampled {num_samples}×.\nSivia & Skilling (2006) PDF with {prior_set} priors\n{num_sources} sources used in fit. Used {reject_method} to reject outliers",
             fontsize=9,
         )
     fig1.tight_layout()  # Need this below suptitle()
@@ -78,6 +79,7 @@ def plot_MCMC(trace, prior_set, like_type, num_sources, num_samples, reject_meth
         quantiles=[0.16, 0.5, 0.84],
         show_titles=True,
         title_fmt=".2f",
+        truths=[8.15, 10.6, 10.7, 7.6, 6.1, -4.3, 0.96, 1.62],
     )
     fig2.savefig(
         Path(__file__).parent / f"MCMC_hist_{prior_set}_{num_rounds}.jpg",
@@ -108,7 +110,7 @@ def main(prior_set, num_rounds, reject_method):
     print("num_sources:", num_sources)
     print("num_samples:", num_samples)
     print("this_round:", num_rounds)
-    
+
 
     if reject_method == "sigma":
         _FILTER_TYPE = "3 sigma"
