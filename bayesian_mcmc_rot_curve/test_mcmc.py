@@ -172,6 +172,11 @@ def main():
         R0=R0, Usun=Usun, Vsun=Vsun, Wsun=Wsun, Theta0=Theta0,
         use_theano=False)
 
+    # Add noise to data
+    eqmux_pred += np.random.normal(loc=0, scale=0.5, size=eqmux_pred.shape)
+    eqmuy_pred += np.random.normal(loc=0, scale=0.5, size=eqmux_pred.shape)
+    vlsr_pred += np.random.normal(loc=0, scale=0.5, size=eqmux_pred.shape)
+
     # Save data to new DataFrame
     data_new = pd.DataFrame(
         {
@@ -196,12 +201,12 @@ def main():
     with open(outfile, "wb") as f:
         dill.dump({"data": data_new}, f)
 
-    # View simulated data
-    with open(outfile, "rb") as f:
-        file = dill.load(f)
-        data = file["data"]
-    print(data.to_markdown())
-    print(np.shape(data))
+    # # View saved simulated data
+    # with open(outfile, "rb") as f:
+    #     file = dill.load(f)
+    #     data = file["data"]
+    # print(data.to_markdown())
+    # print(np.shape(data))
 
 
 if __name__ == "__main__":
