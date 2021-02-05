@@ -304,9 +304,8 @@ def run_MCMC(
 
     # # Making array of random parallaxes. Columns are samples of the same source
     # print("===\nNumber of plx samples:", num_samples)
-    # # plx = np.array([plx_orig, ] * num_samples)
     # plx = np.random.normal(loc=plx, scale=e_plx, size=(num_samples, num_sources))
-    # # Replace non-positive parallax with nan
+    # # Replace non-positive parallax with small positive epsilon
     # print("Number of plx <= 0 replaced:", np.sum(plx<=0))
     # plx[plx<=0] = 1e-9
     # dist = 1 / plx
