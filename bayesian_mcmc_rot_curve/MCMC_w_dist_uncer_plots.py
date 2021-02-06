@@ -56,7 +56,7 @@ def plot_MCMC(trace, prior_set, like_type, num_sources, num_samples, reject_meth
 
     for ax, parameter, varname in zip(axes1, param_lst, varnames):
         for chain in parameter:
-            ax.plot(chain, "k-", alpha=0.5, linewidth=0.5)  # plot chains of parameter
+            ax.plot(chain, "k-", alpha=0.1, linewidth=0.5)  # plot chains of parameter
         ax.set_title(varname, fontsize=8)  # add parameter name as title
         # Make x & y ticks smaller
         ax.tick_params(axis="both", which="major", labelsize=5)
