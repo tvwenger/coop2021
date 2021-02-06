@@ -18,9 +18,12 @@ sys.path.append(_SCRIPT_DIR)
 import mytransforms as trans
 from universal_rotcurve import urc
 
+# Roll angle between galactic midplane and galactocentric frame
+_ROLL = 0.0  # deg (Anderson et al. 2019)
+# Sun's height above galactic midplane (Reid et al. 2019)
+_ZSUN = 5.5  # pc
 # Useful constants
 _RAD_TO_DEG = 57.29577951308232  # 180/pi (Don't forget to % 360 after)
-_KM_KPC_S_TO_MAS_YR = 0.21094952656969873  # (mas/yr) / (km/kpc/s)
 
 
 def plx_to_peak_dist(plx, e_plx):
@@ -47,12 +50,14 @@ def get_sigmas(plx, e_mux, e_muy, e_vlsr):
     TODO: finish docstring
     """
 
+    km_kps_s_to_mas_yr = 0.21094952656969873  # (mas/yr) / (km/kpc/s)
+
     # 1D Virial dispersion for stars in HMSFR w/ mass ~ 10^4 Msun w/in radius of ~ 1 pc
     sigma_vir_sq = 25.0  # km/s
     # dist = plx_to_peak_dist(plx, e_plx)
 
     # Parallax to reciprocal of distance^2 (i.e. 1 / distance^2)
-    reciprocal_dist_sq = _KM_KPC_S_TO_MAS_YR * _KM_KPC_S_TO_MAS_YR * plx * plx
+    reciprocal_dist_sq = km_kps_s_to_mas_yr * km_kps_s_to_mas_yr * plx * plx
 
     sigma_mux = np.sqrt(e_mux * e_mux + sigma_vir_sq * reciprocal_dist_sq)
     sigma_muy = np.sqrt(e_muy * e_muy + sigma_vir_sq * reciprocal_dist_sq)
@@ -104,7 +109,8 @@ def ln_siviaskilling(x, mean, weight):
 
 
 
-def cleanup_data(data, trace, like_type, reject_method):
+def cleanup_data(data, trace, like_type, reject_method,
+                 free_Zsun=False, free_roll=False, free_Wpec=False):
     """
     Cleans up data from pickle file
     (i.e. removes any sources with proper motion or vlsr > 3 sigma from predicted values)
@@ -124,6 +130,9 @@ def cleanup_data(data, trace, like_type, reject_method):
     Vpec = np.median(trace["Vpec"])  # km/s
     a2 = np.median(trace["a2"])  # dimensionless
     a3 = np.median(trace["a3"])  # dimensionless
+    Zsun = np.median(trace["Zsun"]) if free_Zsun else _ZSUN  # pc
+    roll = np.median(trace["roll"]) if free_roll else _ROLL  # deg
+    Wpec = np.median(trace["Wpec"]) if free_Wpec else 0.0  # km/s
 
     # === Get data ===
     # Slice data into components (using np.asarray to prevent PyMC3 error with pandas)
@@ -146,20 +155,21 @@ def cleanup_data(data, trace, like_type, reject_method):
     # Galactic to barycentric Cartesian coordinates
     bary_x, bary_y, bary_z = trans.gal_to_bary(glon, glat, gdist)
     # Barycentric Cartesian to galactocentric Cartesian coodinates
-    gcen_x, gcen_y, gcen_z = trans.bary_to_gcen(bary_x, bary_y, bary_z, R0=R0)
+    gcen_x, gcen_y, gcen_z = trans.bary_to_gcen(
+        bary_x, bary_y, bary_z, R0=R0, Zsun=Zsun, roll=roll)
     # Galactocentric Cartesian frame to galactocentric cylindrical frame
     gcen_cyl_dist = np.sqrt(gcen_x * gcen_x + gcen_y * gcen_y)  # kpc
     azimuth = (np.arctan2(gcen_y, -gcen_x) * _RAD_TO_DEG) % 360  # deg in [0,360)
     v_circ_pred = urc(gcen_cyl_dist, a2=a2, a3=a3, R0=R0) + Vpec  # km/s
     v_rad = -Upec  # km/s
-    v_vert = 0.0  # km/s, zero vertical velocity in URC
     Theta0 = urc(R0, a2=a2, a3=a3, R0=R0)  # km/s, LSR circular rotation speed
 
     # Go in reverse!
     # Galactocentric cylindrical to equatorial proper motions & LSR velocity
     eqmux_pred, eqmuy_pred, vlsr_pred = trans.gcen_cyl_to_pm_and_vlsr(
-        gcen_cyl_dist, azimuth, gcen_z, v_rad, v_circ_pred, v_vert,
-        R0=R0, Usun=Usun, Vsun=Vsun, Wsun=Wsun, Theta0=Theta0,
+        gcen_cyl_dist, azimuth, gcen_z, v_rad, v_circ_pred, Wpec,
+        R0=R0, Zsun=Zsun, roll=roll,
+        Usun=Usun, Vsun=Vsun, Wsun=Wsun, Theta0=Theta0,
         use_theano=False)
 
     # Calculating conditions for data cleaning
@@ -264,7 +274,7 @@ def cleanup_data(data, trace, like_type, reject_method):
     return data_cleaned, num_sources_cleaned
 
 
-def main(prior_set, this_round, reject_method):
+def main(prior_set, this_round):
     # Binary file to read
     # infile = Path(__file__).parent / "MCMC_w_dist_uncer_outfile.pkl"
     infile = Path(
@@ -277,8 +287,12 @@ def main(prior_set, this_round, reject_method):
         trace = file["trace"]
         prior_set = file["prior_set"]  # "A1", "A5", "B", "C", "D"
         like_type = file["like_type"]  # "gauss" or "cauchy" or "sivia"
-        num_sources = file["num_sources"]
         num_samples = file["num_samples"]
+        num_sources = file["num_sources"]
+        reject_method = file["reject_method"]
+        free_Zsun = file["free_Zsun"]
+        free_roll = file["free_roll"]
+        free_Wpec = file["free_Wpec"]
 
     print(f"===\nExecuting outlier rejection after round {this_round}")
     print("prior_set:", prior_set)
@@ -289,7 +303,8 @@ def main(prior_set, this_round, reject_method):
     # print(data.to_markdown())
     # Clean data
     data_cleaned, num_sources_cleaned = cleanup_data(
-        data, trace, like_type, reject_method)
+        data, trace, like_type, reject_method,
+        free_Zsun=free_Zsun, free_roll=free_roll, free_Wpec=free_Wpec)
 
     outfile = Path(
         f"/home/chengi/Documents/coop2021/bayesian_mcmc_rot_curve/mcmc_outfile_{prior_set}_{this_round}_clean.pkl")
@@ -305,12 +320,16 @@ def main(prior_set, this_round, reject_method):
                 "num_sources": num_sources_cleaned,
                 "num_samples": num_samples,
                 "this_round": this_round,
+                "reject_method": reject_method,
+                "free_Zsun": free_Zsun,
+                "free_roll": free_roll,
+                "free_Wpec": free_Wpec,
             }, f)
 
 
 if __name__ == "__main__":
     prior_set_file = input("prior_set of file (A1, A5, B, C, D): ")
     num_round_file = int(input("round number of file to clean (int): "))
-    filter_method = input("Outlier rejection method (sigma or lnlike): ")
+    # filter_method = input("Outlier rejection method (sigma or lnlike): ")
 
-    main(prior_set_file, num_round_file, filter_method)
+    main(prior_set_file, num_round_file)

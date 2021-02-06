@@ -121,11 +121,14 @@ def main():
 
     # Specify parameters
     R0 = 8.15  # kpc
+    Zsun = 5.5  # pc
+    roll = 0.0  # deg
     Usun = 10.6  # km/s
     Vsun = 10.7  # km/s
     Wsun = 7.6  # km/s
     Upec = 6.1  # km/s
     Vpec = -4.3  # km/s
+    Wpec = 0.0  # km/s
     a2 = 0.96  # dimensionless
     a3 = 1.62  # dimensionless
 
@@ -157,19 +160,20 @@ def main():
     # Galactic to galactocentric Cartesian coordinates
     bary_x, bary_y, bary_z = trans.gal_to_bary(glon, glat, dist)
     # Barycentric Cartesian to galactocentric Cartesian coodinates
-    gcen_x, gcen_y, gcen_z = trans.bary_to_gcen(bary_x, bary_y, bary_z, R0=R0)
+    gcen_x, gcen_y, gcen_z = trans.bary_to_gcen(
+        bary_x, bary_y, bary_z,R0=R0, Zsun=Zsun, roll=roll)
     # Galactocentric Cartesian frame to galactocentric cylindrical frame
     gcen_cyl_dist = np.sqrt(gcen_x * gcen_x + gcen_y * gcen_y)  # kpc
     azimuth = (np.arctan2(gcen_y, -gcen_x) * _RAD_TO_DEG) % 360  # deg in [0,360)
     # Predicted galactocentric cylindrical velocity components
     v_circ = urc(gcen_cyl_dist, a2=a2, a3=a3, R0=R0) + Vpec  # km/s
     v_rad = -1 * Upec  # km/s, negative bc toward GC
-    v_vert = 0.0  # Zero vertical velocity in URC
     Theta0 = urc(R0, a2=a2, a3=a3, R0=R0)  # km/s, circular rotation speed of Sun
     # Galactocentric cylindrical to equatorial proper motions & LSR velocity
     eqmux_pred, eqmuy_pred, vlsr_pred = trans.gcen_cyl_to_pm_and_vlsr(
-        gcen_cyl_dist, azimuth, gcen_z, v_rad, v_circ, v_vert,
-        R0=R0, Usun=Usun, Vsun=Vsun, Wsun=Wsun, Theta0=Theta0,
+        gcen_cyl_dist, azimuth, gcen_z, v_rad, v_circ, Wpec,
+        R0=R0, Zsun=Zsun, roll=roll,
+        Usun=Usun, Vsun=Vsun, Wsun=Wsun, Theta0=Theta0,
         use_theano=False)
 
     # Add noise to data

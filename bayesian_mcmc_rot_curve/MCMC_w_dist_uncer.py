@@ -28,6 +28,10 @@ import mytransforms as trans
 from universal_rotcurve import urc
 import mcmc_cleanup as clean
 
+# Roll angle between galactic midplane and galactocentric frame
+_ROLL = 0.0  # deg (Anderson et al. 2019)
+# Sun's height above galactic midplane (Reid et al. 2019)
+_ZSUN = 5.5  # pc
 # Useful constants
 _RAD_TO_DEG = 57.29577951308232  # 180/pi (Don't forget to % 360 after)
 
@@ -208,13 +212,13 @@ def get_weights(dist, e_mux, e_muy, e_vlsr):
     TODO: finish docstring
     """
 
-    km_per_kpc_s_to_mas_yr = 0.21094952656969873  # (mas/yr) / (km/kpc/s)
+    km_kpc_s_to_mas_yr = 0.21094952656969873  # (mas/yr) / (km/kpc/s)
 
     # 1D Virial dispersion for stars in HMSFR w/ mass ~ 10^4 Msun w/in radius of ~ 1 pc
     sigma_vir_sq = 25.0  # km/s
 
     # Parallax to reciprocal of distance^2 (i.e. 1 / distance^2)
-    reciprocal_dist_sq = km_per_kpc_s_to_mas_yr * km_per_kpc_s_to_mas_yr / (dist * dist)
+    reciprocal_dist_sq = km_kpc_s_to_mas_yr * km_kpc_s_to_mas_yr / (dist * dist)
 
     weight_mux = tt.sqrt(e_mux * e_mux + sigma_vir_sq * reciprocal_dist_sq)
     weight_muy = tt.sqrt(e_muy * e_muy + sigma_vir_sq * reciprocal_dist_sq)
@@ -258,7 +262,8 @@ def ln_siviaskilling(x, mean, weight):
 
 def run_MCMC(
     data, num_iters, num_tune, num_cores, num_chains, num_samples,
-    prior_set, like_type, is_database_data, this_round, filter_parallax, reject_method):
+    prior_set, like_type, is_database_data, this_round, filter_parallax, reject_method,
+    free_Wpec=False, free_Zsun=False, free_roll=False):
     """
     Runs Bayesian MCMC. Returns trace & number of sources used in fit.
 
@@ -320,7 +325,6 @@ def run_MCMC(
         R0 = pm.Uniform("R0", lower=7.0, upper=10.0)  # kpc
         a2 = pm.Uniform("a2", lower=0.7, upper=1.5)  # dimensionless
         a3 = pm.Uniform("a3", lower=1.5, upper=1.8)  # dimensionless
-        Wpec = pm.Normal("Wpec", mu=0, sigma=15)  # km/s
         if prior_set == "A1" or prior_set == "A5":
             Usun = pm.Normal("Usun", mu=11.1, sigma=1.2)  # km/s
             Vsun = pm.Normal("Vsun", mu=15.0, sigma=10.0)  # km/s
@@ -351,23 +355,43 @@ def run_MCMC(
 
         # === Predicted values (using data) ===
         # Barycentric Cartesian to galactocentric Cartesian coodinates
-        gcen_x, gcen_y, gcen_z = trans.bary_to_gcen(bary_x, bary_y, bary_z, R0=R0)
+        if free_Zsun:
+            print("+ free Zsun parameter", end=" ", flush=True)
+            Zsun = pm.Normal("Zsun", mu=_ZSUN, sigma=10.)  # pc
+        else:
+            Zsun = _ZSUN  # pc
+        if free_roll:
+            print("+ free roll parameter", end=" ", flush=True)
+            roll = pm.Normal("roll", mu=_ROLL, sigma=30.)  # deg
+        else:
+            roll = _ROLL  # deg
+
+        gcen_x, gcen_y, gcen_z = trans.bary_to_gcen(
+            bary_x, bary_y, bary_z, R0=R0, Zsun=Zsun, roll=roll)
 
         # Galactocentric Cartesian frame to galactocentric cylindrical frame
         gcen_cyl_dist = tt.sqrt(gcen_x * gcen_x + gcen_y * gcen_y)  # kpc
         azimuth = (tt.arctan2(gcen_y, -gcen_x) * _RAD_TO_DEG) % 360  # deg in [0,360)
+
         # Predicted galactocentric cylindrical velocity components
         v_circ = urc(gcen_cyl_dist, a2=a2, a3=a3, R0=R0) + Vpec  # km/s
         v_rad = -1 * Upec  # km/s, negative bc toward GC
-        v_vert = Wpec  # Zero vertical velocity in URC
+        if free_Wpec:
+            print("+ free Wpec parameter", end="", flush=True)
+            Wpec = pm.Normal("Wpec", mu=0., sigma=15.)  # km/s
+        else:
+            Wpec = 0.0  # km/s, zero vertical velocity in URC
+
         Theta0 = urc(R0, a2=a2, a3=a3, R0=R0)  # km/s, circular rotation speed of Sun
 
         # Go in reverse!
         # Galactocentric cylindrical to equatorial proper motions & LSR velocity
         eqmux_pred, eqmuy_pred, vlsr_pred = trans.gcen_cyl_to_pm_and_vlsr(
-            gcen_cyl_dist, azimuth, gcen_z, v_rad, v_circ, v_vert,
-            R0=R0, Usun=Usun, Vsun=Vsun, Wsun=Wsun, Theta0=Theta0,
-            use_theano=True)
+            gcen_cyl_dist, azimuth, gcen_z, v_rad, v_circ, Wpec,
+            R0=R0, Zsun=Zsun, roll=roll,
+            Usun=Usun, Vsun=Vsun, Wsun=Wsun, Theta0=Theta0,
+            use_theano=True
+        )
 
         # === Likelihood components (sigma values are from observed data) ===
         # Calculate uncertainties for likelihood function
@@ -376,6 +400,8 @@ def run_MCMC(
             plx, e_eqmux, e_eqmuy, e_vlsr)
 
         # Make array of likelihood values evaluated at data points
+        if free_Zsun or free_roll or free_Wpec:
+            print()  # start a new line
         if like_type == "gauss":
             # GAUSSIAN MIXTURE PDF
             print("Using Gaussian PDF")
@@ -455,9 +481,20 @@ def run_MCMC(
             return_inferencedata=False)
 
         # === See results (calling within model to prevent FutureWarning) ===
-        print(pm.summary(
-            trace,
-            var_names = ['R0', 'Usun', 'Vsun', 'Wsun', 'Upec', 'Vpec', 'Wpec', 'a2', 'a3']))
+        if reject_method == "lnlike":
+            print(
+                pm.summary(
+                    trace,
+                    var_names=[
+                        "~lnlike_eqmux_dist",
+                        "~lnlike_eqmuy_dist",
+                        "~lnlike_vlsr_dist",
+                    ],
+                # var_names = ['R0', 'Usun', 'Vsun', 'Wsun', 'Upec', 'Vpec', 'Wpec', 'a2', 'a3']
+                ).to_string()
+            )
+        else:  # reject_method == "sigma"
+            print(pm.summary(trace).to_string())
 
         # === Save results to pickle file ===
         with open(outfile, "wb") as f:
@@ -471,12 +508,17 @@ def run_MCMC(
                     "num_sources": num_sources,
                     "num_samples": num_samples,
                     "this_round": this_round,
+                    "reject_method": reject_method,
+                    "free_Zsun": free_Zsun,
+                    "free_roll": free_roll,
+                    "free_Wpec": free_Wpec,
                 }, f)
 
 
 def main(infile, num_cores=None, num_chains=None, num_tune=2000, num_iters=5000,
         num_samples=100, prior_set="A1", like_type="gauss", num_rounds=1,
-        reject_method="sigma", this_round=1, filter_plx=False):
+        reject_method="sigma", this_round=1, filter_plx=False,
+        free_Wpec=False, free_Zsun=False, free_roll=False):
     if num_cores is None:
         num_cores = 2
     if num_chains is None:
@@ -521,13 +563,15 @@ def main(infile, num_cores=None, num_chains=None, num_tune=2000, num_iters=5000,
         run_MCMC(
             data,
             num_iters, num_tune, num_cores, num_chains, num_samples,
-            prior_set, like_type, load_database, this_round, filter_plx, reject_method)
+            prior_set, like_type, load_database, this_round, filter_plx, reject_method,
+            free_Wpec=free_Wpec, free_Zsun=free_Zsun, free_roll=free_roll
+        )
 
         # Seeing if outlier rejection is necessary
         if this_round == num_rounds:
             break  # No need to clean data after final MCMC run
         # Else: do outlier rejection
-        clean.main(prior_set, this_round, reject_method)
+        clean.main(prior_set, this_round)
 
         # Set auto-generated cleaned pickle file as next infile
         filename = f"mcmc_outfile_{prior_set}_{this_round}_clean.pkl"
@@ -601,6 +645,21 @@ if __name__ == "__main__":
         action="store_true",
         default=False,
         help="Filter sources with e_plx/plx > 0.2")
+    parser.add_argument(
+        "--free_Zsun",
+        action="store_true",
+        default=False,
+        help="Let the Sun's height above galactic midplane be a free parameter")
+    parser.add_argument(
+        "--free_Wpec",
+        action="store_true",
+        default=False,
+        help="Let the Sun's vertical velocity toward NGP be a free parameter")
+    parser.add_argument(
+        "--free_roll",
+        action="store_true",
+        default=False,
+        help="Let the roll angle between galactic midplane and galactocentric frame be a free parameter")
     args = vars(parser.parse_args())
 
     main(
@@ -615,4 +674,8 @@ if __name__ == "__main__":
         num_rounds=args["num_rounds"],
         reject_method=args["reject_method"],
         this_round=args["this_round"],
-        filter_plx=args["filter_plx"])
+        filter_plx=args["filter_plx"],
+        free_Zsun=args["free_Zsun"],
+        free_Wpec=args["free_Wpec"],
+        free_roll=args["free_roll"],
+    )
