@@ -27,6 +27,7 @@ sys.path.append(_SCRIPT_DIR)
 import mytransforms as trans
 from universal_rotcurve import urc
 import mcmc_cleanup as clean
+import mcmc_bic as bic
 
 # Roll angle between galactic midplane and galactocentric frame
 _ROLL = 0.0  # deg (Anderson et al. 2019)
@@ -263,7 +264,7 @@ def ln_siviaskilling(x, mean, weight):
 def run_MCMC(
     data, num_iters, num_tune, num_cores, num_chains, num_samples,
     prior_set, like_type, is_database_data, this_round, filter_parallax, reject_method,
-    free_Wpec=False, free_Zsun=False, free_roll=False):
+    free_Wpec=False, free_Zsun=False, free_roll=False, return_num_sources=False):
     """
     Runs Bayesian MCMC. Returns trace & number of sources used in fit.
 
@@ -319,10 +320,11 @@ def run_MCMC(
     bary_x, bary_y, bary_z = trans.gal_to_bary(glon, glat, dist)
 
     # 8 parameters from Reid et al. (2019): (see Section 4 & Table 3)
-    #   R0, Usun, Vsun, Wsun, Upec, Vpec, a2, a3
+    #   R0, Usun, Vsun, Wsun, Upec, Vpec, a2, a3, (optional: Zsun, roll, Wpec)
     with pm.Model() as model:
         # === Define priors ===
-        R0 = pm.Uniform("R0", lower=7.0, upper=10.0)  # kpc
+        # R0 = pm.Uniform("R0", lower=7.0, upper=10.0)  # kpc
+        R0 = pm.Normal("R0", mu=8.178, sigma=0.026)  # kpc (from GRAVITY Collaboration)
         a2 = pm.Uniform("a2", lower=0.7, upper=1.5)  # dimensionless
         a3 = pm.Uniform("a3", lower=1.5, upper=1.8)  # dimensionless
         if prior_set == "A1" or prior_set == "A5":
@@ -357,12 +359,14 @@ def run_MCMC(
         # Barycentric Cartesian to galactocentric Cartesian coodinates
         if free_Zsun:
             print("+ free Zsun parameter", end=" ", flush=True)
+            # Conservative prior based on Reid et al. 2019 & Anderson et al. 2019
             Zsun = pm.Normal("Zsun", mu=_ZSUN, sigma=10.)  # pc
         else:
             Zsun = _ZSUN  # pc
         if free_roll:
             print("+ free roll parameter", end=" ", flush=True)
-            roll = pm.Normal("roll", mu=_ROLL, sigma=30.)  # deg
+            # Prior based on Reid et al. 2019
+            roll = pm.Normal("roll", mu=_ROLL, sigma=0.1)  # deg
         else:
             roll = _ROLL  # deg
 
@@ -378,6 +382,7 @@ def run_MCMC(
         v_rad = -1 * Upec  # km/s, negative bc toward GC
         if free_Wpec:
             print("+ free Wpec parameter", end="", flush=True)
+            # If nonzero, means masers moving out of galactic plane on average
             Wpec = pm.Normal("Wpec", mu=0., sigma=15.)  # km/s
         else:
             Wpec = 0.0  # km/s, zero vertical velocity in URC
@@ -481,20 +486,26 @@ def run_MCMC(
             return_inferencedata=False)
 
         # === See results (calling within model to prevent FutureWarning) ===
-        if reject_method == "lnlike":
-            print(
-                pm.summary(
-                    trace,
-                    var_names=[
-                        "~lnlike_eqmux_dist",
-                        "~lnlike_eqmuy_dist",
-                        "~lnlike_vlsr_dist",
-                    ],
-                # var_names = ['R0', 'Usun', 'Vsun', 'Wsun', 'Upec', 'Vpec', 'Wpec', 'a2', 'a3']
-                ).to_string()
-            )
-        else:  # reject_method == "sigma"
-            print(pm.summary(trace).to_string())
+        # if reject_method == "lnlike":
+        #     print(
+        #         pm.summary(
+        #             trace,
+        #             var_names=[
+        #                 "~lnlike_eqmux_norm",
+        #                 "~lnlike_eqmuy_norm",
+        #                 "~lnlike_vlsr_norm",
+        #             ],
+        #         ).to_string()
+        #     )
+        # else:  # reject_method == "sigma"
+        #     print(pm.summary(trace).to_string())
+
+        # Varnames order: [R0, Zsun, Usun, Vsun, Wsun, Upec, Vpec, Wpec, roll, a2, a3]
+        varnames = ['R0', 'Usun', 'Vsun', 'Wsun', 'Upec', 'Vpec', 'a2', 'a3']
+        varnames.insert(6, "roll") if free_roll else None
+        varnames.insert(6, "Wpec") if free_Wpec else None
+        varnames.insert(1, "Zsun") if free_Zsun else None
+        print(pm.summary(trace, var_names=varnames).to_string())
 
         # === Save results to pickle file ===
         with open(outfile, "wb") as f:
@@ -514,22 +525,31 @@ def run_MCMC(
                     "free_Wpec": free_Wpec,
                 }, f)
 
+        if return_num_sources:
+            return num_sources
+
 
 def main(infile, num_cores=None, num_chains=None, num_tune=2000, num_iters=5000,
         num_samples=100, prior_set="A1", like_type="gauss", num_rounds=1,
         reject_method="sigma", this_round=1, filter_plx=False,
-        free_Wpec=False, free_Zsun=False, free_roll=False):
+        free_Wpec=False, free_Zsun=False, free_roll=False, auto_run=False):
     if num_cores is None:
         num_cores = 2
     if num_chains is None:
         num_chains = num_cores
 
-    # Run simulation for num_rounds times
     if num_rounds < 1:
         raise ValueError("num_rounds must be an integer greater than or equal to 1.")
+    if this_round < 1:
+        raise ValueError("this_round must be an integer greater than or equal to 1.")
 
-    print(f"=========\nQueueing {num_rounds} Bayesian MCMC rounds w/ "
-          f"{prior_set} priors, {like_type} PDF", end="", flush=True)
+    # Run simulation for num_rounds times or until no more outliers removed
+    if auto_run:
+        print(f"=========\nRunning Bayesian MCMC until convergence w/ "
+              f"{prior_set} priors, {like_type} PDF", end="", flush=True)
+    else:
+        print(f"=========\nQueueing {num_rounds} Bayesian MCMC rounds w/ "
+            f"{prior_set} priors, {like_type} PDF", end="", flush=True)
 
     if num_rounds == 1:
         print()
@@ -542,7 +562,7 @@ def main(infile, num_cores=None, num_chains=None, num_tune=2000, num_iters=5000,
     else:
         print(f", & reject_method = {reject_method}")
 
-    while this_round <= num_rounds:
+    while this_round <= num_rounds or auto_run:
         print(f"===\nRunning round {this_round}")
         if infile[-3:] == ".db":
             if this_round != 1:
@@ -560,25 +580,35 @@ def main(infile, num_cores=None, num_chains=None, num_tune=2000, num_iters=5000,
                 # Override like_type to "gauss"
                 like_type = "gauss"
 
-        run_MCMC(
+        num_sources = run_MCMC(
             data,
             num_iters, num_tune, num_cores, num_chains, num_samples,
             prior_set, like_type, load_database, this_round, filter_plx, reject_method,
-            free_Wpec=free_Wpec, free_Zsun=free_Zsun, free_roll=free_roll
+            free_Wpec=free_Wpec, free_Zsun=free_Zsun, free_roll=free_roll,
+            return_num_sources=True
         )
 
+        # Calculate Bayesian information criterion
+        bic.main(prior_set, this_round)
+
         # Seeing if outlier rejection is necessary
-        if this_round == num_rounds:
+        if this_round == num_rounds and not auto_run:
             break  # No need to clean data after final MCMC run
         # Else: do outlier rejection
-        clean.main(prior_set, this_round)
+        num_sources_cleaned = clean.main(
+            prior_set, this_round, return_num_sources_cleaned=True)
+        if like_type == "gauss" and num_sources == num_sources_cleaned:
+            # Even if no outliers rejected, if like_type == "sivia" or "cauchy",
+            # do at least one iteration with "gauss" (since num_rounds > 1)
+            print(f"No more outliers rejected after round {this_round}. Exiting")
+            break
 
         # Set auto-generated cleaned pickle file as next infile
         filename = f"mcmc_outfile_{prior_set}_{this_round}_clean.pkl"
         infile = str(Path(__file__).parent / filename)
         this_round += 1
 
-    print(f"===\n{num_rounds} Bayesian MCMC runs complete\n=========")
+    print(f"===\n{this_round-1} Bayesian MCMC runs complete\n=========")
 
 
 if __name__ == "__main__":
@@ -660,6 +690,11 @@ if __name__ == "__main__":
         action="store_true",
         default=False,
         help="Let the roll angle between galactic midplane and galactocentric frame be a free parameter")
+    parser.add_argument(
+        "--auto_run",
+        action="store_true",
+        default=False,
+        help="Run the MCMC program until no more outliers are rejected. Will override num_rounds")
     args = vars(parser.parse_args())
 
     main(
@@ -678,4 +713,5 @@ if __name__ == "__main__":
         free_Zsun=args["free_Zsun"],
         free_Wpec=args["free_Wpec"],
         free_roll=args["free_roll"],
+        auto_run=args["auto_run"],
     )
