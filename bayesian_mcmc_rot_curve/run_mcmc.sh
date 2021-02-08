@@ -1,17 +1,18 @@
 #!/bin/bash
 num_cores=10
 
-# python MCMC_w_dist_uncer.py /home/chengi/Documents/coop2021/data/hii_v2_20201203.db \
-#     --num_cores $num_cores --num_chains $num_cores --num_tune 2500 --num_iter 5000 \
-#     --num_samples 100 --prior_set A1 --like_type cauchy \
-#     --num_rounds 1 --reject_method sigma --filter_plx
-
-echo "==== Testing simulated data ===="
-python MCMC_w_dist_uncer.py \
-    /home/chengi/Documents/coop2021/bayesian_mcmc_rot_curve/mcmc_sim_data.pkl \
-    --num_cores $num_cores --num_chains $num_cores --num_tune 2000 --num_iter 2000 \
+echo "=== Testing real data ==="
+python MCMC_w_dist_uncer.py /home/chengi/Documents/coop2021/data/hii_v2_20201203.db \
+    --num_cores $num_cores --num_chains $num_cores --num_tune 1500 --num_iter 1500 \
     --num_samples 100 --prior_set A5 --like_type cauchy \
-    --num_rounds 3 --reject_method lnlike --free_Wpec --free_Zsun --free_roll
+    --num_rounds 3 --reject_method lnlike --free_Zsun --free_roll --auto_run
+
+# echo "==== Testing simulated data ===="
+# python MCMC_w_dist_uncer.py \
+#     /home/chengi/Documents/coop2021/bayesian_mcmc_rot_curve/mcmc_sim_data.pkl \
+#     --num_cores $num_cores --num_chains $num_cores --num_tune 1500 --num_iter 1500 \
+#     --num_samples 100 --prior_set A5 --like_type cauchy \
+#     --num_rounds 3 --reject_method lnlike --free_Zsun --free_roll --auto_run
 
 # Other params:
 # --filter_plx (will also filter sources with e_plx/plx > 0.2)
@@ -20,3 +21,5 @@ python MCMC_w_dist_uncer.py \
 # --free Zsun (let Zsun be free parameter)
 # --free_roll (let roll angle b/w galactic midplane &
 #              galactocentric frame be free parameter)
+# --auto_run (let MCMC program run until no more outliers rejected.
+#             Will override num_rounds)
