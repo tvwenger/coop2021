@@ -182,6 +182,8 @@ def main(prior_set, num_rounds):
         free_Zsun = file["free_Zsun"]
         free_roll = file["free_roll"]
         free_Wpec = file["free_Wpec"]
+    print("Number of sources:", num_sources)
+    print("Likelihood function:", like_type)
 
     # === Extract parallax, proper motions & LSR velocity ===
     plx = data["plx"].values  # mas
