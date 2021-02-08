@@ -39,10 +39,17 @@ _RAD_TO_DEG = 57.29577951308232  # 180/pi (Don't forget to % 360 after)
 
 def get_data(db_file):
     """
-    Retrieves all relevant data in Parallax table
-    from database connection specified by db_file
+    Puts all relevant data from db_file's Parallax table into pandas DataFrame.
 
-    Returns DataFrame with:
+    Inputs:
+      db_file :: pathlib Path object
+        Path object to SQL database containing maser galactic longitudes, latitudes,
+        right ascensions, declinations, parallaxes, equatorial proper motions,
+        and LSR velocities with all associated uncertainties
+
+    Returns: data
+      data :: pandas DataFrame
+        Contains db_file data in pandas DataFrame. Specifically, it includes:
         ra (deg), dec (deg), glong (deg), glat (deg), plx (mas), e_plx (mas),
         mux (mas/yr), muy (mas/yr), vlsr (km/s) + all proper motion/vlsr uncertainties
     """
@@ -157,7 +164,7 @@ def dist_prob(dist, plx, e_plx):
     mean_dist = 1 / plx
     exp_part = (-0.5 * (dist - mean_dist) * (dist - mean_dist)
                / (dist * dist * mean_dist * mean_dist * e_plx * e_plx))
-    coeff = 1 / (dist * dist * e_plx * np.sqrt(2*np.pi))
+    coeff = 1 / (dist * dist * e_plx * np.sqrt(2 * np.pi))
 
     return coeff * np.exp(exp_part)
 
@@ -178,7 +185,7 @@ def generate_dists(plx, e_plx, num_samples):
 
     Returns: dists
       dists :: Array of scalars (kpc)
-        Galactic-frame distances sampled from the asymmetric parallax-to-distance PDF
+        Galactic-frame distances sampled from the asymmetric parallax-to-distance pdf
     """
 
     # possible distance values (1 pc resolution)
@@ -294,21 +301,50 @@ def run_MCMC(
     Inputs:
       data :: pandas DataFrame
         DataFrame with all relevant data (expand later)
-      num_iters :: scalar
+      num_iters :: scalar (int)
         Number of MCMC iterations for sampler to run
-      num_tune :: scalar
+      num_tune :: scalar (int)
         Number of MCMC tuning iterations
-      num_cores :: scalar
+      num_cores :: scalar (int)
         Number of computer cores to allocate to PyMC3
-      num_chains :: scalar
+      num_chains :: scalar (int)
         Number of parallel MCMC chains to run
-      num_samples :: scalar
+      num_samples :: scalar (int)
         Number of distance samples per source
-      is_database_data : boolean
+      prior_set :: string
+        Prior set from Reid et al. (2019). (A1, A5, B, C, or D)
+        N.B. the R0 prior has been updated to the value given by GRAVITY Collaboration
+      like_type :: string
+        Likelihood pdf. (gauss, cauchy, or sivia)
+          - gauss = Gaussian pdf
+          - cauchy = Cauchy (aka Lorentzian) pdf
+          - sivia = Sivia & Skilling's 2006 pdf
+      is_database_data :: boolean
         If True, will filter data (i.e. using a new set of priors)
         If False, will not filter data (i.e. reading filtered data from pickle file)
+      this_round :: scalar (int)
+        Number of times the MCMC algorithm has run
+      filter_parallax :: boolean
+        If True, will remove sources w/ R < 4kpc to galactic centre & e_plx/plx > 20%
+        If False, will only remove sources w/ R < 4kpc to galactic centre
+      reject_method :: string
+        Outlier rejection method (lnlike or sigma)
+          - lnlike = compares median ln-likelihood of each source to threshold value
+          - sigma = rejects sources with residual motions > 3 sigma
+      free_Wpec :: boolean (default: False)
+        If True, the Sun's vertical velocity toward NGP is a free parameter
+      free_Zsun :: boolean (defualt: False)
+        If True, the Sun's height above galactic midplane is a free parameter
+      free_roll :: boolean (defualt: False)
+        If True, the roll angle between the galactic midplane and
+        the galactocentric frame is a free parameter
+      return_num_sources :: boolean (default: False)
+        If True, return the number of sources used in MCMC fitting
 
-    TODO: finish docstring
+    Returns: num_sources (optional)
+      num_sources :: scalar (int), optional
+        The number of sources used in MCMC fitting
+        Returned iff return_num_sources == True
     """
 
     # New binary file to store MCMC output
@@ -566,6 +602,51 @@ def main(infile, num_cores=None, num_chains=None, num_tune=2000, num_iters=5000,
         num_samples=100, prior_set="A1", like_type="gauss", num_rounds=1,
         reject_method="sigma", this_round=1, filter_plx=False,
         free_Wpec=False, free_Zsun=False, free_roll=False, auto_run=False):
+    """
+    Inputs:
+      infile :: string
+        Absolute path of the .db or .pkl file containing the data
+      num_cores :: scalar (int), optional
+        Number of computer cores to allocate to PyMC3
+      num_chains :: scalar (int), optional
+        Number of parallel MCMC chains to run
+      num_tune :: scalar (int), optional
+        Number of MCMC tuning iterations
+      num_iters :: scalar (int), optional
+        Number of MCMC iterations for sampler to run
+      num_samples :: scalar (int), optional
+        Number of distance samples per source
+      prior_set :: string, optional
+        Prior set from Reid et al. (2019). (A1, A5, B, C, or D)
+        N.B. the R0 prior has been updated to the value given by GRAVITY Collaboration
+      like_type :: string, optional
+        Likelihood pdf. (gauss, cauchy, or sivia)
+          - gauss = Gaussian pdf
+          - cauchy = Cauchy (aka Lorentzian) pdf
+          - sivia = Sivia & Skilling's 2006 pdf
+      num_rounds :: scalar (int), optional
+        Total number of times to run MCMC algorithm. Overridden if auto_run == True
+      reject_method :: string, optional
+        Outlier rejection method (lnlike or sigma)
+          - lnlike = compares median ln-likelihood of each source to threshold value
+          - sigma = rejects sources with residual motions > 3 sigma
+      this_round :: scalar (int), optional
+        Number of times the MCMC algorithm has run
+      filter_plx :: boolean, optional
+        If False, will only remove sources closer than 4 kpc to galactic centre
+        If True, will also remove sources with parallax uncertainty > 20% of parallax
+      free_Wpec :: boolean (default: False)
+        If True, the Sun's vertical velocity toward NGP is a free parameter
+      free_Zsun :: boolean (defualt: False)
+        If True, the Sun's height above galactic midplane is a free parameter
+      free_roll :: boolean (defualt: False)
+        If True, the roll angle between the galactic midplane and
+        the galactocentric frame is a free parameter
+      auto_run :: boolean, optional
+        If True, will run MCMC until no more outliers are rejected
+        If False, will run MCMC as specified by num_rounds
+    """
+
     if num_cores is None:
         num_cores = 2
     if num_chains is None:
@@ -641,7 +722,7 @@ def main(infile, num_cores=None, num_chains=None, num_tune=2000, num_iters=5000,
         infile = str(Path(__file__).parent / filename)
         this_round += 1
 
-    print(f"===\n{this_round-1} Bayesian MCMC runs complete\n=========")
+    print(f"===\n{this_round} Bayesian MCMC runs complete\n=========")
 
 
 if __name__ == "__main__":
