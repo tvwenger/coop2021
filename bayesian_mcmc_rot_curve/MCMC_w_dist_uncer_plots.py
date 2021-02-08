@@ -16,17 +16,6 @@ def plot_MCMC(trace, prior_set, like_type, num_sources, num_samples, reject_meth
     if like_type != "gauss" and like_type != "cauchy" and like_type != 'sivia':
         raise ValueError("Invalid like_type. Allowed: 'gauss', 'cauchy', or 'sivia'.")
 
-    # sample_lst = []
-    # varnames = []
-
-    # # Get names of variables & data associated with each variable
-    # for varname in trace.varnames:
-    #     if "interval" in varname or "lnlike" in varname:
-    #         continue  # do not want to include non user-defined parameters
-    #     varnames.append(varname)
-    #     sample_lst.append(trace[varname])
-    # samples = np.array(sample_lst)
-
     # Varnames order: [R0, Zsun, Usun, Vsun, Wsun, Upec, Vpec, Wpec, roll, a2, a3]
     varnames = ['R0', 'Usun', 'Vsun', 'Wsun', 'Upec', 'Vpec', 'a2', 'a3']
     samples = [trace[varname] for varname in varnames]
