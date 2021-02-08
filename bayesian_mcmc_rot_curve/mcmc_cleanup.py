@@ -75,7 +75,7 @@ def ln_gauss_norm(x, mean, sigma):
     TODO: finish docstring
     """
 
-    return -0.5 * (x - mean) * (x - mean) / sigma / sigma
+    return -0.5 * (x - mean) * (x - mean) / (sigma * sigma)
 
 
 def ln_cauchy_norm(x, x_peak, sigma):
