@@ -182,6 +182,8 @@ def main(prior_set, num_rounds):
         free_Zsun = file["free_Zsun"]
         free_roll = file["free_roll"]
         free_Wpec = file["free_Wpec"]
+
+    print(f"=== Calculating BIC ({prior_set} priors & {num_rounds} MCMC rounds) ===")
     print("Number of sources:", num_sources)
     print("Likelihood function:", like_type)
 
@@ -199,6 +201,7 @@ def main(prior_set, num_rounds):
     # === Bayesian Information Criterion ===
     num_params = 8
     num_params += sum([free_Zsun, free_roll, free_Wpec])
+    print("Number of parameters:", num_params)
 
     sigma_eqmux, sigma_eqmuy, sigma_vlsr = get_sigmas(plx, e_eqmux, e_eqmuy, e_vlsr)
 
