@@ -192,9 +192,9 @@ def cleanup_data(data, trace, like_type, reject_method,
         ln_eqmux_pred = np.median(trace["lnlike_eqmux_norm"], axis=(0, 1))
         ln_eqmuy_pred = np.median(trace["lnlike_eqmuy_norm"], axis=(0, 1))
         ln_vlsr_pred = np.median(trace["lnlike_vlsr_norm"], axis=(0, 1))
-        print("    min predicted ln_mux:", np.min(ln_eqmux_pred))
-        print("    min predicted ln_muy:", np.min(ln_eqmuy_pred))
-        print("    min predicted ln_vlsr:", np.min(ln_vlsr_pred))
+        # print("    min predicted ln_mux:", np.min(ln_eqmux_pred))
+        # print("    min predicted ln_muy:", np.min(ln_eqmuy_pred))
+        # print("    min predicted ln_vlsr:", np.min(ln_vlsr_pred))
 
         if like_type == "gauss":
             ln_threshold = -4.5  # ln(exponential part) = -(3^2)/2
