@@ -205,12 +205,24 @@ def generate_dists(plx, e_plx, num_samples):
 
 def get_weights(dist, e_mux, e_muy, e_vlsr):
     """
-    Calculates sigma values for proper motions and LSR velocity
-    using Reid et al. (2014) weights
+    Calculates uncertainties in proper motions and LSR velocity
+    using Reid et al. (2014) weights (i.e. accounts for 1D virial dispersion)
 
-    Returns: weights (sigma_mux, sigma_muy, sigma_vlsr)
+    Inputs:
+      dist :: Array of scalars (kpc)
+        Distances to sources (in the galactic frame). e.g., dist = 1 / parallax
+      e_mux :: Array of scalars (mas/yr)
+        Uncertainty in RA proper motion with cos(Declination) correction
+      e_eqmuy :: Array of scalars (mas/yr)
+        Uncertainty in declination proper motion
+      e_vlsr :: Array of scalars (km/s)
+        Uncertainty in LSR velocity
 
-    TODO: finish docstring
+    Returns: weight_mux, weight_muy, weight_vlsr
+      weight_mux, weight_muy :: Array of scalars (mas/yr)
+        Reid et al. weights for the RA (w/ cos(dec) correction) & dec proper motions
+      weight_vlsr :: Array of scalars (km/s)
+        Reid et al. weights for the LSR velocity
     """
 
     km_kpc_s_to_mas_yr = 0.21094952656969873  # (mas/yr) / (km/kpc/s)
@@ -248,7 +260,18 @@ def ln_siviaskilling(x, mean, weight):
     Returns the natural log of Sivia & Skilling's (2006) "Lorentzian-like" PDF.
     N.B. That the PDF is _not_ normalized. Peak is at 0.5
 
-    TODO: Finish docstring
+    Inputs:
+      (x, mean, & weight must have the same units)
+      x :: Array of scalars
+        Data
+      mean :: Array of scalars
+        Arithmetic mean of the data
+      weight :: Array of scalars
+        Reid et al. (2014) weights for the data (i.e. data uncertaintites)
+
+    Returns: lnlike
+      lnlike :: Theano TensorVariable (typically dmatrix)
+        Object representing the ln-likelihood of the data using this pdf
     """
 
     residual = abs((x - mean) / weight)
@@ -269,8 +292,18 @@ def run_MCMC(
     Runs Bayesian MCMC. Returns trace & number of sources used in fit.
 
     Inputs:
-      data : pandas DataFrame
+      data :: pandas DataFrame
         DataFrame with all relevant data (expand later)
+      num_iters :: scalar
+        Number of MCMC iterations for sampler to run
+      num_tune :: scalar
+        Number of MCMC tuning iterations
+      num_cores :: scalar
+        Number of computer cores to allocate to PyMC3
+      num_chains :: scalar
+        Number of parallel MCMC chains to run
+      num_samples :: scalar
+        Number of distance samples per source
       is_database_data : boolean
         If True, will filter data (i.e. using a new set of priors)
         If False, will not filter data (i.e. reading filtered data from pickle file)
@@ -402,7 +435,7 @@ def run_MCMC(
         # Calculate uncertainties for likelihood function
         # (using Reid et al. (2014) weights as uncertainties)
         weight_eqmux, weight_eqmuy, weight_vlsr = get_weights(
-            plx, e_eqmux, e_eqmuy, e_vlsr)
+            dist, e_eqmux, e_eqmuy, e_vlsr)
 
         # Make array of likelihood values evaluated at data points
         if free_Zsun or free_roll or free_Wpec:
@@ -551,7 +584,7 @@ def main(infile, num_cores=None, num_chains=None, num_tune=2000, num_iters=5000,
         print(f"=========\nQueueing {num_rounds} Bayesian MCMC rounds w/ "
             f"{prior_set} priors, {like_type} PDF", end="", flush=True)
 
-    if num_rounds == 1:
+    if num_rounds == 1 and not auto_run:
         print()
         if reject_method != "sigma":
             # Override reject_method since no outlier cleaning will be done
