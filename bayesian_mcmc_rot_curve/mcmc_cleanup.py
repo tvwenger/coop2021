@@ -274,7 +274,7 @@ def cleanup_data(data, trace, like_type, reject_method,
     return data_cleaned, num_sources_cleaned
 
 
-def main(prior_set, this_round):
+def main(prior_set, this_round, return_num_sources_cleaned=False):
     # Binary file to read
     # infile = Path(__file__).parent / "MCMC_w_dist_uncer_outfile.pkl"
     infile = Path(
@@ -325,6 +325,9 @@ def main(prior_set, this_round):
                 "free_roll": free_roll,
                 "free_Wpec": free_Wpec,
             }, f)
+
+    if return_num_sources_cleaned:
+        return num_sources_cleaned
 
 
 if __name__ == "__main__":
