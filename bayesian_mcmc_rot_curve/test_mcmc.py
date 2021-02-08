@@ -204,7 +204,7 @@ def main():
 
     # Place DataFrame in pickle file
     outfile = Path(
-        f"/home/chengi/Documents/coop2021/bayesian_mcmc_rot_curve/mcmc_sim_data.pkl")
+        "/home/chengi/Documents/coop2021/bayesian_mcmc_rot_curve/mcmc_sim_data.pkl")
     with open(outfile, "wb") as f:
         dill.dump({"data": data_new}, f)
 
