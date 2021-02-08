@@ -1,10 +1,10 @@
 #!/bin/bash
-num_cores=10
+num_cores=20
 
 echo "=== Testing real data ==="
 python MCMC_w_dist_uncer.py /home/chengi/Documents/coop2021/data/hii_v2_20201203.db \
-    --num_cores $num_cores --num_chains $num_cores --num_tune 1500 --num_iter 1500 \
-    --num_samples 100 --prior_set A5 --like_type cauchy \
+    --num_cores $num_cores --num_chains $num_cores --num_tune 1000 --num_iter 1000 \
+    --num_samples 1000 --prior_set A5 --like_type cauchy \
     --num_rounds 3 --reject_method lnlike --free_Zsun --free_roll --auto_run
 
 # echo "==== Testing simulated data ===="
