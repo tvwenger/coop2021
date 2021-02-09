@@ -160,3 +160,89 @@ Using prior set A5
 Using Gaussian PDF
 Using 10 cores, 10 chains, 1000 tunings, and 1000 iterations.
 ===
+Auto-assigning NUTS sampler...
+Initializing NUTS using advi...
+Convergence achieved at 29100--------------------| 14.55% [29095/200000 10:47<1:03:20 Average Loss = 773.88]
+Interrupted at 29,099 [14%]: Average Loss = 828.51
+Multiprocess sampling (10 chains in 10 jobs)
+NUTS: [roll, Zsun, Vpec, Upec, Wsun, Vsun, Usun, a3, a2, R0]
+Sampling 10 chains for 1_000 tune and 1_000 draw iterations (10_000 + 10_000 draws total) took 875 seconds.]
+The number of effective samples is smaller than 25% for some parameters.
+        mean      sd  hdi_3%  hdi_97%  mcse_mean  mcse_sd  ess_mean   ess_sd  ess_bulk  ess_tail  r_hat
+R0     8.176   0.026   8.128    8.225      0.000    0.000   12200.0  12200.0   12186.0    8316.0   1.00
+Zsun   5.295  10.020 -13.521   23.721      0.090    0.091   12269.0   6036.0   12284.0    7378.0   1.00
+Usun  10.863   1.041   9.007   12.905      0.012    0.008    7832.0   7829.0    7836.0    7122.0   1.00
+Vsun   9.869   5.954  -1.900   20.548      0.165    0.117    1300.0   1290.0    1307.0    1654.0   1.01
+Wsun   7.971   0.598   6.828    9.102      0.005    0.004   12985.0  12985.0   12950.0    7863.0   1.00
+Upec   4.981   1.274   2.561    7.342      0.015    0.011    7454.0   7347.0    7457.0    7259.0   1.00
+Vpec  -5.174   5.771 -16.600    5.176      0.161    0.119    1291.0   1167.0    1295.0    1713.0   1.01
+roll   0.004   0.098  -0.177    0.190      0.001    0.001   12318.0   5155.0   12313.0    7283.0   1.00
+a2     0.967   0.043   0.885    1.047      0.001    0.001    3291.0   3291.0    3328.0    4714.0   1.00
+a3     1.624   0.022   1.585    1.668      0.001    0.000    1400.0   1398.0    1400.0    2089.0   1.01
+=== Calculating BIC (A5 priors & 4 MCMC rounds) ===
+Number of sources: 141
+Likelihood function: gauss
+Number of parameters: 10
+Bayesian Information Criterion: 57.55698366750052
+===
+Executing outlier rejection after round 4
+prior_set: A5
+like_type: gauss
+num parallax samples: 100
+num sources before filtering: 141
+Using log-likelihood to reject data
+    min predicted ln_mux: -3.465569907722747
+    min predicted ln_muy: -4.270293388830181
+    min predicted ln_vlsr: -4.577899137377806
+num sources after filtering: 140
+===
+Running round 5
+===
+Using data from pickle file
+Number of data points used: 140
+Number of distance samples: 100
+===
+Using prior set A5
++ free Zsun parameter + free roll parameter
+Using Gaussian PDF
+Using 10 cores, 10 chains, 1000 tunings, and 1000 iterations.
+===
+Auto-assigning NUTS sampler...
+Initializing NUTS using advi...
+Convergence achieved at 30200--------------------| 15.10% [30197/200000 11:14<1:03:12 Average Loss = 766.99]
+Interrupted at 30,199 [15%]: Average Loss = 817.1
+Multiprocess sampling (10 chains in 10 jobs)
+NUTS: [roll, Zsun, Vpec, Upec, Wsun, Vsun, Usun, a3, a2, R0]
+Sampling 10 chains for 1_000 tune and 1_000 draw iterations (10_000 + 10_000 draws total) took 854 seconds.]
+The number of effective samples is smaller than 25% for some parameters.
+        mean     sd  hdi_3%  hdi_97%  mcse_mean  mcse_sd  ess_mean   ess_sd  ess_bulk  ess_tail  r_hat
+R0     8.177  0.026   8.132    8.228      0.000    0.000   12871.0  12866.0   12882.0    8402.0   1.00
+Zsun   5.156  9.863 -13.894   23.190      0.087    0.089   12991.0   6198.0   13028.0    7733.0   1.00
+Usun  10.718  1.060   8.780   12.694      0.012    0.009    7380.0   7379.0    7383.0    6967.0   1.00
+Vsun  10.405  6.021  -0.776   21.583      0.181    0.135    1104.0    994.0    1103.0    1168.0   1.01
+Wsun   8.046  0.588   6.997    9.228      0.005    0.003   14172.0  14172.0   14174.0    7918.0   1.00
+Upec   4.853  1.296   2.523    7.383      0.015    0.011    7164.0   7136.0    7166.0    6835.0   1.00
+Vpec  -4.550  5.835 -15.498    6.222      0.175    0.124    1105.0   1105.0    1105.0    1289.0   1.01
+roll   0.004  0.098  -0.182    0.188      0.001    0.001   13774.0   5018.0   13776.0    7832.0   1.00
+a2     0.969  0.043   0.887    1.047      0.001    0.001    2579.0   2579.0    2631.0    4423.0   1.00
+a3     1.624  0.022   1.582    1.664      0.001    0.000    1173.0   1173.0    1176.0    1502.0   1.01
+=== Calculating BIC (A5 priors & 5 MCMC rounds) ===
+Number of sources: 140
+Likelihood function: gauss
+Number of parameters: 10
+Bayesian Information Criterion: 57.49244601684791
+===
+Executing outlier rejection after round 5
+prior_set: A5
+like_type: gauss
+num parallax samples: 100
+num sources before filtering: 140
+Using log-likelihood to reject data
+    min predicted ln_mux: -3.4060410236821137
+    min predicted ln_muy: -3.904992181023971
+    min predicted ln_vlsr: -4.001226308554289
+num sources after filtering: 140
+No more outliers rejected after round 5. Exiting
+===
+5 Bayesian MCMC runs complete
+=========
