@@ -28,12 +28,12 @@ _ZSUN = 5.5  # pc
 # Useful constants
 _RAD_TO_DEG = 57.29577951308232  # 180/pi (Don't forget to % 360 after)
 
-def data_to_gcen_cyl_residuals(
+def data_to_gcen_cyl(
   data, trace, free_Zsun=False, free_roll=False, free_Wpec=False
 ):
     """
-    Converts database data to galactocentric cylindrical coordinates and
-    calculates the residual motions of the sources.
+    Converts database data to
+    galactocentric cylindrical coordinates and velocities
 
     Returns galactocentric cylindrical coordinates & their
     residual motions in the galactocentric cylindrical frame
@@ -160,7 +160,7 @@ def main(prior_set, num_samples, num_rounds):
       v_rad,
       v_circ,
       v_vert,
-    ) = data_to_gcen_cyl_residuals(
+    ) = data_to_gcen_cyl(
         data, trace, free_Zsun=free_Zsun, free_roll=free_roll, free_Wpec=free_Wpec)
 
     # Convert galactocentric cylindrical to galactocentric Cartesian
@@ -194,7 +194,8 @@ def main(prior_set, num_samples, num_rounds):
 
     fig, ax = plt.subplots()
     ax.scatter(x, y, c=vrad_vcirc, cmap=cmap, s=2)
-    cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax, ticks=ticks)
+    cbar = fig.colorbar(
+      mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax, ticks=ticks, format="%.2f")
     cbar.ax.get_yaxis().labelpad = 15
     cbar.ax.set_ylabel(r'$v_{rad}/v_{circ}$', rotation=270)
     ax.axhline(y=0, linewidth=0.5, linestyle="--", color="k")  # horizontal line
@@ -203,6 +204,11 @@ def main(prior_set, num_samples, num_rounds):
     ax.set_xticks([-5, 0, 5, 10])
     ax.set_ylim(-5, 15)
     ax.set_yticks([-5, 0, 5, 10, 15])
+    # # Using our coordinate convention
+    # ax.set_xlim(-15, 5)
+    # ax.set_xticks([-15, -10, -5, 0, 5])
+    # ax.set_ylim(-8, 12)
+    # ax.set_yticks([-5, 0, 5, 10])
 
     # Set title and labels. Then save figure
     ax.set_title(f"Face-on View of {num_sources} Masers & "
@@ -227,7 +233,7 @@ def main(prior_set, num_samples, num_rounds):
     # e_eqmuy = data["e_muy"].values  # mas/y (equatorial frame)
     # vlsr = data["vlsr"].values  # km/s
     # e_vlsr = data["e_vlsr"].values  # km/s
-    # eqmux_pred, eqmuy_pred, vlsr_pred = data_to_gcen_cyl_residuals(
+    # eqmux_pred, eqmuy_pred, vlsr_pred = data_to_gcen_cyl(
     #     data, trace, free_Zsun=free_Zsun, free_roll=free_roll, free_Wpec=free_Wpec)
 
     # # === Peculiar motions ===
