@@ -1,3 +1,4 @@
+! NOTE: These results used the wrong likelihood calculation
 =========================================================================================
 == FOLLOWING MCMC RUNS w/ 10 chains, 2500 tunings + 5000 iterations each chain,
 == 100 distance samples, and init="advi"
