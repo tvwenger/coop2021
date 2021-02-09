@@ -180,16 +180,19 @@ def main(prior_set, num_samples, num_rounds):
     print("Min v_rad/v_circ:", vrad_vcirc_min)
     print("Max v_rad/v_circ:", vrad_vcirc_max)
     print("Mean v_rad/v_circ:", np.mean(vrad_vcirc))
+    print("# v_rad/v_circ > 0:", np.sum(vrad_vcirc > 0))
+    print("# v_rad/v_circ < 0:", np.sum(vrad_vcirc < 0))
 
     # Plot data
     cmap = "inferno"  # "coolwarm" is another option
     cmap_min = np.floor(100 * vrad_vcirc_min) / 100
     cmap_max = np.ceil(100 * vrad_vcirc_max) / 100
     norm = mpl.colors.Normalize(vmin=cmap_min, vmax=cmap_max)
+    ticks = np.linspace(cmap_min, cmap_max, 8)
 
     fig, ax = plt.subplots()
     ax.scatter(x, y, c=vrad_vcirc, cmap=cmap, s=2)
-    cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax)
+    cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax, ticks=ticks)
     cbar.ax.get_yaxis().labelpad = 15
     cbar.ax.set_ylabel(r'$v_{rad}/v_{circ}$', rotation=270)
     ax.axhline(y=0, linewidth=0.5, linestyle="--", color="k")  # horizontal line
