@@ -842,10 +842,15 @@ def gcen_cyl_to_gcen_cart(
 
     x_kpc = perp_distance * -cos_az  # kpc
     y_kpc = perp_distance * sin_az  # kpc
-    vx = v_radial * -cos_az + v_tangent * sin_az  # km/s
-    vy = v_radial * sin_az + v_tangent * cos_az  # km/s
 
-    return x_kpc, y_kpc, height, vx, vy, v_vertical
+    if v_radial is not None and v_tangent is not None and v_vertical is not None:
+        vx = v_radial * -cos_az + v_tangent * sin_az  # km/s
+        vy = v_radial * sin_az + v_tangent * cos_az  # km/s
+
+        return x_kpc, y_kpc, height, vx, vy, v_vertical
+
+    return x_kpc, y_kpc, height
+
 
 
 def get_gcen_cyl_radius_and_circ_velocity(
@@ -1032,8 +1037,9 @@ def vbary_to_vlsr(vbary, glon, glat, e_vbary=None):
 
 def eq_and_gal_to_gcen_cyl(
     ra, dec, plx, glon, glat, eq_mux, eq_muy, vlsr,
-    R0=_RSUN, Usun=_USUN, Vsun=_VSUN, Wsun=_WSUN,
-    return_only_r_and_theta=True
+    R0=_RSUN, Zsun=_ZSUN, roll=_ROLL,
+    Usun=_USUN, Vsun=_VSUN, Wsun=_WSUN, Theta0=_THETA_0,
+    use_theano=False, return_only_r_and_theta=True,
 ):
     """
     Converts RA, dec, parallax, longitude, latitude,
@@ -1054,7 +1060,8 @@ def eq_and_gal_to_gcen_cyl(
 
     # Transform from galactic to galactocentric Cartesian coordinates
     bary_x, bary_y, bary_z = gal_to_bary(glon, glat, gdist)
-    gcen_x, gcen_y, gcen_z = bary_to_gcen(bary_x, bary_y, bary_z, R0=R0)
+    gcen_x, gcen_y, gcen_z = bary_to_gcen(
+      bary_x, bary_y, bary_z, R0=R0, Zsun=Zsun, roll=roll)
 
     # === VELOCITY CONVERSIONS ===
 
@@ -1062,14 +1069,17 @@ def eq_and_gal_to_gcen_cyl(
     vbary = vlsr_to_vbary(vlsr, glon, glat)
 
     # Transform equatorial proper motions to galactic proper motions
-    gmul, gmub = eq_to_gal(ra, dec, eq_mux, eq_muy, return_pos=False)
+    gmul, gmub = eq_to_gal(
+      ra, dec, eq_mux, eq_muy, return_pos=False, use_theano=use_theano)
 
     # Transform galactic proper motions to barycentric Cartesian velocities
     U, V, W = gal_to_bary_vel(glon, glat, gdist, gmul, gmub, vbary)
 
     # Transform barycentric Cartesian velocities to galactocentric Cartesian velocities
     gcen_vx, gcen_vy, gcen_vz = bary_to_gcen_vel(
-      U, V, W, R0=R0, Usun=Usun, Vsun=Vsun, Wsun=Wsun
+      U, V, W,
+      R0=R0, Zsun=Zsun, roll=roll,
+      Usun=Usun, Vsun=Vsun, Wsun=Wsun, Theta0=Theta0
     )
 
     # === GALACTOCENTRIC CARTESIAN TO GALACTOCENTRIC CYLINDRICAL CONVERSION ===
@@ -1083,7 +1093,7 @@ def eq_and_gal_to_gcen_cyl(
 
     # Calculate all coordinates & velocities in cylindrical frame
     radius, azimuth, height, v_radial, v_circ, v_vert = gcen_cart_to_gcen_cyl(
-        gcen_x, gcen_y, gcen_z, gcen_vx, gcen_vy, gcen_vz
+        gcen_x, gcen_y, gcen_z, gcen_vx, gcen_vy, gcen_vz, use_theano=use_theano
     )
     return radius, azimuth, height, v_radial, v_circ, v_vert
 
