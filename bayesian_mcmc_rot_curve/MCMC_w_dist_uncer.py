@@ -17,6 +17,7 @@ import theano.tensor as tt
 import pymc3 as pm
 import dill
 import textwrap
+import theano
 
 # Want to add my own programs as package:
 # Make a $PATH to coop2021 (twice parent folder of this file)
@@ -35,6 +36,7 @@ _ROLL = 0.0  # deg (Anderson et al. 2019)
 _ZSUN = 5.5  # pc
 # Useful constants
 _RAD_TO_DEG = 57.29577951308232  # 180/pi (Don't forget to % 360 after)
+theano.config.floatX = 'float32'
 
 
 def get_data(db_file):
@@ -110,12 +112,12 @@ def filter_data(data, filter_e_plx):
         print("Only filter sources with R < 4 kpc")
         bad = (np.array(all_radii) < 4.0)
 
-    # Slice data into components (using np.asarray to prevent PyMC3 error with pandas)
+    # Slice data into components
     ra = data["ra"][~bad]  # deg
     dec = data["dec"][~bad]  # deg
     glon = data["glong"][~bad]  # deg
     glat = data["glat"][~bad]  # deg
-    plx_orig = data["plx"][~bad]  # mas
+    plx = data["plx"][~bad]  # mas
     e_plx = data["e_plx"][~bad]  # mas
     eqmux = data["mux"][~bad]  # mas/yr (equatorial frame)
     e_eqmux = data["e_mux"][~bad]  # mas/y (equatorial frame)
@@ -131,7 +133,7 @@ def filter_data(data, filter_e_plx):
             "dec": dec,
             "glong": glon,
             "glat": glat,
-            "plx": plx_orig,
+            "plx": plx,
             "e_plx": e_plx,
             "mux": eqmux,
             "e_mux": e_eqmux,
