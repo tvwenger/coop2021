@@ -182,6 +182,8 @@ def main(prior_set, num_samples, num_rounds):
     print("Mean v_rad/v_circ:", np.mean(vrad_vcirc))
     print("# v_rad/v_circ > 0:", np.sum(vrad_vcirc > 0))
     print("# v_rad/v_circ < 0:", np.sum(vrad_vcirc < 0))
+    print("# v_rad < 0:", np.sum(v_rad < 0))
+    print("# v_circ < 0:", np.sum(v_circ < 0))
 
     # Plot data
     cmap = "inferno"  # "coolwarm" is another option
