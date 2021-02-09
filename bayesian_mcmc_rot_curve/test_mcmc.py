@@ -120,7 +120,7 @@ def main():
     data = get_data(db)
 
     # Specify parameters
-    R0 = 8.15  # kpc
+    R0 = 8.18  # kpc
     Zsun = 5.5  # pc
     roll = 0.0  # deg
     Usun = 10.6  # km/s
