@@ -1,0 +1,162 @@
+=========================================================================================
+! PARTIAL RUN w/ A5 priors, 100 distance samples, & lnlikelihood outlier rejection
+== MCMC RUN w/ 10 chains, 1000 tunings + 1000 iterations each chain,
+== 100 distance samples, and init="advi"
+=========================================================================================
+=== Testing real data ===
+=========
+Running Bayesian MCMC until convergence w/ A5 priors, cauchy PDF, & reject_method = lnlike
+===
+Running round 1
+===
+Starting with fresh data from database
+Only filter sources with R < 4 kpc
+Number of data points used: 183
+Number of distance samples: 100
+===
+Using prior set A5
++ free Zsun parameter + free roll parameter
+Using Cauchy PDF
+Using 10 cores, 10 chains, 1000 tunings, and 1000 iterations.
+===
+Auto-assigning NUTS sampler...
+Initializing NUTS using advi...
+Convergence achieved at 28500-------------------| 14.25% [28497/200000 22:39<2:16:20 Average Loss = 1,221.3]
+Interrupted at 28,499 [14%]: Average Loss = 1,269.3
+Multiprocess sampling (10 chains in 10 jobs)
+NUTS: [roll, Zsun, Vpec, Upec, Wsun, Vsun, Usun, a3, a2, R0]
+Sampling 10 chains for 1_000 tune and 1_000 draw iterations (10_000 + 10_000 draws total) took 1598 seconds.
+The number of effective samples is smaller than 25% for some parameters.
+        mean      sd  hdi_3%  hdi_97%  mcse_mean  mcse_sd  ess_mean   ess_sd  ess_bulk  ess_tail  r_hat
+R0     8.178   0.026   8.130    8.225      0.000    0.000   13981.0  13981.0   13928.0    8220.0   1.00
+Zsun   5.797  10.002 -13.019   24.769      0.090    0.094   12475.0   5612.0   12449.0    7094.0   1.00
+Usun  10.290   1.082   8.174   12.270      0.011    0.008    9882.0   9812.0    9901.0    8093.0   1.00
+Vsun  11.857   6.307   0.695   24.150      0.185    0.131    1166.0   1166.0    1173.0    1608.0   1.01
+Wsun   7.900   0.655   6.658    9.102      0.006    0.004   13859.0  13823.0   13843.0    8548.0   1.00
+Upec   4.226   1.452   1.458    6.874      0.015    0.011    9420.0   9309.0    9420.0    7368.0   1.00
+Vpec  -4.185   6.163 -15.573    7.324      0.181    0.128    1161.0   1161.0    1168.0    1506.0   1.01
+roll   0.004   0.098  -0.179    0.190      0.001    0.001   13228.0   4957.0   13238.0    8335.0   1.00
+a2     0.948   0.050   0.853    1.039      0.001    0.001    3531.0   3531.0    3559.0    5295.0   1.00
+a3     1.621   0.024   1.577    1.666      0.001    0.000    1304.0   1304.0    1310.0    1960.0   1.01
+=== Calculating BIC (A5 priors & 1 MCMC rounds) ===
+Number of sources: 183
+Likelihood function: cauchy
+Number of parameters: 10
+Bayesian Information Criterion: 62.26579714775096
+===
+Executing outlier rejection after round 1
+prior_set: A5
+like_type: cauchy
+num parallax samples: 100
+num sources before filtering: 183
+Using log-likelihood to reject data
+    min predicted ln_mux: -3.0833505466626834
+    min predicted ln_muy: -3.651764458725907
+    min predicted ln_vlsr: -4.486248747272778
+num sources after filtering: 145
+===
+Running round 2
+===
+Using data from pickle file
+Number of data points used: 145
+Number of distance samples: 100
+===
+Using prior set A5
++ free Zsun parameter + free roll parameter
+Using Gaussian PDF
+Using 10 cores, 10 chains, 1000 tunings, and 1000 iterations.
+===
+Auto-assigning NUTS sampler...
+Initializing NUTS using advi...
+Convergence achieved at 28100--------------------| 14.05% [28093/200000 13:01<1:19:40 Average Loss = 807.38]
+Interrupted at 28,099 [14%]: Average Loss = 862.16
+Multiprocess sampling (10 chains in 10 jobs)
+NUTS: [roll, Zsun, Vpec, Upec, Wsun, Vsun, Usun, a3, a2, R0]
+Sampling 10 chains for 1_000 tune and 1_000 draw iterations (10_000 + 10_000 draws total) took 900 seconds.]
+The number of effective samples is smaller than 25% for some parameters.
+        mean     sd  hdi_3%  hdi_97%  mcse_mean  mcse_sd  ess_mean   ess_sd  ess_bulk  ess_tail  r_hat
+R0     8.179  0.026   8.132    8.228      0.000    0.000   14681.0  14681.0   14681.0    8518.0   1.00
+Zsun   5.656  9.857 -12.760   24.314      0.091    0.090   11619.0   6065.0   11607.0    6582.0   1.00
+Usun  10.757  1.055   8.778   12.725      0.012    0.009    7562.0   7533.0    7563.0    7065.0   1.00
+Vsun   8.491  5.942  -2.325   19.846      0.160    0.114    1381.0   1359.0    1382.0    1602.0   1.01
+Wsun   7.997  0.587   6.922    9.137      0.005    0.004   13102.0  13036.0   13111.0    8097.0   1.00
+Upec   5.173  1.272   2.801    7.520      0.015    0.011    6976.0   6785.0    6980.0    6748.0   1.00
+Vpec  -6.897  5.730 -16.890    4.633      0.154    0.109    1393.0   1393.0    1394.0    1687.0   1.01
+roll   0.006  0.098  -0.170    0.196      0.001    0.001   14039.0   5119.0   14045.0    7811.0   1.00
+a2     0.983  0.040   0.910    1.059      0.001    0.000    3290.0   3290.0    3324.0    5098.0   1.00
+a3     1.630  0.022   1.588    1.670      0.001    0.000    1478.0   1478.0    1481.0    2064.0   1.01
+=== Calculating BIC (A5 priors & 2 MCMC rounds) ===
+Number of sources: 145
+Likelihood function: gauss
+Number of parameters: 10
+Bayesian Information Criterion: 57.839552666837236
+===
+Executing outlier rejection after round 2
+prior_set: A5
+like_type: gauss
+num parallax samples: 100
+num sources before filtering: 145
+Using log-likelihood to reject data
+    min predicted ln_mux: -3.4702998490132586
+    min predicted ln_muy: -4.505846377152094
+    min predicted ln_vlsr: -4.840765794256669
+num sources after filtering: 142
+===
+Running round 3
+===
+Using data from pickle file
+Number of data points used: 142
+Number of distance samples: 100
+===
+Using prior set A5
++ free Zsun parameter + free roll parameter
+Using Gaussian PDF
+Using 10 cores, 10 chains, 1000 tunings, and 1000 iterations.
+===
+Auto-assigning NUTS sampler...
+Initializing NUTS using advi...
+Convergence achieved at 29500--------------------| 14.75% [29499/200000 11:04<1:04:01 Average Loss = 783.13]
+Interrupted at 29,499 [14%]: Average Loss = 836.28
+Multiprocess sampling (10 chains in 10 jobs)
+NUTS: [roll, Zsun, Vpec, Upec, Wsun, Vsun, Usun, a3, a2, R0]
+Sampling 10 chains for 1_000 tune and 1_000 draw iterations (10_000 + 10_000 draws total) took 862 seconds.]
+The number of effective samples is smaller than 25% for some parameters.
+        mean      sd  hdi_3%  hdi_97%  mcse_mean  mcse_sd  ess_mean   ess_sd  ess_bulk  ess_tail  r_hat
+R0     8.178   0.025   8.132    8.226      0.000    0.000   13375.0  13375.0   13370.0    8865.0   1.00
+Zsun   5.319  10.006 -13.281   24.416      0.090    0.098   12450.0   5189.0   12441.0    6376.0   1.00
+Usun  10.702   1.068   8.722   12.696      0.012    0.009    7746.0   7734.0    7742.0    7309.0   1.00
+Vsun   9.654   6.182  -2.294   20.512      0.183    0.129    1145.0   1145.0    1143.0    1435.0   1.01
+Wsun   7.951   0.591   6.838    9.038      0.005    0.004   13166.0  13029.0   13164.0    8305.0   1.00
+Upec   4.661   1.299   2.154    7.032      0.015    0.011    7333.0   7213.0    7330.0    7064.0   1.00
+Vpec  -5.196   5.977 -16.449    5.690      0.176    0.127    1158.0   1104.0    1158.0    1452.0   1.01
+roll   0.005   0.097  -0.175    0.185      0.001    0.001   12877.0   5361.0   12881.0    7856.0   1.00
+a2     0.992   0.042   0.911    1.066      0.001    0.001    2735.0   2735.0    2738.0    4995.0   1.00
+a3     1.626   0.023   1.584    1.668      0.001    0.000    1255.0   1255.0    1254.0    1686.0   1.01
+=== Calculating BIC (A5 priors & 3 MCMC rounds) ===
+Number of sources: 142
+Likelihood function: gauss
+Number of parameters: 10
+Bayesian Information Criterion: 57.6180946896777
+===
+Executing outlier rejection after round 3
+prior_set: A5
+like_type: gauss
+num parallax samples: 100
+num sources before filtering: 142
+Using log-likelihood to reject data
+    min predicted ln_mux: -3.399947173865816
+    min predicted ln_muy: -4.503297199910724
+    min predicted ln_vlsr: -3.909264634262077
+num sources after filtering: 141
+===
+Running round 4
+===
+Using data from pickle file
+Number of data points used: 141
+Number of distance samples: 100
+===
+Using prior set A5
++ free Zsun parameter + free roll parameter
+Using Gaussian PDF
+Using 10 cores, 10 chains, 1000 tunings, and 1000 iterations.
+===
