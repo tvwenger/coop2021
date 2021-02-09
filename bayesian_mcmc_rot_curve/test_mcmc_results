@@ -1,4 +1,124 @@
 Initial parameters:
+    R0 = 8.18  # kpc
+    Zsun = 5.5  # pc
+    Usun = 10.6  # km/s
+    Vsun = 10.7  # km/s
+    Wsun = 7.6  # km/s
+    Upec = 6.1  # km/s
+    Vpec = -4.3  # km/s
+    roll = 0.0  # deg
+    a2 = 0.96  # dimensionless
+    a3 = 1.62  # dimensionless
+
+==== Testing simulated data ====
+=========
+Running Bayesian MCMC until convergence w/ A5 priors, cauchy PDF, & reject_method = lnlike
+===
+Running round 1
+===
+Using data from pickle file
+Number of data points used: 158
+Number of distance samples: 100
+===
+Using prior set A5
++ free Zsun parameter + free roll parameter
+Using Cauchy PDF
+Using 10 cores, 10 chains, 1000 tunings, and 1000 iterations.
+===
+Auto-assigning NUTS sampler...
+Initializing NUTS using advi...
+Convergence achieved at 29200--------------------| 14.60% [29199/200000 15:08<1:28:31 Average Loss = 933.23]
+Interrupted at 29,199 [14%]: Average Loss = 983.13
+Multiprocess sampling (10 chains in 10 jobs)
+NUTS: [roll, Zsun, Vpec, Upec, Wsun, Vsun, Usun, a3, a2, R0]
+Sampling 10 chains for 1_000 tune and 1_000 draw iterations (10_000 + 10_000 draws total) took 1313 seconds.
+The number of effective samples is smaller than 25% for some parameters.
+        mean     sd  hdi_3%  hdi_97%  mcse_mean  mcse_sd  ess_mean   ess_sd  ess_bulk  ess_tail  r_hat
+R0     8.183  0.026   8.133    8.230      0.000    0.000   13113.0  13113.0   13131.0    8802.0   1.00
+Zsun   5.804  9.855 -13.009   23.943      0.086    0.089   13210.0   6192.0   13200.0    7657.0   1.00
+Usun  10.907  1.083   8.814   12.872      0.012    0.009    7909.0   7909.0    7908.0    7249.0   1.00
+Vsun  17.059  6.100   5.500   28.409      0.178    0.126    1177.0   1177.0    1174.0    1755.0   1.01
+Wsun   7.377  0.619   6.239    8.533      0.006    0.004   12587.0  12546.0   12645.0    8456.0   1.00
+Upec   5.599  1.361   3.090    8.168      0.016    0.011    7150.0   7075.0    7145.0    6486.0   1.00
+Vpec   1.955  5.933  -8.612   13.553      0.172    0.121    1196.0   1196.0    1193.0    1785.0   1.01
+roll  -0.002  0.098  -0.176    0.189      0.001    0.001   12856.0   5141.0   12861.0    7986.0   1.00
+a2     0.922  0.051   0.826    1.017      0.001    0.001    2766.0   2766.0    2853.0    3185.0   1.00
+a3     1.605  0.024   1.563    1.651      0.001    0.000    1242.0   1242.0    1244.0    1897.0   1.01
+=== Calculating BIC (A5 priors & 1 MCMC rounds) ===
+Number of sources: 158
+Likelihood function: cauchy
+Number of parameters: 10
+Bayesian Information Criterion: 59.165562286023025
+===
+Executing outlier rejection after round 1
+prior_set: A5
+like_type: cauchy
+num parallax samples: 100
+num sources before filtering: 158
+Using log-likelihood to reject data
+    min predicted ln_mux: -1.742312032275449
+    min predicted ln_muy: -2.7396080683015853
+    min predicted ln_vlsr: -2.561245686073995
+num sources after filtering: 156
+===
+Running round 2
+===
+Using data from pickle file
+Number of data points used: 156
+Number of distance samples: 100
+===
+Using prior set A5
++ free Zsun parameter + free roll parameter
+Using Gaussian PDF
+Using 10 cores, 10 chains, 1000 tunings, and 1000 iterations.
+===
+Auto-assigning NUTS sampler...
+Initializing NUTS using advi...
+Convergence achieved at 28200--------------------| 14.10% [28192/200000 11:35<1:10:38 Average Loss = 746.02]
+Interrupted at 28,199 [14%]: Average Loss = 808.01
+Multiprocess sampling (10 chains in 10 jobs)
+NUTS: [roll, Zsun, Vpec, Upec, Wsun, Vsun, Usun, a3, a2, R0]
+Sampling 10 chains for 1_000 tune and 1_000 draw iterations (10_000 + 10_000 draws total) took 999 seconds.]
+The number of effective samples is smaller than 25% for some parameters.
+        mean     sd  hdi_3%  hdi_97%  mcse_mean  mcse_sd  ess_mean   ess_sd  ess_bulk  ess_tail  r_hat
+R0     8.185  0.026   8.135    8.233      0.000    0.000   13215.0  13215.0   13206.0    8530.0   1.00
+Zsun   6.505  9.973 -11.709   25.632      0.090    0.096   12370.0   5411.0   12386.0    6527.0   1.00
+Usun  10.694  1.040   8.782   12.675      0.012    0.008    7595.0   7591.0    7592.0    7007.0   1.00
+Vsun  16.778  5.742   6.262   27.698      0.154    0.111    1386.0   1345.0    1382.0    1576.0   1.01
+Wsun   7.583  0.565   6.564    8.694      0.005    0.004   13156.0  13048.0   13157.0    8308.0   1.00
+Upec   5.285  1.258   3.038    7.678      0.015    0.010    7399.0   7340.0    7399.0    7023.0   1.00
+Vpec   1.966  5.568  -8.082   12.704      0.149    0.111    1390.0   1251.0    1387.0    1546.0   1.01
+roll   0.002  0.098  -0.179    0.186      0.001    0.001   13145.0   4967.0   13164.0    8009.0   1.00
+a2     0.939  0.045   0.856    1.022      0.001    0.001    2615.0   2615.0    2766.0    3567.0   1.00
+a3     1.608  0.022   1.567    1.651      0.001    0.000    1484.0   1484.0    1489.0    1901.0   1.01
+=== Calculating BIC (A5 priors & 2 MCMC rounds) ===
+Number of sources: 156
+Likelihood function: gauss
+Number of parameters: 10
+Bayesian Information Criterion: 56.777886863636155
+===
+Executing outlier rejection after round 2
+prior_set: A5
+like_type: gauss
+num parallax samples: 100
+num sources before filtering: 156
+Using log-likelihood to reject data
+    min predicted ln_mux: -3.3215830837151303
+    min predicted ln_muy: -4.4446305241683906
+    min predicted ln_vlsr: -3.383760229634447
+num sources after filtering: 156
+No more outliers rejected after round 2. Exiting
+===
+2 Bayesian MCMC runs complete
+=========
+
+
+==========================================================================================
+ The following runs have the wrong weights
+ since I passed plx instead of dist into get_weights() function
+ (but the results are similar)
+==========================================================================================
+Initial parameters:
     R0 = 8.15  # kpc
     Usun = 10.6  # km/s
     Vsun = 10.7  # km/s
@@ -275,7 +395,7 @@ a3     1.619  0.029   1.567    1.675      0.001    0.001     921.0   921.0     9
 
 ==== Testing simulated data with DISTANCES (i.e. using generate_dists function) ====
 =========
-Queueing 2 Bayesian MCMC rounds w/ A1 priors, cauchy PDF, & reject_method = lnlike
+Queueing 2 Bayesian MCMC rounds w/ A5 priors, cauchy PDF, & reject_method = lnlike
 ===
 Running round 1
 ===
@@ -283,7 +403,7 @@ Using data from pickle file
 Number of data points used: 158
 Number of distance samples: 100
 ===
-Using prior set A1
+Using prior set A5
 Using Cauchy PDF
 Using 10 cores, 10 chains, 1000 tunings, and 1000 iterations.
 ===
@@ -306,7 +426,7 @@ a2     0.981  0.081   0.827    1.132      0.001    0.001    6990.0   6990.0    7
 a3     1.622  0.029   1.569    1.678      0.001    0.000    2734.0   2734.0    2735.0    4325.0   1.00
 ===
 Executing outlier rejection after round 1
-prior_set: A1
+prior_set: A5
 like_type: cauchy
 num parallax samples: 100
 num sources before filtering: 158
@@ -322,7 +442,7 @@ Using data from pickle file
 Number of data points used: 156
 Number of distance samples: 100
 ===
-Using prior set A1
+Using prior set A5
 Using Gaussian PDF
 Using 10 cores, 10 chains, 1000 tunings, and 1000 iterations.
 ===
