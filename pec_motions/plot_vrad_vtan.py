@@ -209,8 +209,9 @@ def main(prior_set, num_samples, num_rounds):
     ax.set_xlabel("x (kpc)")
     ax.set_ylabel("y (kpc)")
     ax.set_aspect("equal")
+    filename = f"vrad_vtan_{prior_set}_{num_samples}dist_{num_rounds}.jpg"
     fig.savefig(
-        Path(__file__).parent / "vrad_vtan.jpg",
+        Path(__file__).parent / filename,
         format="jpg",
         dpi=300,
         bbox_inches="tight",
