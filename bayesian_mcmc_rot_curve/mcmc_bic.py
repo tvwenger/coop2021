@@ -99,8 +99,8 @@ def data_to_pm_and_vlsr(data, trace, free_Zsun=False, free_roll=False, free_Wpec
     """
     Inputs:
       data :: pandas DataFrame
-        Contains all relevant data for each source
-        TODO: ameliorate description
+        Contains maser galactic longitudes, latitudes, parallaxes,
+        and parallax uncertainties
       trace :: PyMC3 MultiTrace object
         Contains each iteration of the Bayesian MCMC algorithm for every parameter
       free_Zsun, free_roll, free_Wpec :: booleans (default: False)
@@ -136,7 +136,6 @@ def data_to_pm_and_vlsr(data, trace, free_Zsun=False, free_roll=False, free_Wpec
     plx = data["plx"].values  # mas
     # e_plx = data["e_plx"].values  # mas
 
-
     # === Calculate predicted values from optimal parameters ===
     # Parallax to distance
     dist = trans.parallax_to_dist(plx)
@@ -162,12 +161,12 @@ def data_to_pm_and_vlsr(data, trace, free_Zsun=False, free_roll=False, free_Wpec
 
     return eqmux_pred, eqmuy_pred, vlsr_pred
 
-def main(prior_set, num_rounds):
+def main(prior_set, num_samples, num_rounds):
     # Binary file to read
     # infile = Path(__file__).parent / "reid_MCMC_outfile.pkl"
     infile = Path(
         "/home/chengi/Documents/coop2021/bayesian_mcmc_rot_curve/"
-        f"mcmc_outfile_{prior_set}_{num_rounds}.pkl"
+        f"mcmc_outfile_{prior_set}_{num_samples}dist_{num_rounds}.pkl"
     )
 
     with open(infile, "rb") as f:
@@ -177,7 +176,7 @@ def main(prior_set, num_rounds):
         # prior_set = file["prior_set"]  # "A1", "A5", "B", "C", "D"
         like_type = file["like_type"]  # "gauss", "cauchy", or "sivia"
         num_sources = file["num_sources"]
-        num_samples = file["num_samples"]
+        # num_samples = file["num_samples"]
         # reject_method = file["reject_method"] if num_rounds != 1 else None
         free_Zsun = file["free_Zsun"]
         free_roll = file["free_roll"]
@@ -232,7 +231,7 @@ def main(prior_set, num_rounds):
 
 if __name__ == "__main__":
     prior_set_file = input("prior_set of file (A1, A5, B, C, D): ")
+    num_samples_file = int(input("Number of distance samples per source in file (int): "))
     num_rounds_file = int(input("round number of file to calculate BIC (int): "))
 
-
-    main(prior_set_file, num_rounds_file)
+    main(prior_set_file, num_samples_file, num_rounds_file)

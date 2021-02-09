@@ -347,9 +347,6 @@ def run_MCMC(
         Returned iff return_num_sources == True
     """
 
-    # New binary file to store MCMC output
-    outfile = Path(__file__).parent / f"mcmc_outfile_{prior_set}_{this_round}.pkl"
-
     # Extract data components from database & filter if necessary
     if is_database_data:  # data is from database, need to filter data
         print("===\nStarting with fresh data from database")
@@ -577,6 +574,9 @@ def run_MCMC(
         print(pm.summary(trace, var_names=varnames).to_string())
 
         # === Save results to pickle file ===
+        # New binary file to store MCMC output
+        filename = f"mcmc_outfile_{prior_set}_{num_samples}dist_{this_round}.pkl"
+        outfile = Path(__file__).parent / filename
         with open(outfile, "wb") as f:
             dill.dump(
                 {
@@ -703,14 +703,14 @@ def main(infile, num_cores=None, num_chains=None, num_tune=2000, num_iters=5000,
         )
 
         # Calculate Bayesian information criterion
-        bic.main(prior_set, this_round)
+        bic.main(prior_set, num_samples, this_round)
 
         # Seeing if outlier rejection is necessary
         if this_round == num_rounds and not auto_run:
             break  # No need to clean data after final MCMC run
         # Else: do outlier rejection
         num_sources_cleaned = clean.main(
-            prior_set, this_round, return_num_sources_cleaned=True)
+            prior_set, num_samples, this_round, return_num_sources_cleaned=True)
         if like_type == "gauss" and num_sources == num_sources_cleaned:
             # Even if no outliers rejected, if like_type == "sivia" or "cauchy",
             # do at least one iteration with "gauss" (since num_rounds > 1)
@@ -718,7 +718,7 @@ def main(infile, num_cores=None, num_chains=None, num_tune=2000, num_iters=5000,
             break
 
         # Set auto-generated cleaned pickle file as next infile
-        filename = f"mcmc_outfile_{prior_set}_{this_round}_clean.pkl"
+        filename = f"mcmc_outfile_{prior_set}_{num_samples}dist_{this_round}_clean.pkl"
         infile = str(Path(__file__).parent / filename)
         this_round += 1
 

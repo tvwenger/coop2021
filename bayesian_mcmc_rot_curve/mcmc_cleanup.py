@@ -54,7 +54,6 @@ def get_sigmas(plx, e_mux, e_muy, e_vlsr):
 
     # 1D Virial dispersion for stars in HMSFR w/ mass ~ 10^4 Msun w/in radius of ~ 1 pc
     sigma_vir_sq = 25.0  # km/s
-    # dist = plx_to_peak_dist(plx, e_plx)
 
     # Parallax to reciprocal of distance^2 (i.e. 1 / distance^2)
     reciprocal_dist_sq = km_kps_s_to_mas_yr * km_kps_s_to_mas_yr * plx * plx
@@ -274,20 +273,23 @@ def cleanup_data(data, trace, like_type, reject_method,
     return data_cleaned, num_sources_cleaned
 
 
-def main(prior_set, this_round, return_num_sources_cleaned=False):
+def main(prior_set, num_samples, this_round, return_num_sources_cleaned=False):
     # Binary file to read
-    # infile = Path(__file__).parent / "MCMC_w_dist_uncer_outfile.pkl"
+    # filename = f"mcmc_outfile_{prior_set}_{num_samples}dist_{this_round}.pkl"
+    # infile = Path(__file__).parent / filename"
     infile = Path(
-        f"/home/chengi/Documents/coop2021/bayesian_mcmc_rot_curve/mcmc_outfile_{prior_set}_{this_round}.pkl")
+        "/home/chengi/Documents/coop2021/bayesian_mcmc_rot_curve/"
+        f"mcmc_outfile_{prior_set}_{num_samples}dist_{this_round}.pkl"
+    )
 
     with open(infile, "rb") as f:
         file = dill.load(f)
         data = file["data"]
         model = file["model"]
         trace = file["trace"]
-        prior_set = file["prior_set"]  # "A1", "A5", "B", "C", "D"
+        # prior_set = file["prior_set"]  # "A1", "A5", "B", "C", "D"
         like_type = file["like_type"]  # "gauss" or "cauchy" or "sivia"
-        num_samples = file["num_samples"]
+        # num_samples = file["num_samples"]
         num_sources = file["num_sources"]
         reject_method = file["reject_method"]
         free_Zsun = file["free_Zsun"]
@@ -307,7 +309,9 @@ def main(prior_set, this_round, return_num_sources_cleaned=False):
         free_Zsun=free_Zsun, free_roll=free_roll, free_Wpec=free_Wpec)
 
     outfile = Path(
-        f"/home/chengi/Documents/coop2021/bayesian_mcmc_rot_curve/mcmc_outfile_{prior_set}_{this_round}_clean.pkl")
+        "/home/chengi/Documents/coop2021/bayesian_mcmc_rot_curve/"
+        f"mcmc_outfile_{prior_set}_{num_samples}dist_{this_round}_clean.pkl"
+    )
     # Save cleaned results to different pickle file
     with open(outfile, "wb") as f:
         dill.dump(
@@ -332,7 +336,8 @@ def main(prior_set, this_round, return_num_sources_cleaned=False):
 
 if __name__ == "__main__":
     prior_set_file = input("prior_set of file (A1, A5, B, C, D): ")
+    num_samples_file = int(input("Number of distance samples per source in file (int): "))
     num_round_file = int(input("round number of file to clean (int): "))
     # filter_method = input("Outlier rejection method (sigma or lnlike): ")
 
-    main(prior_set_file, num_round_file)
+    main(prior_set_file, num_samples_file, num_round_file)
