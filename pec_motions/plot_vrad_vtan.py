@@ -303,7 +303,7 @@ def main(prior_set, num_samples, num_rounds):
     # ax.set_yticks([-5, 0, 5, 10])
 
     # Set title and labels. Then save figure
-    fig.suptitle(f"Face-on View of {num_sources} Masers \& their Peculiar Motions",
+    fig.suptitle(f"Face-on View of {num_sources} Masers \& Their Peculiar Motions",
                  x=0.55, y=0.94)
     ax.set_title(r"Colour-coded by their ratio of $v_{rad}$ to $v_{circ}$"
                  f"\nUsed best-fit parameters from {prior_set} priors",
