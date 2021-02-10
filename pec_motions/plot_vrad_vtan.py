@@ -252,6 +252,10 @@ def main(prior_set, num_samples, num_rounds):
     print("Mean vy_res:", np.mean(vy_res))
     print("Min & Max vx_res:", np.min(vx_res), np.max(vx_res))
     print("Min & Max vy_res:", np.min(vy_res), np.max(vy_res))
+    print()
+    v_tot = np.sqrt(vx_res * vx_res + vy_res * vy_res)
+    print("Mean magnitude of peculiar motions:", np.mean(v_tot))
+    print("Min & Max magnitudes of peculiar motions:", np.min(v_tot), np.max(v_tot))
     print("="*6)
 
     # Define plotting parameters
@@ -299,13 +303,15 @@ def main(prior_set, num_samples, num_rounds):
     # ax.set_yticks([-5, 0, 5, 10])
 
     # Set title and labels. Then save figure
-    ax.set_title(f"Face-on View of {num_sources} Masers \& the Peculiar Motions"
-                 r"\nColour-coded by their  Ratio of $v_{rad}$ to $v_{circ}$"
+    fig.suptitle(f"Face-on View of {num_sources} Masers \& their Peculiar Motions",
+                 x=0.55, y=0.94)
+    ax.set_title(r"Colour-coded by their Ratio of $v_{rad}$ to $v_{circ}$"
                  f"\nUsed best-fit parameters from {prior_set} priors",
-                 pad=15)
+                 fontsize=12)
     ax.set_xlabel("x (kpc)")
     ax.set_ylabel("y (kpc)")
     ax.set_aspect("equal")
+    fig.tight_layout()
     filename = f"vrad_vtan_{prior_set}_{num_samples}dist_{num_rounds}.jpg"
     fig.savefig(
         Path(__file__).parent / filename,
