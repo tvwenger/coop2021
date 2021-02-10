@@ -240,9 +240,9 @@ def main(prior_set, num_samples, num_rounds):
     vrad_vcirc = v_rad / v_circ
     vrad_vcirc_min = np.min(vrad_vcirc)
     vrad_vcirc_max = np.max(vrad_vcirc)
-    print("Min v_rad/v_circ:", vrad_vcirc_min)
-    print("Max v_rad/v_circ:", vrad_vcirc_max)
+    print()
     print("Mean v_rad/v_circ:", np.mean(vrad_vcirc))
+    print("Min & Max v_rad/v_circ:", vrad_vcirc_min, vrad_vcirc_max)
     print("# v_rad/v_circ > 0:", np.sum(vrad_vcirc > 0))
     print("# v_rad/v_circ < 0:", np.sum(vrad_vcirc < 0))
     print("# v_rad < 0:", np.sum(v_rad < 0))
@@ -305,7 +305,7 @@ def main(prior_set, num_samples, num_rounds):
     # Set title and labels. Then save figure
     fig.suptitle(f"Face-on View of {num_sources} Masers \& their Peculiar Motions",
                  x=0.55, y=0.94)
-    ax.set_title(r"Colour-coded by their Ratio of $v_{rad}$ to $v_{circ}$"
+    ax.set_title(r"Colour-coded by their ratio of $v_{rad}$ to $v_{circ}$"
                  f"\nUsed best-fit parameters from {prior_set} priors",
                  fontsize=12)
     ax.set_xlabel("x (kpc)")
