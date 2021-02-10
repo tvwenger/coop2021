@@ -283,7 +283,7 @@ def main(prior_set, num_samples, num_rounds):
     # Plot residual velocity vectors
     vectors = ax.quiver(x, y, vx_res, vy_res, vrad_vcirc, cmap=cmap,
               minlength=3, linewidth=0.25)
-    ax.quiverkey(vectors, X=0.25, Y=0.1, U=50,
+    ax.quiverkey(vectors, X=0.25, Y=0.1, U=-50,
                  label="50 km/s", labelpos="N", fontproperties={"size": 10})
 
     ax.axhline(y=0, linewidth=0.5, linestyle="--", color="k")  # horizontal line
