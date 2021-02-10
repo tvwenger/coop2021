@@ -1,7 +1,8 @@
 """
 plot_vrad_vtan.py
 
-Plots the maser sources colour-coded by ratio of radial to azimuthal velocity
+Plots the peculiar (non-circular) motions of the sources,
+colour-coded by ratio of radial to azimuthal velocity
 
 Isaac Cheng - February 2021
 """
@@ -28,9 +29,7 @@ _ZSUN = 5.5  # pc
 # Useful constants
 _RAD_TO_DEG = 57.29577951308232  # 180/pi (Don't forget to % 360 after)
 
-def data_to_gcen_cyl(
-  data, trace, free_Zsun=False, free_roll=False, free_Wpec=False
-):
+def data_to_gcen_cyl(data, trace, free_Zsun=False, free_roll=False):
     """
     Converts database data to
     galactocentric cylindrical coordinates and velocities
@@ -45,34 +44,39 @@ def data_to_gcen_cyl(
         with all associated uncertainties
       trace :: PyMC3 MultiTrace object
         Contains each iteration of the Bayesian MCMC algorithm for every parameter
-      free_Zsun, free_roll, free_Wpec :: booleans (default: False)
-        True iff Zsun, roll, or Wpec are free parameters in the model
+      free_Zsun, free_roll :: booleans (default: False)
+        True iff Zsun or roll are free parameters in the model
 
-    Returns: eqmux_pred, eqmuy_pred, vlsr_pred
-      eqmux_pred :: Array of scalars (mas/yr)
-        RA proper motion with cos(Declination) correction
-      eqmuy_pred :: Array of scalars (mas/yr)
-        Declination proper motion
-      vlsr_pred :: Array of scalars (km/s)
-        LSR velocity
-
-    TODO: fix docstring
+    Returns: radius, azimuth, height, v_radial, v_circ, v_vert
+      radius : Array of scalars (kpc)
+        Radial distance perpendicular to z-axis
+      azimuth : Array of scalars (deg)
+        Azimuthal angle; positive CW from -x-axis (left-hand convention!)
+      height : Array of scalars (kpc)
+        Height above xy-plane (i.e. z_kpc)
+      v_radial : Array of scalars (km/s)
+        Radial velocity; positive away from z-axis
+      v_circ : Array of scalars (km/s)
+        Tangential velocity; positive CW (left-hand convention!)
+      v_vert : Array of scalars (km/s)
+        Velocity perp. to xy-plane; positive if pointing toward NGP (i.e. vz)
     """
     # === Get optimal parameters from MCMC trace ===
     R0 = np.median(trace["R0"])  # kpc
     Vsun = np.median(trace["Vsun"])  # km/s
     Usun = np.median(trace["Usun"])  # km/s
     Wsun = np.median(trace["Wsun"])  # km/s
-    Upec = np.median(trace["Upec"])  # km/s
-    Vpec = np.median(trace["Vpec"])  # km/s
     a2 = np.median(trace["a2"])  # dimensionless
     a3 = np.median(trace["a3"])  # dimensionless
     Zsun = np.median(trace["Zsun"]) if free_Zsun else _ZSUN  # pc
     roll = np.median(trace["roll"]) if free_roll else _ROLL  # deg
-    Wpec = np.median(trace["Wpec"]) if free_Wpec else 0.0  # km/s
-    # # ? Set Upec = Vpec = 0 as per Reid et al. Fig. 6
-    # Upec = 0.0  # km/s
-    # Vpec = 0.0  # km/s
+
+    # R0 = 8.15
+    # Usun = 10.6
+    # Vsun = 10.7
+    # Wsun = 7.6
+    # a2 = 0.96
+    # a3 = 1.62
 
     # === Get data ===
     # Slice data into components
@@ -81,13 +85,9 @@ def data_to_gcen_cyl(
     glon = data["glong"]  # deg
     glat = data["glat"]  # deg
     plx = data["plx"]  # mas
-    e_plx = data["e_plx"]  # mas
     eqmux = data["mux"]  # mas/yr (equatorial frame)
-    e_eqmux = data["e_mux"]  # mas/y (equatorial frame)
     eqmuy = data["muy"]  # mas/y (equatorial frame)
-    e_eqmuy = data["e_muy"]  # mas/y (equatorial frame)
     vlsr = data["vlsr"]  # km/s
-    e_vlsr = data["e_vlsr"]  # km/s
 
     # === Calculate predicted values from optimal parameters ===
     Theta0 = urc(R0, a2=a2, a3=a3, R0=R0)  # km/s, LSR circular rotation speed
@@ -98,34 +98,80 @@ def data_to_gcen_cyl(
       use_theano=False, return_only_r_and_theta=False
     )
 
-    # v_rad_pred = -Upec  # km/s
-    # v_circ_pred = urc(radius, a2=a2, a3=a3, R0=R0) + Vpec  # km/s
-    # v_vert_pred = Wpec  # km/s
-    # v_rad_residual = v_radial - v_rad_pred
-    # v_circ_residual = v_circ - v_circ_pred
-    # v_vert_residual = v_vert - v_vert_pred
+    return radius, azimuth, height, v_radial, v_circ, v_vert
 
-    # # Parallax to distance
-    # dist = trans.parallax_to_dist(plx)
-    # # Galactic to barycentric Cartesian coordinates
-    # bary_x, bary_y, bary_z = trans.gal_to_bary(glon, glat, dist)
-    # # Barycentric Cartesian to galactocentric Cartesian coodinates
-    # gcen_x, gcen_y, gcen_z = trans.bary_to_gcen(
-    #     bary_x, bary_y, bary_z, R0=R0, Zsun=Zsun, roll=roll)
-    # # Galactocentric Cartesian frame to galactocentric cylindrical frame
-    # gcen_cyl_dist = np.sqrt(gcen_x * gcen_x + gcen_y * gcen_y)  # kpc
+
+def data_to_vcirc_pred(data, trace, free_Zsun=False, free_roll=False):
+    """
+    TODO: add description here
+
+    Inputs:
+      data :: pandas DataFrame
+        Contains maser galactic longitudes, latitudes, right ascensions, declinations,
+        parallaxes, equatorial proper motions, and LSR velocities
+        with all associated uncertainties
+      trace :: PyMC3 MultiTrace object
+        Contains each iteration of the Bayesian MCMC algorithm for every parameter
+      free_Zsun, free_roll :: booleans (default: False)
+        True iff Zsun or roll are free parameters in the model
+
+    Returns: v_circ_pred
+      v_circ_pred :: Array of scalars (km/s)
+        Circular rotation speed of source around galactic centre predicted by
+        Persic et al.'s 1996 universal rotation curve
+    TODO: fix docstring (data & returns descriptions)
+    eqmux_res, eqmuy_res, vlsr_res
+      eqmux_res :: Array of scalars (mas/yr)
+        Residual RA proper motion with cos(Declination) correction
+      eqmuy_res :: Array of scalars (mas/yr)
+        Residual declination proper motion
+      vlsr_res :: Array of scalars (km/s)
+        Residual LSR velocity
+    """
+    # === Get optimal parameters from MCMC trace ===
+    R0 = np.median(trace["R0"])  # kpc
+    Vsun = np.median(trace["Vsun"])  # km/s
+    Usun = np.median(trace["Usun"])  # km/s
+    Wsun = np.median(trace["Wsun"])  # km/s
+    # Upec = np.median(trace["Upec"])  # km/s
+    # Vpec = np.median(trace["Vpec"])  # km/s
+    a2 = np.median(trace["a2"])  # dimensionless
+    a3 = np.median(trace["a3"])  # dimensionless
+    Zsun = np.median(trace["Zsun"]) if free_Zsun else _ZSUN  # pc
+    roll = np.median(trace["roll"]) if free_roll else _ROLL  # deg
+    # Set Upec = Vpec = 0 as per Reid et al. Fig. 6
+    Upec = 0.0  # km/s
+    Vpec = 0.0  # km/s
+
+    # R0 = 8.15
+    # Usun = 10.6
+    # Vsun = 10.7
+    # Wsun = 7.6
+    # a2 = 0.96
+    # a3 = 1.62
+
+    # === Get data ===
+    # Slice data into components
+    glon = data["glong"].values  # deg
+    glat = data["glat"].values  # deg
+    plx = data["plx"].values  # mas
+
+    # === Calculate predicted values from optimal parameters ===
+    # Parallax to distance
+    dist = trans.parallax_to_dist(plx)
+    # Galactic to barycentric Cartesian coordinates
+    bary_x, bary_y, bary_z = trans.gal_to_bary(glon, glat, dist)
+    # Barycentric Cartesian to galactocentric Cartesian coodinates
+    gcen_x, gcen_y, gcen_z = trans.bary_to_gcen(
+        bary_x, bary_y, bary_z, R0=R0, Zsun=Zsun, roll=roll)
+    # Galactocentric Cartesian frame to galactocentric cylindrical frame
+    gcen_cyl_dist = np.sqrt(gcen_x * gcen_x + gcen_y * gcen_y)  # kpc
     # azimuth = (np.arctan2(gcen_y, -gcen_x) * _RAD_TO_DEG) % 360  # deg in [0,360)
+    v_circ_pred = urc(gcen_cyl_dist, a2=a2, a3=a3, R0=R0) + Vpec  # km/s
+    # v_rad = -Upec  # km/s
     # Theta0 = urc(R0, a2=a2, a3=a3, R0=R0)  # km/s, LSR circular rotation speed
 
-    # # Go in reverse!
-    # # Galactocentric cylindrical to equatorial proper motions & LSR velocity
-    # eqmux_pred, eqmuy_pred, vlsr_pred = trans.gcen_cyl_to_pm_and_vlsr(
-    #     gcen_cyl_dist, azimuth, gcen_z, v_rad, v_circ_pred, Wpec,
-    #     R0=R0, Zsun=Zsun, roll=roll,
-    #     Usun=Usun, Vsun=Vsun, Wsun=Wsun, Theta0=Theta0,
-    #     use_theano=False)
-
-    return radius, azimuth, height, v_radial, v_circ, v_vert
+    return v_circ_pred
 
 
 def main(prior_set, num_samples, num_rounds):
@@ -145,14 +191,14 @@ def main(prior_set, num_samples, num_rounds):
         # reject_method = file["reject_method"] if num_rounds != 1 else None
         free_Zsun = file["free_Zsun"]
         free_roll = file["free_roll"]
-        free_Wpec = file["free_Wpec"]
 
     print("=== Plotting v_rad/v_tan plot for "
           f"({prior_set} priors & {num_rounds} MCMC rounds) ===")
     print("Number of sources:", num_sources)
     print("Likelihood function:", like_type)
 
-    # Convert database data to galactocentric cylindrical positions & residual velocities
+    # ===
+    # Convert database data to galactocentric cylindrical positions & velocities
     (
       radius,
       azimuth,
@@ -160,18 +206,35 @@ def main(prior_set, num_samples, num_rounds):
       v_rad,
       v_circ,
       v_vert,
-    ) = data_to_gcen_cyl(
-        data, trace, free_Zsun=free_Zsun, free_roll=free_roll, free_Wpec=free_Wpec)
+    ) = data_to_gcen_cyl(data, trace, free_Zsun=free_Zsun, free_roll=free_roll)
 
-    # Convert galactocentric cylindrical to galactocentric Cartesian
-    # x, y, z, vx, vy, vz = trans.gcen_cyl_to_gcen_cart(
-    #   radius, azimuth, height,
-    #   v_radial=v_rad, v_tangent=v_circ, v_vertical=v_vert)
-    x, y, z = trans.gcen_cyl_to_gcen_cart(radius, azimuth, height)
+    # # Convert galactocentric cylindrical to galactocentric Cartesian
+    # # x, y, z, vx, vy, vz = trans.gcen_cyl_to_gcen_cart(
+    # #   radius, azimuth, height,
+    # #   v_radial=v_rad, v_tangent=v_circ, v_vertical=v_vert)
+    # x, y, z = trans.gcen_cyl_to_gcen_cart(radius, azimuth, height)
+
+    # # Change galactocentric coordinates to Reid's convention
+    # # (our convention is detailed in the docstring of trans.gcen_cyl_to_gcen_cart)
+    # x, y = y, -x
+    # ===
+
+    # ===
+    # Find residual motions
+    v_circ_pred = data_to_vcirc_pred(
+      data, trace, free_Zsun=free_Zsun, free_roll=free_roll)
+    v_circ_res = v_circ - v_circ_pred
+
+    # Transform galactocentric cylindrical residual velocities
+    # to galactocentric Cartesian residuals
+    x, y, z, vx_res, vy_res, vz_res = trans.gcen_cyl_to_gcen_cart(
+      radius, azimuth, height,
+      v_radial=v_rad, v_tangent=v_circ_res, v_vertical=v_vert)
 
     # Change galactocentric coordinates to Reid's convention
     # (our convention is detailed in the docstring of trans.gcen_cyl_to_gcen_cart)
     x, y = y, -x
+    vx_res, vy_res = vy_res, -vx_res
 
     # Ratio of radial velocity to circular rotation speed
     vrad_vcirc = v_rad / v_circ
@@ -184,20 +247,45 @@ def main(prior_set, num_samples, num_rounds):
     print("# v_rad/v_circ < 0:", np.sum(vrad_vcirc < 0))
     print("# v_rad < 0:", np.sum(v_rad < 0))
     print("# v_circ < 0:", np.sum(v_circ < 0))
+    print()
+    print("Mean vx_res:", np.mean(vx_res))
+    print("Mean vy_res:", np.mean(vy_res))
+    print("Min & Max vx_res:", np.min(vx_res), np.max(vx_res))
+    print("Min & Max vy_res:", np.min(vy_res), np.max(vy_res))
+    print("="*6)
 
-    # Plot data
-    cmap = "inferno"  # "coolwarm" is another option
+    # Define plotting parameters
+    fig, ax = plt.subplots()
+    cmap = "viridis"  # "coolwarm" is another option
     cmap_min = np.floor(100 * vrad_vcirc_min) / 100
     cmap_max = np.ceil(100 * vrad_vcirc_max) / 100
     norm = mpl.colors.Normalize(vmin=cmap_min, vmax=cmap_max)
     ticks = np.linspace(cmap_min, cmap_max, 8)
 
-    fig, ax = plt.subplots()
+    # Plot v_rad / v_circ
     ax.scatter(x, y, c=vrad_vcirc, cmap=cmap, s=2)
     cbar = fig.colorbar(
       mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax, ticks=ticks, format="%.2f")
-    cbar.ax.get_yaxis().labelpad = 15
     cbar.ax.set_ylabel(r'$v_{rad}/v_{circ}$', rotation=270)
+    cbar.ax.get_yaxis().labelpad = 20
+
+    # # Normalize x & y components & scale
+    # v_length = np.sqrt(vx_res * vx_res + vy_res * vy_res)
+    # scale = 50  # km/s
+    # vx_res_norm = vx_res / v_length * scale
+    # vy_res_norm = vy_res / v_length * scale
+    # # Plot residual velocity vectors
+    # ax.quiver(x, y, vx_res_norm, vy_res_norm, vrad_vcirc, cmap=cmap,
+    #           # width=0.005,
+    #           # headlength=2, headwidth=2,
+    #           minlength=0.01 * scale,
+    #           linewidth=0.5)
+    # Plot residual velocity vectors
+    vectors = ax.quiver(x, y, vx_res, vy_res, vrad_vcirc, cmap=cmap,
+              minlength=3, linewidth=0.25)
+    ax.quiverkey(vectors, X=0.25, Y=0.1, U=50,
+                 label="50 km/s", labelpos="N", fontproperties={"size": 10})
+
     ax.axhline(y=0, linewidth=0.5, linestyle="--", color="k")  # horizontal line
     ax.axvline(x=0, linewidth=0.5, linestyle="--", color="k")  # vertical line
     ax.set_xlim(-8, 12)
@@ -211,9 +299,10 @@ def main(prior_set, num_samples, num_rounds):
     # ax.set_yticks([-5, 0, 5, 10])
 
     # Set title and labels. Then save figure
-    ax.set_title(f"Face-on View of {num_sources} Masers & "
+    ax.set_title(f"Face-on View of {num_sources} Masers \& "
                  r"their Ratio of $v_{rad}$ to $v_{circ}$"
-                 f"\nUsed best-fit parameters from {prior_set} priors")
+                 f"\nUsed best-fit parameters from {prior_set} priors",
+                 pad=15)
     ax.set_xlabel("x (kpc)")
     ax.set_ylabel("y (kpc)")
     ax.set_aspect("equal")
