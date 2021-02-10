@@ -282,7 +282,7 @@ def main(prior_set, num_samples, num_rounds):
     #           linewidth=0.5)
     # Plot residual velocity vectors
     vectors = ax.quiver(x, y, vx_res, vy_res, vrad_vcirc, cmap=cmap,
-              minlength=3, linewidth=0.25)
+              minlength=3, width=0.002)
     ax.quiverkey(vectors, X=0.25, Y=0.1, U=-50,
                  label="50 km/s", labelpos="N", fontproperties={"size": 10})
 
@@ -299,8 +299,8 @@ def main(prior_set, num_samples, num_rounds):
     # ax.set_yticks([-5, 0, 5, 10])
 
     # Set title and labels. Then save figure
-    ax.set_title(f"Face-on View of {num_sources} Masers \& "
-                 r"their Ratio of $v_{rad}$ to $v_{circ}$"
+    ax.set_title(f"Face-on View of {num_sources} Masers \& the Peculiar Motions"
+                 r"\nColour-coded by their  Ratio of $v_{rad}$ to $v_{circ}$"
                  f"\nUsed best-fit parameters from {prior_set} priors",
                  pad=15)
     ax.set_xlabel("x (kpc)")
