@@ -311,6 +311,7 @@ def main(prior_set, num_samples, num_rounds):
     ax.set_xlabel("x (kpc)")
     ax.set_ylabel("y (kpc)")
     ax.set_aspect("equal")
+    ax.grid(False)
     fig.tight_layout()
     filename = f"vrad_vtan_{prior_set}_{num_samples}dist_{num_rounds}.jpg"
     fig.savefig(
