@@ -12,25 +12,8 @@ import numpy as np
 import dill
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-from scipy.interpolate import griddata
 from scipy.interpolate import Rbf
-
-# Want to add my own programs as package:
-# Make a $PATH to coop2021 (twice parent folder of this file)
-_SCRIPT_DIR = str(Path.cwd() / Path(__file__).parent.parent)
-# Add coop2021 to $PATH
-sys.path.append(_SCRIPT_DIR)
-
-import mytransforms as trans
 from plot_vrad_vtan import get_pos_and_residuals_and_vrad_vtan
-
-# Roll angle between galactic midplane and galactocentric frame
-_ROLL = 0.0  # deg (Anderson et al. 2019)
-# Sun's height above galactic midplane (Reid et al. 2019)
-_ZSUN = 5.5  # pc
-# Useful constants
-_RAD_TO_DEG = 57.29577951308232  # 180/pi (Don't forget to % 360 after)
-
 
 def main(prior_set, num_samples, num_rounds):
     # Binary file to read
@@ -69,7 +52,7 @@ def main(prior_set, num_samples, num_rounds):
 
     # Radial basis function interpolation
     print("Rbf default epsilon (kpc):", Rbf(x, y, vx_res).epsilon)
-    epsilon = 0.2  # kpc
+    epsilon = 0.1  # kpc (0.1 to 0.2 seems to work well)
     print("My epsilon (kpc):", epsilon)
 
     vx_res_fit = Rbf(x, y, vx_res, epsilon=epsilon)  # Residual x-components function
