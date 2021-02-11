@@ -81,14 +81,14 @@ def data_to_gcen_cyl(data, trace, free_Zsun=False, free_roll=False):
 
     # === Get data ===
     # Slice data into components
-    ra = data["ra"]  # deg
-    dec = data["dec"]  # deg
-    glon = data["glong"]  # deg
-    glat = data["glat"]  # deg
-    plx = data["plx"]  # mas
-    eqmux = data["mux"]  # mas/yr (equatorial frame)
-    eqmuy = data["muy"]  # mas/y (equatorial frame)
-    vlsr = data["vlsr"]  # km/s
+    ra = data["ra"].values  # deg
+    dec = data["dec"].values  # deg
+    glon = data["glong"].values  # deg
+    glat = data["glat"].values  # deg
+    plx = data["plx"].values  # mas
+    eqmux = data["mux"].values  # mas/yr (equatorial frame)
+    eqmuy = data["muy"].values  # mas/y (equatorial frame)
+    vlsr = data["vlsr"].values  # km/s
 
     # === Calculate predicted values from optimal parameters ===
     Theta0 = urc(R0, a2=a2, a3=a3, R0=R0)  # km/s, LSR circular rotation speed
@@ -281,6 +281,7 @@ def main(prior_set, num_samples, num_rounds):
     ax.quiverkey(vectors, X=0.25, Y=0.1, U=-50,
                  label="50 km/s", labelpos="N", fontproperties={"size": 10})
 
+    # Set other figure parameters
     ax.axhline(y=0, linewidth=0.5, linestyle="--", color="k")  # horizontal line
     ax.axvline(x=0, linewidth=0.5, linestyle="--", color="k")  # vertical line
     ax.set_xlim(-8, 12)
@@ -288,6 +289,7 @@ def main(prior_set, num_samples, num_rounds):
     ax.set_ylim(-5, 15)
     ax.set_yticks([-5, 0, 5, 10, 15])
     # # Using our coordinate convention
+    # # (remember to remove the swapping of coordinates & velocities in above function)
     # ax.set_xlim(-15, 5)
     # ax.set_xticks([-15, -10, -5, 0, 5])
     # ax.set_ylim(-8, 12)
