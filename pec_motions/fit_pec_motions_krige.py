@@ -189,7 +189,7 @@ def main(prior_set, num_samples, num_rounds):
 
     fig.suptitle(
         f"Interpolated Peculiar Motions of {num_sources} Masers\n"
-        fr"(Ordinary Kriging, \texttt{{variogram\_model={variogram_model}}})"
+        fr"(Universal Kriging, \texttt{{variogram\_model={variogram_model}}})"
     )
     # fig.suptitle("Interpolated Peculiar Motions of", len(x), "Masers")
     fig.tight_layout()
