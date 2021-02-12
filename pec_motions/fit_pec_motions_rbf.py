@@ -6,7 +6,6 @@ Fits the vector peculiar motions of sources using a radial basis function.
 Isaac Cheng - February 2021
 """
 
-import sys
 from pathlib import Path
 import numpy as np
 import dill
@@ -14,6 +13,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from scipy.interpolate import Rbf
 from plot_vrad_vtan import get_pos_and_residuals_and_vrad_vtan
+
 
 def main(prior_set, num_samples, num_rounds):
     # Binary file to read
@@ -51,37 +51,48 @@ def main(prior_set, num_samples, num_rounds):
     y = y[y > -5]
 
     # Radial basis function interpolation
-    print("Rbf default epsilon (kpc):", Rbf(x, y, vx_res).epsilon)
-    epsilon = 0.1  # kpc (0.1 to 0.2 seems to work well)
-    print("My epsilon (kpc):", epsilon)
-
-    vx_res_fit = Rbf(x, y, vx_res, epsilon=epsilon)  # Residual x-components function
-    vy_res_fit = Rbf(x, y, vy_res, epsilon=epsilon)  # Residual y-components function
+    smooth = 0.05  # smoothing parameter
+    vx_res_fit = Rbf(x, y, vx_res, smooth=smooth)  # Residual x-components function
+    vy_res_fit = Rbf(x, y, vy_res, smooth=smooth)  # Residual y-components function
+    print("Rbf epsilon (kpc):", vx_res_fit.epsilon)
+    print("Rbf smoothing:", smooth)
 
     # Interpolate values
     gridx, gridy = np.mgrid[-8:12:500j, -5:15:500j]
     vx_res_interp = vx_res_fit(gridx.flatten(), gridy.flatten())
     vx_res_interp = vx_res_interp.reshape(gridx.shape[0], gridy.shape[0])
     print()
-    print("# vx_res_interp nans:", np.sum(np.isnan(vx_res_interp)))
+    # print("# vx_res_interp nans:", np.sum(np.isnan(vx_res_interp)))
     print("Mean vx_res_interp:", np.mean(vx_res_interp))
-    print("min & max vx_res_interp:", np.nanmin(vx_res_interp), np.nanmax(vx_res_interp))
+    print("min & max vx_res_interp:", np.min(vx_res_interp), np.max(vx_res_interp))
 
     vy_res_interp = vy_res_fit(gridx.flatten(), gridy.flatten())
     vy_res_interp = vy_res_interp.reshape(gridx.shape[0], gridy.shape[0])
-    print("# vy_res_interp nans:", np.sum(np.isnan(vy_res_interp)))
+    # print("# vy_res_interp nans:", np.sum(np.isnan(vy_res_interp)))
     print("Mean vy_res_interp:", np.mean(vy_res_interp))
-    print("min & max vy_res_interp:", np.nanmin(vy_res_interp), np.nanmax(vy_res_interp))
+    print("min & max vy_res_interp:", np.min(vy_res_interp), np.max(vy_res_interp))
     print("=" * 6)
 
+    # # Mask data
+    # vx_res_interp = np.ma.masked_where(abs(vx_res_interp) > 150, vx_res_interp)
+    # vy_res_interp = np.ma.masked_where(abs(vy_res_interp) > 150, vy_res_interp)
+    # print("Masked mean vx_res_interp:", np.mean(vx_res_interp))
+    # print("Masked min & max vx_res_interp:", np.nanmin(vx_res_interp), np.nanmax(vx_res_interp))
+    # print("Masked mean vy_res_interp:", np.mean(vy_res_interp))
+    # print("Masked min & max vy_res_interp:", np.nanmin(vy_res_interp), np.nanmax(vy_res_interp))
+
     # Plot parameters
-    fig, ax = plt.subplots(2, 1, figsize=plt.figaspect(2))
+    fig, ax = plt.subplots(1, 2, figsize=plt.figaspect(0.5))
+    # cmap = copy.copy(mpl.cm.get_cmap("viridis"))
+    # cmap.set_bad(color="black")
     cmap = "viridis"
 
     # Plot residual x-component
     norm_x = mpl.colors.Normalize(
-        vmin=np.nanmin(vx_res_interp), vmax=np.nanmax(vx_res_interp)
+        vmin=np.min([np.min(vx_res_interp), np.min(vx_res)]),
+        vmax=np.max([np.max(vx_res_interp), np.max(vx_res)]),
     )
+    # norm_x = mpl.colors.Normalize(vmin=-150, vmax=150)
     ax[0].imshow(vx_res_interp.T, origin="lower", extent=(-8, 12, -5, 15), norm=norm_x)
     cbar_x = fig.colorbar(
         mpl.cm.ScalarMappable(norm=norm_x, cmap=cmap), ax=ax[0], format="%.0f"
@@ -92,14 +103,16 @@ def main(prior_set, num_samples, num_rounds):
     ax[0].set_ylabel("y (kpc)")
     ax[0].set_title("x-component")
     cbar_x.ax.set_ylabel("Residual x-velocity", rotation=270)
-    cbar_x.ax.get_yaxis().labelpad = 20
+    cbar_x.ax.get_yaxis().labelpad = 15
     ax[0].set_aspect("equal")
     ax[0].grid(False)
 
     # Plot residual y-components
     norm_y = mpl.colors.Normalize(
-        vmin=np.nanmin(vy_res_interp), vmax=np.nanmax(vy_res_interp)
+        vmin=np.min([np.min(vy_res_interp), np.min(vy_res)]),
+        vmax=np.max([np.max(vy_res_interp), np.max(vy_res)]),
     )
+    # norm_y = mpl.colors.Normalize(vmin=-150, vmax=150)
     ax[1].imshow(vy_res_interp.T, origin="lower", extent=(-8, 12, -5, 15), norm=norm_y)
     cbar_y = fig.colorbar(
         mpl.cm.ScalarMappable(norm=norm_y, cmap=cmap), ax=ax[1], format="%.0f"
@@ -110,7 +123,7 @@ def main(prior_set, num_samples, num_rounds):
     ax[1].set_ylabel("y (kpc)")
     ax[1].set_title("y-component")
     cbar_y.ax.set_ylabel("Residual y-velocity", rotation=270)
-    cbar_y.ax.get_yaxis().labelpad = 20
+    cbar_y.ax.get_yaxis().labelpad = 15
     ax[1].set_aspect("equal")
     ax[1].grid(False)
 
@@ -133,12 +146,12 @@ def main(prior_set, num_samples, num_rounds):
     ax[1].legend(loc="lower left", fontsize=9)
 
     fig.suptitle(
-        f"Interpolated Peculiar Motions of {num_sources} Masers"
-        "\n(Radial Basis Function)"
+        f"Interpolated Peculiar Motions of {num_sources} Masers\n"
+        fr"(Radial Basis Function, \texttt{{smooth={smooth}}})"
     )
     # fig.suptitle("Interpolated Peculiar Motions of", len(x), "Masers")
     fig.tight_layout()
-    filename = f"pec_mot_interp_{prior_set}_{num_samples}dist_{num_rounds}.jpg"
+    filename = f"pec_mot_interp_{prior_set}_{num_samples}dist_{num_rounds}_{smooth}.jpg"
     fig.savefig(
         Path(__file__).parent / filename, format="jpg", dpi=300, bbox_inches="tight",
     )
