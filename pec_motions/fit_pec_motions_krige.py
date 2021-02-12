@@ -67,6 +67,28 @@ def main(prior_set, num_samples, num_rounds):
     x = x[y > -5]
     y = y[y > -5]
 
+    variogram_model = "linear"
+    vx_res_fit = OrdinaryKriging(
+        x,
+        y,
+        vx_res,
+        variogram_model=variogram_model,
+        # verbose=False,
+        # enable_plotting=False,
+    )
+    vy_res_fit = OrdinaryKriging(
+        x,
+        y,
+        vy_res,
+        variogram_model=variogram_model,
+        # verbose=False,
+        # enable_plotting=False,
+    )
+
+    # gridx, gridy = np.mgrid[-8:12:500j, -5:15:500j]
+    gridx = np.linspace(-8, 12, 500)
+    gridy = np.linspace(-5, 15, 500)
+
     # # Radial basis function interpolation
     # print("Rbf default epsilon (kpc):", Rbf(x, y, vx_res).epsilon)
     # epsilon = 0.2  # kpc
