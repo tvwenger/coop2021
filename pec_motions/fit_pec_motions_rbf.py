@@ -34,7 +34,7 @@ def main(prior_set, num_samples, num_rounds):
         free_roll = file["free_roll"]
 
     print(
-        "=== Fitting peculiar motions for "
+        "=== Fitting peculiar motions (RBF) for "
         f"({prior_set} priors & {num_rounds} MCMC rounds) ==="
     )
     print("Number of sources:", num_sources)
