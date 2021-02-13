@@ -71,6 +71,8 @@ def main(prior_set, num_samples, num_rounds):
     # print("# vy_res_interp nans:", np.sum(np.isnan(vy_res_interp)))
     print("Mean vy_res_interp:", np.mean(vy_res_interp))
     print("min & max vy_res_interp:", np.min(vy_res_interp), np.max(vy_res_interp))
+    print("vx_res_interp nan detected!") if np.sum(np.isnan(vx_res_interp)) else None
+    print("vy_res_interp nan detected!") if np.sum(np.isnan(vy_res_interp)) else None
     print("=" * 6)
 
     # # Mask data
