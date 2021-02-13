@@ -12,6 +12,7 @@ import numpy as np
 import dill
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+import pandas as pd
 
 # Want to add my own programs as package:
 # Make a $PATH to coop2021 (twice parent folder of this file)
@@ -93,10 +94,23 @@ def data_to_gcen_cyl(data, trace, free_Zsun=False, free_roll=False):
     # === Calculate predicted values from optimal parameters ===
     Theta0 = urc(R0, a2=a2, a3=a3, R0=R0)  # km/s, LSR circular rotation speed
     radius, azimuth, height, v_radial, v_circ, v_vert = trans.eq_and_gal_to_gcen_cyl(
-      ra, dec, plx, glon, glat, eqmux, eqmuy, vlsr,
-      R0=R0, Zsun=Zsun, roll=roll,
-      Usun=Usun, Vsun=Vsun, Wsun=Wsun, Theta0=Theta0,
-      use_theano=False, return_only_r_and_theta=False
+        ra,
+        dec,
+        plx,
+        glon,
+        glat,
+        eqmux,
+        eqmuy,
+        vlsr,
+        R0=R0,
+        Zsun=Zsun,
+        roll=roll,
+        Usun=Usun,
+        Vsun=Vsun,
+        Wsun=Wsun,
+        Theta0=Theta0,
+        use_theano=False,
+        return_only_r_and_theta=False,
     )
 
     return radius, azimuth, height, v_radial, v_circ, v_vert
@@ -166,7 +180,8 @@ def data_to_vcirc_pred(data, trace, free_Zsun=False, free_roll=False):
 
     # Barycentric Cartesian to galactocentric Cartesian coodinates
     gcen_x, gcen_y, gcen_z = trans.bary_to_gcen(
-        bary_x, bary_y, bary_z, R0=R0, Zsun=Zsun, roll=roll)
+        bary_x, bary_y, bary_z, R0=R0, Zsun=Zsun, roll=roll
+    )
 
     # Galactocentric Cartesian frame to galactocentric cylindrical frame
     gcen_cyl_dist = np.sqrt(gcen_x * gcen_x + gcen_y * gcen_y)  # kpc
@@ -184,25 +199,21 @@ def get_pos_and_residuals_and_vrad_vtan(data, trace, free_Zsun=False, free_roll=
     """
 
     # Convert pickled data to galactocentric cylindrical positions & velocities
-    (
-      radius,
-      azimuth,
-      height,
-      v_rad,
-      v_circ,
-      v_vert,
-    ) = data_to_gcen_cyl(data, trace, free_Zsun=free_Zsun, free_roll=free_roll)
+    (radius, azimuth, height, v_rad, v_circ, v_vert,) = data_to_gcen_cyl(
+        data, trace, free_Zsun=free_Zsun, free_roll=free_roll
+    )
 
     # Find residual motions
     v_circ_pred = data_to_vcirc_pred(
-      data, trace, free_Zsun=free_Zsun, free_roll=free_roll)
+        data, trace, free_Zsun=free_Zsun, free_roll=free_roll
+    )
     v_circ_res = v_circ - v_circ_pred
 
     # Transform galactocentric cylindrical residual velocities
     # to galactocentric Cartesian residuals
     x, y, z, vx_res, vy_res, vz_res = trans.gcen_cyl_to_gcen_cart(
-      radius, azimuth, height,
-      v_radial=v_rad, v_tangent=v_circ_res, v_vertical=v_vert)
+        radius, azimuth, height, v_radial=v_rad, v_tangent=v_circ_res, v_vertical=v_vert
+    )
 
     # Change galactocentric coordinates to Reid's convention
     # (our convention is detailed in the docstring of trans.gcen_cyl_to_gcen_cart)
@@ -228,9 +239,62 @@ def get_pos_and_residuals_and_vrad_vtan(data, trace, free_Zsun=False, free_roll=
     v_tot = np.sqrt(vx_res * vx_res + vy_res * vy_res)
     print("Mean magnitude of peculiar velocity:", np.mean(v_tot))
     print("Min & Max magnitudes of peculiar velocity:", np.min(v_tot), np.max(v_tot))
-    print("="*6)
+    print("=" * 6)
 
     return x, y, z, vx_res, vy_res, vz_res, vrad_vcirc
+
+
+def get_cart_pos_and_cyl_residuals(data, trace, free_Zsun=False, free_roll=False):
+    """
+    Gets galactocentric Cartesian positions &
+    galactocentric cylindrical residual velocities
+
+    TODO: finish docstring
+    """
+    # Convert pickled data to galactocentric cylindrical positions & velocities
+    (radius, azimuth, height, v_rad, v_circ, v_vert,) = data_to_gcen_cyl(
+        data, trace, free_Zsun=free_Zsun, free_roll=free_roll
+    )
+
+    # Find residual motions
+    v_circ_pred = data_to_vcirc_pred(
+        data, trace, free_Zsun=free_Zsun, free_roll=free_roll
+    )
+    v_circ_res = v_circ - v_circ_pred
+
+    # Transform galactocentric cylindrical residual velocities
+    # to galactocentric Cartesian residuals
+    x, y, z, = trans.gcen_cyl_to_gcen_cart(radius, azimuth, height)
+
+    # Change galactocentric coordinates to Reid's convention
+    # (our convention is detailed in the docstring of trans.gcen_cyl_to_gcen_cart)
+    x, y = y, -x
+
+    print()
+    print("mean residual radial velocity:", np.mean(v_rad))
+    print("min & max residual radial velocity:", np.min(v_rad), np.max(v_rad))
+    print("mean residual tangential velocity:", np.mean(v_circ_res))
+    print(
+        "min & max residual tangential velocity:", np.min(v_circ_res), np.max(v_circ_res)
+    )
+    print()
+    v_tot = np.sqrt(v_rad * v_rad + v_circ_res * v_circ_res)
+    print("mean magnitude of peculiar velocity:", np.mean(v_tot))
+    print("min & max magnitudes of peculiar velocity:", np.min(v_tot), np.max(v_tot))
+    print("=" * 6)
+
+    # # Save coordinates & residual motions to .txt & .csv
+    # df = pd.DataFrame({"x": x, "y": y, "vr_res": v_rad, "vtan_res": v_circ_res})
+    # np.savetxt(r"/home/chengi/Documents/coop2021/pec_motions/pec_motion_data.txt", df)
+    # df.to_csv(
+    #     path_or_buf=r"/home/chengi/Documents/coop2021/pec_motions/pec_motion_data.csv",
+    #     sep=" ",
+    #     index=False,
+    #     header=True,
+    # )
+    # print("Saved to .csv & .txt!")
+
+    return x, y, z, v_rad, v_circ_res, v_vert
 
 
 def main(prior_set, num_samples, num_rounds):
@@ -251,14 +315,17 @@ def main(prior_set, num_samples, num_rounds):
         free_Zsun = file["free_Zsun"]
         free_roll = file["free_roll"]
 
-    print("=== Plotting peculiar motions & v_rad/v_tan ratio for "
-          f"({prior_set} priors & {num_rounds} MCMC rounds) ===")
+    print(
+        "=== Plotting peculiar motions & v_rad/v_tan ratio for "
+        f"({prior_set} priors & {num_rounds} MCMC rounds) ==="
+    )
     print("Number of sources:", num_sources)
     print("Likelihood function:", like_type)
 
     # Get residual motions & ratio of radial to circular velocity
     x, y, z, vx_res, vy_res, vz_res, vrad_vcirc = get_pos_and_residuals_and_vrad_vtan(
-      data, trace, free_Zsun=free_Zsun, free_roll=free_roll)
+        data, trace, free_Zsun=free_Zsun, free_roll=free_roll
+    )
 
     # Define plotting parameters
     fig, ax = plt.subplots()
@@ -271,15 +338,24 @@ def main(prior_set, num_samples, num_rounds):
     # Plot v_rad / v_circ
     ax.scatter(x, y, c=vrad_vcirc, cmap=cmap, s=2)
     cbar = fig.colorbar(
-      mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax, ticks=ticks, format="%.2f")
-    cbar.ax.set_ylabel(r'$v_{rad}/v_{circ}$', rotation=270)
+        mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax, ticks=ticks, format="%.2f"
+    )
+    cbar.ax.set_ylabel(r"$v_{rad}/v_{circ}$", rotation=270)
     cbar.ax.get_yaxis().labelpad = 20
 
     # Plot residual motions
-    vectors = ax.quiver(x, y, vx_res, vy_res, vrad_vcirc, cmap=cmap,
-              minlength=3, width=0.002)
-    ax.quiverkey(vectors, X=0.25, Y=0.1, U=-50,
-                 label="50 km/s", labelpos="N", fontproperties={"size": 10})
+    vectors = ax.quiver(
+        x, y, vx_res, vy_res, vrad_vcirc, cmap=cmap, minlength=3, width=0.002
+    )
+    ax.quiverkey(
+        vectors,
+        X=0.25,
+        Y=0.1,
+        U=-50,
+        label="50 km/s",
+        labelpos="N",
+        fontproperties={"size": 10},
+    )
 
     # Set other figure parameters
     ax.axhline(y=0, linewidth=0.5, linestyle="--", color="k")  # horizontal line
@@ -296,11 +372,14 @@ def main(prior_set, num_samples, num_rounds):
     # ax.set_yticks([-5, 0, 5, 10])
 
     # Set title and labels. Then save figure
-    fig.suptitle(f"Face-on View of {num_sources} Masers \& Their Peculiar Motions",
-                 x=0.55, y=0.94)
-    ax.set_title(r"Colour-coded by their ratio of $v_{rad}$ to $v_{circ}$"
-                 f"\nUsed best-fit parameters from {prior_set} priors",
-                 fontsize=12)
+    fig.suptitle(
+        f"Face-on View of {num_sources} Masers \& Their Peculiar Motions", x=0.55, y=0.94
+    )
+    ax.set_title(
+        r"Colour-coded by their ratio of $v_{rad}$ to $v_{circ}$"
+        f"\nUsed best-fit parameters from {prior_set} priors",
+        fontsize=12,
+    )
     ax.set_xlabel("x (kpc)")
     ax.set_ylabel("y (kpc)")
     ax.set_aspect("equal")
@@ -308,10 +387,7 @@ def main(prior_set, num_samples, num_rounds):
     fig.tight_layout()
     filename = f"vrad_vtan_{prior_set}_{num_samples}dist_{num_rounds}.jpg"
     fig.savefig(
-        Path(__file__).parent / filename,
-        format="jpg",
-        dpi=300,
-        bbox_inches="tight",
+        Path(__file__).parent / filename, format="jpg", dpi=300, bbox_inches="tight",
     )
     plt.show()
 
