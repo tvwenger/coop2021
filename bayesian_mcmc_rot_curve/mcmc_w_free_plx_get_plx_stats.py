@@ -24,8 +24,10 @@ with open(infile, "rb") as f:
 print(pm.summary(trace, var_names="plx").to_string())
 print(data.to_markdown())
 
-plx_mcmc = pm.summary(trace, var_names="plx")["mean"].values
-e_plx_mcmc = pm.summary(trace, var_names="plx")["sd"].values
+# plx_mcmc = pm.summary(trace, var_names="plx")["mean"].values
+# e_plx_mcmc = pm.summary(trace, var_names="plx")["sd"].values
+plx_mcmc = np.mean(trace["plx"], axis=0)
+e_plx_mcmc = np.std(trace["plx"], axis=0)
 # rhat = pm.summary(trace, var_names="plx")["r_hat"].values
 plx_data = data["plx"].values
 e_plx_data = data["e_plx"].values
