@@ -377,10 +377,7 @@ def run_MCMC(
     num_sources = len(eqmux)
     print("Number of data points used:", num_sources)
 
-    # for var in [glon, glat, plx_orig, e_plx, eqmux, e_eqmux, eqmuy, e_eqmuy, vlsr, e_vlsr]:
-    #     print(type(var))
-
-    # 8 parameters from Reid et al. (2019): (see Section 4 & Table 3)
+    # 8 parameters from Reid et al. (2019): (see Section 4 & Table 3) + parallax
     #   R0, Usun, Vsun, Wsun, Upec, Vpec, a2, a3, (optional: Zsun, roll, Wpec)
     with pm.Model() as model:
         # === Define priors ===
@@ -535,11 +532,11 @@ def run_MCMC(
         # No need for lnlike_avg since ln(1) = 0
         # lnlike_avg = lnlike_sum - tt.log(num_samples)
 
-        # No need to sum over sources since only 1 source
-        # lnlike_final = lnlike_avg.sum()
+        # Sum over sources
+        lnlike_final = lnlike_sum.sum()
 
         # Likelihood function
-        likelihood = pm.Potential("likelihood", lnlike_sum)
+        likelihood = pm.Potential("likelihood", lnlike_final)
 
         # # === Check model ===
         # print(textwrap.fill("test_point: " + str(model.test_point),
@@ -578,10 +575,6 @@ def run_MCMC(
         varnames.insert(6, "Wpec") if free_Wpec else None
         varnames.insert(1, "Zsun") if free_Zsun else None
         print(pm.summary(trace, var_names=varnames).to_string())
-
-
-        # for var in [glon, glat, plx_orig, e_plx, eqmux, e_eqmux, eqmuy, e_eqmuy, vlsr, e_vlsr]:
-        #     print(type(var))
 
         # === Save results to pickle file ===
         # New binary file to store MCMC output
