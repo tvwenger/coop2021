@@ -376,8 +376,9 @@ def run_MCMC(
     # Calculate number of sources used in fit
     num_sources = len(eqmux)
     print("Number of data points used:", num_sources)
-    for var in [glon, glat, plx_orig, e_plx, eqmux, e_eqmux, eqmuy, e_eqmuy, vlsr, e_vlsr]:
-        print(type(var))
+
+    # for var in [glon, glat, plx_orig, e_plx, eqmux, e_eqmux, eqmuy, e_eqmuy, vlsr, e_vlsr]:
+    #     print(type(var))
 
     # 8 parameters from Reid et al. (2019): (see Section 4 & Table 3)
     #   R0, Usun, Vsun, Wsun, Upec, Vpec, a2, a3, (optional: Zsun, roll, Wpec)
@@ -579,8 +580,9 @@ def run_MCMC(
         print(pm.summary(trace, var_names=varnames).to_string())
 
 
-        for var in [glon, glat, plx_orig, e_plx, eqmux, e_eqmux, eqmuy, e_eqmuy, vlsr, e_vlsr]:
-            print(type(var))
+        # for var in [glon, glat, plx_orig, e_plx, eqmux, e_eqmux, eqmuy, e_eqmuy, vlsr, e_vlsr]:
+        #     print(type(var))
+
         # === Save results to pickle file ===
         # New binary file to store MCMC output
         filename = f"mcmc_outfile_{prior_set}_{num_samples}dist_{this_round}.pkl"

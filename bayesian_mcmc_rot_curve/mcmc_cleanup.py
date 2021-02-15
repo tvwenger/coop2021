@@ -108,7 +108,7 @@ def ln_siviaskilling(x, mean, weight):
 
 
 
-def cleanup_data(data, trace, like_type, reject_method,
+def cleanup_data(data, trace, like_type, reject_method, num_samples,
                  free_Zsun=False, free_roll=False, free_Wpec=False):
     """
     Cleans up data from pickle file
@@ -148,8 +148,8 @@ def cleanup_data(data, trace, like_type, reject_method,
     vlsr = data["vlsr"].values  # km/s
     e_vlsr = data["e_vlsr"].values  # km/s
 
-    for var in [ra, dec, glon, glat, plx, e_plx, eqmux, e_eqmux, eqmuy, e_eqmuy, vlsr, e_vlsr]:
-        print(type(var))
+    # for var in [ra, dec, glon, glat, plx, e_plx, eqmux, e_eqmux, eqmuy, e_eqmuy, vlsr, e_vlsr]:
+    #     print(type(var))
 
     # === Calculate predicted values from optimal parameters ===
     # Parallax to distance
@@ -189,14 +189,20 @@ def cleanup_data(data, trace, like_type, reject_method,
         )
     elif reject_method == "lnlike":
         print("Using log-likelihood to reject data")
-        # Take median of all likelihood values per source (i.e. median of a whole "sheet")
-        # Shape of distributions is (# MC iters, # samples, # sources)
-        ln_eqmux_pred = np.median(trace["lnlike_eqmux_norm"], axis=(0, 1))
-        ln_eqmuy_pred = np.median(trace["lnlike_eqmuy_norm"], axis=(0, 1))
-        ln_vlsr_pred = np.median(trace["lnlike_vlsr_norm"], axis=(0, 1))
+        if num_samples == 1:
+            ln_eqmux_pred = np.median(trace["lnlike_eqmux_norm"], axis=0)
+            ln_eqmuy_pred = np.median(trace["lnlike_eqmuy_norm"], axis=0)
+            ln_vlsr_pred = np.median(trace["lnlike_vlsr_norm"], axis=0)
+        else:
+            # Take median of all likelihood values per source (i.e. median of a whole "sheet")
+            # Shape of distributions is (# MC iters, # samples, # sources)
+            ln_eqmux_pred = np.median(trace["lnlike_eqmux_norm"], axis=(0, 1))
+            ln_eqmuy_pred = np.median(trace["lnlike_eqmuy_norm"], axis=(0, 1))
+            ln_vlsr_pred = np.median(trace["lnlike_vlsr_norm"], axis=(0, 1))
         # print("    min predicted ln_mux:", np.min(ln_eqmux_pred))
         # print("    min predicted ln_muy:", np.min(ln_eqmuy_pred))
         # print("    min predicted ln_vlsr:", np.min(ln_vlsr_pred))
+        print(ln_eqmux_pred.shape)
 
         if like_type == "gauss":
             ln_threshold = -4.5  # ln(exponential part) = -(3^2)/2
@@ -252,8 +258,10 @@ def cleanup_data(data, trace, like_type, reject_method,
     # plt.legend()
     # plt.show()
     # # ===========================================================
-    for var in [ra_good, dec_good, glon_good, glat_good, plx_good, e_plx_good, eqmux_good, e_eqmux_good, eqmuy_good, e_eqmuy_good, vlsr_good, e_vlsr_good]:
-        print(type(var))
+
+    # for var in [ra_good, dec_good, glon_good, glat_good, plx_good, e_plx_good, eqmux_good, e_eqmux_good, eqmuy_good, e_eqmuy_good, vlsr_good, e_vlsr_good]:
+    #     print(type(var))
+
     # Store filtered data in DataFrame
     data_cleaned = pd.DataFrame(
         {
@@ -313,7 +321,7 @@ def main(prior_set, num_samples, this_round, return_num_sources_cleaned=False):
     # print(data.to_markdown())
     # Clean data
     data_cleaned, num_sources_cleaned = cleanup_data(
-        data, trace, like_type, reject_method,
+        data, trace, like_type, reject_method, num_samples,
         free_Zsun=free_Zsun, free_roll=free_roll, free_Wpec=free_Wpec)
 
     outfile = Path(
