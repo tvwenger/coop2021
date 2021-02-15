@@ -139,14 +139,24 @@ def cleanup_data(data, trace, like_type, reject_method, num_samples,
     dec = data["dec"].values  # deg
     glon = data["glong"].values  # deg
     glat = data["glat"].values  # deg
-    plx = data["plx"].values  # mas
-    e_plx = data["e_plx"].values  # mas
+    plx_orig = data["plx"].values  # mas
+    e_plx_orig = data["e_plx"].values  # mas
     eqmux = data["mux"].values  # mas/yr (equatorial frame)
     e_eqmux = data["e_mux"].values  # mas/y (equatorial frame)
     eqmuy = data["muy"].values  # mas/y (equatorial frame)
     e_eqmuy = data["e_muy"].values  # mas/y (equatorial frame)
     vlsr = data["vlsr"].values  # km/s
     e_vlsr = data["e_vlsr"].values  # km/s
+
+    if num_samples == 1:
+        print("(Assuming parallax is a model parameter")
+        # ? Maybe use mean(plx) if bad results?
+        plx = np.median(trace["plx"], axis=0)
+        e_plx = np.std(trace["plx"], axis=0)
+    else:
+        # Assuming using multiple distance samples
+        plx = plx_orig
+        e_plx = e_plx_orig
 
     # === Calculate predicted values from optimal parameters ===
     # Parallax to distance
@@ -222,8 +232,8 @@ def cleanup_data(data, trace, like_type, reject_method, num_samples,
     dec_good = dec[~bad_sigma]  # deg
     glon_good = glon[~bad_sigma]  # deg
     glat_good = glat[~bad_sigma]  # deg
-    plx_good = plx[~bad_sigma]  # mas
-    e_plx_good = e_plx[~bad_sigma]  # mas
+    plx_good = plx_orig[~bad_sigma]  # mas
+    e_plx_good = e_plx_orig[~bad_sigma]  # mas
     eqmux_good = eqmux[~bad_sigma]  # mas/yr (equatorial frame)
     e_eqmux_good = e_eqmux[~bad_sigma]  # mas/y (equatorial frame)
     eqmuy_good = eqmuy[~bad_sigma]  # mas/y (equatorial frame)
