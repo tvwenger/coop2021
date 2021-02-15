@@ -148,6 +148,9 @@ def cleanup_data(data, trace, like_type, reject_method,
     vlsr = data["vlsr"].values  # km/s
     e_vlsr = data["e_vlsr"].values  # km/s
 
+    for var in [ra, dec, glon, glat, plx, e_plx, eqmux, e_eqmux, eqmuy, e_eqmuy, vlsr, e_vlsr]:
+        print(type(var))
+
     # === Calculate predicted values from optimal parameters ===
     # Parallax to distance
     gdist = trans.parallax_to_dist(plx)
@@ -249,7 +252,8 @@ def cleanup_data(data, trace, like_type, reject_method,
     # plt.legend()
     # plt.show()
     # # ===========================================================
-
+    for var in [ra_good, dec_good, glon_good, glat_good, plx_good, e_plx_good, eqmux_good, e_eqmux_good, eqmuy_good, e_eqmuy_good, vlsr_good, e_vlsr_good]:
+        print(type(var))
     # Store filtered data in DataFrame
     data_cleaned = pd.DataFrame(
         {
@@ -269,6 +273,10 @@ def cleanup_data(data, trace, like_type, reject_method,
     )
     num_sources_cleaned = len(eqmux_good)
     print("num sources after filtering:", num_sources_cleaned)
+    print("Original data")
+    print(data.to_markdown())
+    print("Cleaned data")
+    print(data_cleaned.to_markdown())
 
     return data_cleaned, num_sources_cleaned
 

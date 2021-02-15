@@ -365,7 +365,7 @@ def run_MCMC(
     # (using np.asarray to prevent PyMC3 error with pandas)
     glon = np.asarray(data["glong"].values)  # deg
     glat = np.asarray(data["glat"].values)  # deg
-    plx = np.asarray(data["plx"].values)  # mas
+    plx_orig = np.asarray(data["plx"].values)  # mas
     e_plx = np.asarray(data["e_plx"].values)  # mas
     eqmux = np.asarray(data["mux"].values)  # mas/yr (equatorial frame)
     e_eqmux = np.asarray(data["e_mux"].values)  # mas/y (equatorial frame)
@@ -376,6 +376,8 @@ def run_MCMC(
     # Calculate number of sources used in fit
     num_sources = len(eqmux)
     print("Number of data points used:", num_sources)
+    for var in [glon, glat, plx_orig, e_plx, eqmux, e_eqmux, eqmuy, e_eqmuy, vlsr, e_vlsr]:
+        print(type(var))
 
     # 8 parameters from Reid et al. (2019): (see Section 4 & Table 3)
     #   R0, Usun, Vsun, Wsun, Upec, Vpec, a2, a3, (optional: Zsun, roll, Wpec)
@@ -385,7 +387,7 @@ def run_MCMC(
         R0 = pm.Normal("R0", mu=8.178, sigma=0.026)  # kpc (from GRAVITY Collaboration)
         a2 = pm.Uniform("a2", lower=0.7, upper=1.5)  # dimensionless
         a3 = pm.Uniform("a3", lower=1.5, upper=1.8)  # dimensionless
-        plx = pm.Normal("plx", mu=plx, sigma=e_plx, shape=num_sources)  # mas/yr
+        plx = pm.Normal("plx", mu=plx_orig, sigma=e_plx, shape=num_sources)  # mas/yr
         if prior_set == "A1" or prior_set == "A5":
             Usun = pm.Normal("Usun", mu=11.1, sigma=1.2)  # km/s
             Vsun = pm.Normal("Vsun", mu=15.0, sigma=10.0)  # km/s
@@ -419,6 +421,7 @@ def run_MCMC(
         dist = 1 / plx
         # Galactic to galactocentric Cartesian coordinates
         bary_x, bary_y, bary_z = trans.gal_to_bary(glon, glat, dist)
+        print("+ free parallaxes", end=" ", flush=True)
         # Barycentric Cartesian to galactocentric Cartesian coodinates
         if free_Zsun:
             print("+ free Zsun parameter", end=" ", flush=True)
@@ -575,6 +578,9 @@ def run_MCMC(
         varnames.insert(1, "Zsun") if free_Zsun else None
         print(pm.summary(trace, var_names=varnames).to_string())
 
+
+        for var in [glon, glat, plx_orig, e_plx, eqmux, e_eqmux, eqmuy, e_eqmuy, vlsr, e_vlsr]:
+            print(type(var))
         # === Save results to pickle file ===
         # New binary file to store MCMC output
         filename = f"mcmc_outfile_{prior_set}_{num_samples}dist_{this_round}.pkl"
