@@ -526,14 +526,8 @@ def run_MCMC(
         # Joint likelihood
         lnlike_tot = lnlike_eqmux + lnlike_eqmuy + lnlike_vlsr
 
-        # Marginalize over each distance samples
-        lnlike_sum = pm.logsumexp(lnlike_tot, axis=0)
-
-        # No need for lnlike_avg since ln(1) = 0
-        # lnlike_avg = lnlike_sum - tt.log(num_samples)
-
         # Sum over sources
-        lnlike_final = lnlike_sum.sum()
+        lnlike_final = lnlike_tot.sum()
 
         # Likelihood function
         likelihood = pm.Potential("likelihood", lnlike_final)

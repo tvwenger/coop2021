@@ -224,7 +224,10 @@ def main(prior_set, num_samples, num_rounds):
     # Joint likelihood
     lnlike_tot = lnlike_eqmux + lnlike_eqmuy + lnlike_vlsr
     # Marginalize over each distance samples
-    lnlike_sum = logsumexp(lnlike_tot, axis=0)
+    if num_samples == 1:
+        lnlike_sum = lnlike_tot
+    else:
+        lnlike_sum = logsumexp(lnlike_tot, axis=0)
     lnlike_avg = lnlike_sum - np.log(num_samples)
     # Sum over sources
     max_lnlike = lnlike_avg.sum()
