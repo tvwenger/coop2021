@@ -8,16 +8,26 @@ import corner
 import dill
 
 
-def plot_MCMC(trace, prior_set, like_type, num_sources, num_samples, reject_method,
-              num_rounds, free_Zsun=False, free_roll=False, free_Wpec=False):
+def plot_MCMC(
+    trace,
+    prior_set,
+    like_type,
+    num_sources,
+    num_samples,
+    reject_method,
+    num_rounds,
+    free_Zsun=False,
+    free_roll=False,
+    free_Wpec=False,
+):
     """
     Plots walkers and corner plot from trace. Returns None
     """
-    if like_type != "gauss" and like_type != "cauchy" and like_type != 'sivia':
+    if like_type != "gauss" and like_type != "cauchy" and like_type != "sivia":
         raise ValueError("Invalid like_type. Allowed: 'gauss', 'cauchy', or 'sivia'.")
 
     # Varnames order: [R0, Zsun, Usun, Vsun, Wsun, Upec, Vpec, Wpec, roll, a2, a3]
-    varnames = ['R0', 'Usun', 'Vsun', 'Wsun', 'Upec', 'Vpec', 'a2', 'a3']
+    varnames = ["R0", "Usun", "Vsun", "Wsun", "Upec", "Vpec", "a2", "a3"]
     samples = [trace[varname] for varname in varnames]
     if free_roll:
         varnames.insert(6, "roll")
@@ -48,36 +58,64 @@ def plot_MCMC(trace, prior_set, like_type, num_sources, num_samples, reject_meth
             ax.plot(chain, "k-", alpha=0.1, linewidth=0.5)  # plot chains of parameter
         ax.set_title(varname, fontsize=8)  # add parameter name as title
         # Make x & y ticks smaller
-        ax.tick_params(axis="both", which="major", labelsize=5)
-        ax.tick_params(axis="both", which="minor", labelsize=3)
+        ax.tick_params(axis="both", which="major", labelsize=4)
+        # ax.tick_params(axis="both", which="minor", labelsize=3)
+        ax.grid(False)
+        ax.minorticks_off()
+
+    suptitle = (
+        f"MCMC walkers: {num_chains} chains with {num_iters} iters each. "
+        f"\n{num_sources} sources used in fit. Outlier rejection method: {reject_method}"
+    )
+
+    if num_samples == 1:
+        print("(Assuming parallax is an MCMC model parameter)")
+        suptitle += "\nParallax is an MCMC model paramater"
+    else:
+        suptitle += f"\nEach distance sampled {num_samples}×."
 
     if like_type == "gauss":
+        # fig1.suptitle(
+        #     f"MCMC walkers: {num_chains} chains with {num_iters} iters each. "
+        #     f"Each distance sampled {num_samples}×."
+        #     f"\nGaussian (+ Cauchy) PDF with {prior_set} priors. {num_rounds} MCMC fits."
+        #     f"\n{num_sources} sources used in fit. Outlier rejection method: {reject_method}",
+        #     fontsize=9,
+        # )
         fig1.suptitle(
-            f"MCMC walkers: {num_chains} chains with {num_iters} iters each. "
-            f"Each distance sampled {num_samples}×."
-            f"\nGaussian (+ Cauchy) PDF with {prior_set} priors. {num_rounds} MCMC fits."
-            f"\n{num_sources} sources used in fit. Outlier rejection method: {reject_method}",
+            suptitle
+            + f"\nGaussian (+ Cauchy) PDF with {prior_set} priors. {num_rounds} MCMC fits.",
             fontsize=9,
         )
     elif like_type == "cauchy":
+        # fig1.suptitle(
+        #     f"MCMC walkers: {num_chains} chains with {num_iters} iters each. "
+        #     f"Each distance sampled {num_samples}×."
+        #     f"\nCauchy PDF with {prior_set} priors. {num_rounds} MCMC fits."
+        #     f"\n{num_sources} sources used in fit. Outlier rejection method: {reject_method}",
+        #     fontsize=9,
+        # )
         fig1.suptitle(
-            f"MCMC walkers: {num_chains} chains with {num_iters} iters each. "
-            f"Each distance sampled {num_samples}×."
-            f"\nCauchy PDF with {prior_set} priors. {num_rounds} MCMC fits."
-            f"\n{num_sources} sources used in fit. Outlier rejection method: {reject_method}",
+            suptitle + f"\nCauchy PDF with {prior_set} priors. {num_rounds} MCMC fits.",
             fontsize=9,
         )
     else:  # like_type == "sivia"
+        # fig1.suptitle(
+        #     f"MCMC walkers: {num_chains} chains with {num_iters} iters each. "
+        #     f"Each distance sampled {num_samples}×."
+        #     f"\nSivia & Skilling (2006) PDF with {prior_set} priors. {num_rounds} MCMC fits."
+        #     f"\n{num_sources} sources used in fit. Outlier rejection method: {reject_method}",
+        #     fontsize=9,
+        # )
         fig1.suptitle(
-            f"MCMC walkers: {num_chains} chains with {num_iters} iters each. "
-            f"Each distance sampled {num_samples}×."
-            f"\nSivia & Skilling (2006) PDF with {prior_set} priors. {num_rounds} MCMC fits."
-            f"\n{num_sources} sources used in fit. Outlier rejection method: {reject_method}",
+            suptitle
+            + f"\nSivia & Skilling (2006) PDF with {prior_set} priors. {num_rounds} MCMC fits.",
             fontsize=9,
         )
     fig1.tight_layout()  # Need this below suptitle()
     fig1.savefig(
-        Path(__file__).parent / f"MCMC_chains_{prior_set}_{num_samples}dist_{num_rounds}.jpg",
+        Path(__file__).parent
+        / f"MCMC_chains_{prior_set}_{num_samples}dist_{num_rounds}.jpg",
         format="jpg",
         dpi=300,
         bbox_inches="tight",
@@ -95,8 +133,12 @@ def plot_MCMC(trace, prior_set, like_type, num_sources, num_samples, reject_meth
         # [R0, Zsun, Usun, Vsun, Wsun, Upec, Vpec, Wpec, roll, a2, a3]
         # truths=[8.15, 5.5, 10.6, 10.7, 7.6, 6.1, -4.3, 0., 0., 0.96, 1.62],
     )
+    for ax in fig2.axes:
+        ax.grid(False)
+        ax.minorticks_off()
     fig2.savefig(
-        Path(__file__).parent / f"MCMC_hist_{prior_set}_{num_samples}dist_{num_rounds}.jpg",
+        Path(__file__).parent
+        / f"MCMC_hist_{prior_set}_{num_samples}dist_{num_rounds}.jpg",
         format="jpg",
         dpi=300,
         bbox_inches="tight",
@@ -140,14 +182,26 @@ def main(prior_set, num_samples, num_rounds):
     else:
         raise ValueError("Invalid reject_method. Please choose sigma or lnlike.")
 
-    plot_MCMC(trace, prior_set, like_type, num_sources, num_samples, reject_string,
-              num_rounds, free_Zsun=free_Zsun, free_roll=free_roll, free_Wpec=free_Wpec)
+    plot_MCMC(
+        trace,
+        prior_set,
+        like_type,
+        num_sources,
+        num_samples,
+        reject_string,
+        num_rounds,
+        free_Zsun=free_Zsun,
+        free_roll=free_roll,
+        free_Wpec=free_Wpec,
+    )
 
 
 if __name__ == "__main__":
     prior_set_file = input("prior_set of file (A1, A5, B, C, D): ")
     num_samples_file = int(input("Number of distance samples per source in file (int): "))
-    num_rounds_file = int(input("Number of times MCMC has run. i.e., this_round of file (int): "))
+    num_rounds_file = int(
+        input("Number of times MCMC has run. i.e., this_round of file (int): ")
+    )
     # reject_method_file = input("Outlier rejection method used (sigma or lnlike): ")
 
     main(prior_set_file, num_samples_file, num_rounds_file)
