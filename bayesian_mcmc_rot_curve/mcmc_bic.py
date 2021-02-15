@@ -199,7 +199,7 @@ def main(prior_set, num_samples, num_rounds):
 
     # === Bayesian Information Criterion ===
     if num_samples == 1:
-        print("Assuming parallax is an MCMC model parameter")
+        print("(Assuming parallax is an MCMC model parameter)")
         num_params = 9
     else:
         num_params = 8
