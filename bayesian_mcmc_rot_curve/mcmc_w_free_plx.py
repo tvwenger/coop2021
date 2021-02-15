@@ -386,6 +386,7 @@ def run_MCMC(
         a2 = pm.Uniform("a2", lower=0.7, upper=1.5)  # dimensionless
         a3 = pm.Uniform("a3", lower=1.5, upper=1.8)  # dimensionless
         plx = pm.Normal("plx", mu=plx_orig, sigma=e_plx, shape=num_sources)  # mas/yr
+        # TODO: Incorporate Upec & Vpec per source
         if prior_set == "A1" or prior_set == "A5":
             Usun = pm.Normal("Usun", mu=11.1, sigma=1.2)  # km/s
             Vsun = pm.Normal("Vsun", mu=15.0, sigma=10.0)  # km/s
