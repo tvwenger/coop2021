@@ -198,7 +198,11 @@ def main(prior_set, num_samples, num_rounds):
         data, trace, free_Zsun=free_Zsun, free_roll=free_roll, free_Wpec=free_Wpec)
 
     # === Bayesian Information Criterion ===
-    num_params = 8
+    if num_samples == 1:
+        print("Assuming parallax is an MCMC model parameter")
+        num_params = 9
+    else:
+        num_params = 8
     num_params += sum([free_Zsun, free_roll, free_Wpec])
     print("Number of parameters:", num_params)
 
