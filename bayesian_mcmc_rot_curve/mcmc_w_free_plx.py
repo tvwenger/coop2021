@@ -727,9 +727,7 @@ def main(infile, num_cores=None, num_chains=None, num_tune=2000, num_iters=5000,
         # Else: do outlier rejection
         num_sources_cleaned = clean.main(
             prior_set, num_samples, this_round, return_num_sources_cleaned=True)
-        if like_type == "gauss" and num_sources == num_sources_cleaned:
-            # Even if no outliers rejected, if like_type == "sivia" or "cauchy",
-            # do at least one iteration with "gauss" (since num_rounds > 1)
+        if num_sources == num_sources_cleaned:
             print(f"No more outliers rejected after round {this_round}. Exiting")
             break
 
