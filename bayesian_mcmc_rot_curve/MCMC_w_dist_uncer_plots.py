@@ -90,7 +90,7 @@ def plot_MCMC(
     else:
         suptitle += f"\nEach distance sampled {num_samples}×"
     if individual_Upec and individual_Vpec:
-        suptitle += "\nIndividual Upec & Vpec (plotting median over all sources per iteration)"
+        suptitle += "\nIndividual Upec \& Vpec (plotting median over all sources per iteration)"
     elif individual_Upec:
         suptitle += "\nIndividual Upec (plotting median over all sources per iteration)"
     elif individual_Vpec:
@@ -167,6 +167,55 @@ def plot_MCMC(
     )
     plt.show()
 
+    # Plot plx, Upec, Vpec posterior distributions for 1 source
+    source_idx = 0  # index of source to plot
+    plx_1source = trace["plx"][:, source_idx]
+    Upec_1source = trace["Upec"][:, source_idx]
+    Vpec_1source = trace["Vpec"][:, source_idx]
+    samples_1source = np.array([plx_1source, Upec_1source, Vpec_1source])
+    params_1source = [param.reshape((num_chains, num_iters)) for param in samples_1source]
+    varnames_1source = [f"Parallax[{source_idx}]", f"Upec[{source_idx}]", f"Vpec[{source_idx}]"]
+    fig3, axes3 = plt.subplots(np.shape(param_lst)[0], figsize=plt.figaspect(2))
+
+    for ax, parameter, varname in zip(axes3, params_1source, varnames_1source):
+        for chain in parameter:
+            ax.plot(chain, "k-", alpha=0.1, linewidth=0.5)  # plot chains of parameter
+        ax.set_title(varname, fontsize=8)  # add parameter name as title
+        # Make x & y ticks smaller
+        ax.tick_params(axis="both", which="major", labelsize=4)
+        # ax.tick_params(axis="both", which="minor", labelsize=3)
+        ax.grid(False)
+        ax.minorticks_off()
+    fig3.suptitle(f"Chains for source (index={source_idx})")
+    fig3.tight_layout()
+    fig3.savefig(
+        Path(__file__).parent
+        / f"MCMC_chains_source{source_idx}_{prior_set}_{num_samples}dist_{num_rounds}.jpg",
+        format="jpg",
+        dpi=300,
+        bbox_inches="tight",
+    )
+    plt.show()
+
+    # Plot histogram of parameters
+    fig4 = corner.corner(
+        samples_1source.T,
+        labels=varnames_1source,
+        quantiles=[0.16, 0.5, 0.84],
+        show_titles=True,
+        title_fmt=".2f",
+    )
+    for ax in fig4.axes:
+        ax.grid(False)
+        ax.minorticks_off()
+    fig4.savefig(
+        Path(__file__).parent
+        / f"MCMC_hist_source{source_idx}_{prior_set}_{num_samples}dist_{num_rounds}.jpg",
+        format="jpg",
+        dpi=300,
+        bbox_inches="tight",
+    )
+    plt.show()
 
 def main(prior_set, num_samples, num_rounds):
     # Binary file to read
