@@ -19,6 +19,9 @@ def plot_MCMC(
     free_Zsun=False,
     free_roll=False,
     free_Wpec=False,
+    individual_Upec=False,
+    individual_Vpec=False,
+
 ):
     """
     Plots walkers and corner plot from trace. Returns None
@@ -27,14 +30,27 @@ def plot_MCMC(
         raise ValueError("Invalid like_type. Allowed: 'gauss', 'cauchy', or 'sivia'.")
 
     # Varnames order: [R0, Zsun, Usun, Vsun, Wsun, Upec, Vpec, Wpec, roll, a2, a3]
-    varnames = ["R0", "Usun", "Vsun", "Wsun", "Upec", "Vpec", "a2", "a3"]
+    varnames = ["R0", "Usun", "Vsun", "Wsun", "a2", "a3"]
     samples = [trace[varname] for varname in varnames]
+
     if free_roll:
-        varnames.insert(6, "roll")
-        samples.insert(6, trace["roll"])
+        varnames.insert(4, "roll")
+        samples.insert(4, trace["roll"])
     if free_Wpec:
-        varnames.insert(6, "Wpec")
-        samples.insert(6, trace["Wpec"])
+        varnames.insert(4, "Wpec")
+        samples.insert(4, trace["Wpec"])
+    varnames.insert(4, "Vpec")
+    if individual_Vpec:
+        # Take median Vpec for all sources
+        samples.insert(4, np.median(trace["Vpec"], axis=1))
+    else:
+        samples.insert(4, trace["Vpec"])
+    varnames.insert(4, "Upec")
+    if individual_Vpec:
+        # Take median Upec for all sources
+        samples.insert(4, np.median(trace["Upec"], axis=1))
+    else:
+        samples.insert(4, trace["Upec"])
     if free_Zsun:
         varnames.insert(1, "Zsun")
         samples.insert(1, trace["Zsun"])
@@ -72,7 +88,13 @@ def plot_MCMC(
         print("(Assuming parallax is an MCMC model parameter)")
         suptitle += "\nParallax is an MCMC model paramater"
     else:
-        suptitle += f"\nEach distance sampled {num_samples}×."
+        suptitle += f"\nEach distance sampled {num_samples}×"
+    if individual_Upec and individual_Vpec:
+        suptitle += "\nIndividual Upec & Vpec (plotting median over all sources per iteration)"
+    elif individual_Upec:
+        suptitle += "\nIndividual Upec (plotting median over all sources per iteration)"
+    elif individual_Vpec:
+        suptitle += "\nIndividual Vpec (plotting median over all sources per iteration)"
 
     if like_type == "gauss":
         # fig1.suptitle(
@@ -165,6 +187,8 @@ def main(prior_set, num_samples, num_rounds):
         free_Zsun = file["free_Zsun"]
         free_roll = file["free_roll"]
         free_Wpec = file["free_Wpec"]
+        individual_Upec = file["individual_Upec"]
+        individual_Vpec = file["individual_Vpec"]
 
     print("prior_set:", prior_set)
     print("like_type:", like_type)
@@ -193,6 +217,9 @@ def main(prior_set, num_samples, num_rounds):
         free_Zsun=free_Zsun,
         free_roll=free_roll,
         free_Wpec=free_Wpec,
+        individual_Upec=individual_Upec,
+        individual_Vpec=individual_Vpec,
+
     )
 
 
