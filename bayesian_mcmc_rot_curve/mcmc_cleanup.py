@@ -151,7 +151,7 @@ def cleanup_data(data, trace, like_type, reject_method, num_samples,
     e_vlsr = data["e_vlsr"].values  # km/s
 
     if num_samples == 1:
-        print("(Assuming parallax is a model parameter")
+        print("(Assuming parallax is a model parameter)")
         # ? Maybe use mean(plx) if bad results?
         plx = np.median(trace["plx"], axis=0)
         e_plx = np.std(trace["plx"], axis=0)
