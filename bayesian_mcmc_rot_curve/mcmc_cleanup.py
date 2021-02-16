@@ -109,7 +109,9 @@ def ln_siviaskilling(x, mean, weight):
 
 
 def cleanup_data(data, trace, like_type, reject_method, num_samples,
-                 free_Zsun=False, free_roll=False, free_Wpec=False):
+                 free_Zsun=False, free_roll=False, free_Wpec=False,
+                 individual_Upec=False, individual_Vpec=False,
+):
     """
     Cleans up data from pickle file
     (i.e. removes any sources with proper motion or vlsr > 3 sigma from predicted values)
@@ -125,8 +127,8 @@ def cleanup_data(data, trace, like_type, reject_method, num_samples,
     Vsun = np.median(trace["Vsun"])  # km/s
     Usun = np.median(trace["Usun"])  # km/s
     Wsun = np.median(trace["Wsun"])  # km/s
-    Upec = np.median(trace["Upec"])  # km/s
-    Vpec = np.median(trace["Vpec"])  # km/s
+    Upec = np.median(trace["Upec"], axis=0) if individual_Upec else np.median(trace["Upec"])  # km/s
+    Vpec = np.median(trace["Vpec"], axis=0) if individual_Upec else np.median(trace["Vpec"])  # km/s
     a2 = np.median(trace["a2"])  # dimensionless
     a3 = np.median(trace["a3"])  # dimensionless
     Zsun = np.median(trace["Zsun"]) if free_Zsun else _ZSUN  # pc
@@ -310,6 +312,8 @@ def main(prior_set, num_samples, this_round, return_num_sources_cleaned=False):
         free_Zsun = file["free_Zsun"]
         free_roll = file["free_roll"]
         free_Wpec = file["free_Wpec"]
+        individual_Upec = file["individual_Upec"]
+        individual_Vpec = file["individual_Vpec"]
 
     print(f"===\nExecuting outlier rejection after round {this_round}")
     print("prior_set:", prior_set)
@@ -321,7 +325,9 @@ def main(prior_set, num_samples, this_round, return_num_sources_cleaned=False):
     # Clean data
     data_cleaned, num_sources_cleaned = cleanup_data(
         data, trace, like_type, reject_method, num_samples,
-        free_Zsun=free_Zsun, free_roll=free_roll, free_Wpec=free_Wpec)
+        free_Zsun=free_Zsun, free_roll=free_roll, free_Wpec=free_Wpec,
+        individual_Upec=individual_Upec, individual_Vpec=individual_Vpec
+    )
 
     outfile = Path(
         "/home/chengi/Documents/coop2021/bayesian_mcmc_rot_curve/"
@@ -343,6 +349,8 @@ def main(prior_set, num_samples, this_round, return_num_sources_cleaned=False):
                 "free_Zsun": free_Zsun,
                 "free_roll": free_roll,
                 "free_Wpec": free_Wpec,
+                "individual_Upec": individual_Upec,
+                "individual_Vpec": individual_Vpec,
             }, f)
 
     if return_num_sources_cleaned:

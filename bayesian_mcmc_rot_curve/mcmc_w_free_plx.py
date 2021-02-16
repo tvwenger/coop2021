@@ -296,7 +296,10 @@ def ln_siviaskilling(x, mean, weight):
 def run_MCMC(
     data, num_iters, num_tune, num_cores, num_chains, num_samples,
     prior_set, like_type, is_database_data, this_round, filter_parallax, reject_method,
-    free_Wpec=False, free_Zsun=False, free_roll=False, return_num_sources=False):
+    free_Wpec=False, free_Zsun=False, free_roll=False,
+    individual_Upec=False, individual_Vpec=False,
+    return_num_sources=False
+):
     """
     Runs Bayesian MCMC. Returns trace & number of sources used in fit.
 
@@ -386,33 +389,55 @@ def run_MCMC(
         a2 = pm.Uniform("a2", lower=0.7, upper=1.5)  # dimensionless
         a3 = pm.Uniform("a3", lower=1.5, upper=1.8)  # dimensionless
         plx = pm.Normal("plx", mu=plx_orig, sigma=e_plx, shape=num_sources)  # mas/yr
-        # TODO: Incorporate Upec & Vpec per source
+        if individual_Upec:
+          # Use best-fit mean value from A5 priors & conservative sigma
+          print("+ individual Upecs", end=" ", flush=True)
+          mean_Upec = np.array([4.853,] * num_sources)
+          sigma_Upec = np.array([15., ] * num_sources)
+          Upec = pm.Normal("Upec", mu=mean_Upec, sigma=sigma_Upec, shape=num_sources)
+        if individual_Vpec:
+          # Use best-fit mean value from A5 priors & conservative sigma
+          print("+ individual Vpecs", end="", flush=True)
+          mean_Vpec = np.array([-4.55,] * num_sources)
+          sigma_Vpec = np.array([15., ] * num_sources)
+          Vpec = pm.Normal("Vpec", mu=mean_Vpec, sigma=sigma_Vpec, shape=num_sources)
         if prior_set == "A1" or prior_set == "A5":
             Usun = pm.Normal("Usun", mu=11.1, sigma=1.2)  # km/s
             Vsun = pm.Normal("Vsun", mu=15.0, sigma=10.0)  # km/s
             Wsun = pm.Normal("Wsun", mu=7.2, sigma=1.1)  # km/s
-            Upec = pm.Normal("Upec", mu=3.0, sigma=10.0)  # km/s
-            Vpec = pm.Normal("Vpec", mu=-3.0, sigma=10.0)  # km/s
+            if not individual_Upec:
+              Upec = pm.Normal("Upec", mu=3.0, sigma=10.0)  # km/s
+            if not individual_Vpec:
+              Vpec = pm.Normal("Vpec", mu=-3.0, sigma=10.0)  # km/s
         elif prior_set == "B":
             Usun = pm.Normal("Usun", mu=11.1, sigma=1.2)  # km/s
             Vsun = pm.Normal("Vsun", mu=12.2, sigma=2.1)  # km/s
             Wsun = pm.Normal("Wsun", mu=7.2, sigma=1.1)  # km/s
-            Upec = pm.Uniform("Upec", lower=-500.0, upper=500.0)  # km/s
-            Vpec = pm.Uniform("Vpec", lower=-500.0, upper=500.0)  # km/s
+            if not individual_Upec:
+              Upec = pm.Uniform("Upec", lower=-500.0, upper=500.0)  # km/s
+            if not individual_Vpec:
+              Vpec = pm.Uniform("Vpec", lower=-500.0, upper=500.0)  # km/s
         elif prior_set == "C":
             Usun = pm.Uniform("Usun", lower=-500.0, upper=500.0)  # km/s
             Vsun = pm.Uniform("Vsun", lower=-500.0, upper=500.0)  # km/s
             Wsun = pm.Uniform("Wsun", lower=-500.0, upper=500.0)  # km/s
-            Upec = pm.Normal("Upec", mu=3.0, sigma=5.0)  # km/s
-            Vpec = pm.Normal("Vpec", mu=-3.0, sigma=5.0)  # km/s
+            if not individual_Upec:
+              Upec = pm.Normal("Upec", mu=3.0, sigma=5.0)  # km/s
+            if not individual_Vpec:
+              Vpec = pm.Normal("Vpec", mu=-3.0, sigma=5.0)  # km/s
         elif prior_set == "D":
             Usun = pm.Uniform("Usun", lower=-500.0, upper=500.0)  # km/s
             Vsun = pm.Uniform("Vsun", lower=-5.0, upper=35.0)  # km/s
             Wsun = pm.Uniform("Wsun", lower=-500.0, upper=500.0)  # km/s
-            Upec = pm.Uniform("Upec", lower=-500.0, upper=500.0)  # kpc
-            Vpec = pm.Uniform("Vpec", lower=-23.0, upper=17.0)  # km/s
+            if not individual_Upec:
+              Upec = pm.Uniform("Upec", lower=-500.0, upper=500.0)  # kpc
+            if not individual_Vpec:
+              Vpec = pm.Uniform("Vpec", lower=-23.0, upper=17.0)  # km/s
         else:
             raise ValueError("Illegal prior_set. Choose 'A1', 'A5', 'B', 'C', or 'D'.")
+
+        if individual_Upec or individual_Vpec:
+            print()  # start new line
         print("===\nUsing prior set", prior_set)
 
         # === Predicted values (using data) ===
@@ -550,24 +575,12 @@ def run_MCMC(
             return_inferencedata=False)
 
         # === See results (calling within model to prevent FutureWarning) ===
-        # if reject_method == "lnlike":
-        #     print(
-        #         pm.summary(
-        #             trace,
-        #             var_names=[
-        #                 "~lnlike_eqmux_norm",
-        #                 "~lnlike_eqmuy_norm",
-        #                 "~lnlike_vlsr_norm",
-        #             ],
-        #         ).to_string()
-        #     )
-        # else:  # reject_method == "sigma"
-        #     print(pm.summary(trace).to_string())
-
         # Varnames order: [R0, Zsun, Usun, Vsun, Wsun, Upec, Vpec, Wpec, roll, a2, a3]
-        varnames = ['R0', 'Usun', 'Vsun', 'Wsun', 'Upec', 'Vpec', 'a2', 'a3']
-        varnames.insert(6, "roll") if free_roll else None
-        varnames.insert(6, "Wpec") if free_Wpec else None
+        varnames = ['R0', 'Usun', 'Vsun', 'Wsun', 'a2', 'a3']
+        varnames.insert(4, "roll") if free_roll else None
+        varnames.insert(4, "Wpec") if free_Wpec else None
+        varnames.insert(4, "Vpec") if not individual_Vpec else None
+        varnames.insert(4, "Upec") if not individual_Upec else None
         varnames.insert(1, "Zsun") if free_Zsun else None
         print(pm.summary(trace, var_names=varnames).to_string())
 
@@ -590,6 +603,8 @@ def run_MCMC(
                     "free_Zsun": free_Zsun,
                     "free_roll": free_roll,
                     "free_Wpec": free_Wpec,
+                    "individual_Upec": individual_Upec,
+                    "individual_Vpec": individual_Vpec,
                 }, f)
 
         if return_num_sources:
@@ -597,9 +612,10 @@ def run_MCMC(
 
 
 def main(infile, num_cores=None, num_chains=None, num_tune=2000, num_iters=5000,
-        num_samples=100, prior_set="A1", like_type="gauss", num_rounds=1,
+        num_samples=1, prior_set="A1", like_type="gauss", num_rounds=1,
         reject_method="sigma", this_round=1, filter_plx=False,
-        free_Wpec=False, free_Zsun=False, free_roll=False, auto_run=False):
+        free_Wpec=False, free_Zsun=False, free_roll=False, auto_run=False,
+        individual_Upec=False, individual_Vpec=False):
     """
     Inputs:
       infile :: string
@@ -689,14 +705,16 @@ def main(infile, num_cores=None, num_chains=None, num_tune=2000, num_iters=5000,
             with open(infile, "rb") as f:
                 data = dill.load(f)["data"]
             if this_round != 1:
-                # Override like_type to "gauss"
-                like_type = "gauss"
+                # Override like_type to "cauchy"
+                # since model does not converge with "gauss"
+                like_type = "cauchy"
 
         num_sources = run_MCMC(
             data,
             num_iters, num_tune, num_cores, num_chains, num_samples,
             prior_set, like_type, load_database, this_round, filter_plx, reject_method,
             free_Wpec=free_Wpec, free_Zsun=free_Zsun, free_roll=free_roll,
+            individual_Upec=individual_Upec, individual_Vpec=individual_Vpec,
             return_num_sources=True
         )
 
@@ -753,11 +771,6 @@ if __name__ == "__main__":
         default=5000,
         help="Number of actual MCMC iterations")
     parser.add_argument(
-        "--num_samples",
-        type=int,
-        default=100,
-        help="Number of times to sample each parallax")
-    parser.add_argument(
         "--prior_set",
         type=str,
         default="A5",
@@ -807,6 +820,16 @@ if __name__ == "__main__":
         action="store_true",
         default=False,
         help="Run the MCMC program until no more outliers are rejected. Will override num_rounds")
+    parser.add_argument(
+        "--individual_Upec",
+        action="store_true",
+        default=False,
+        help="Let Upec vary for each source")
+    parser.add_argument(
+        "--individual_Vpec",
+        action="store_true",
+        default=False,
+        help="Let Vpec vary for each source")
     args = vars(parser.parse_args())
 
     main(
@@ -815,7 +838,7 @@ if __name__ == "__main__":
         num_chains=args["num_chains"],
         num_tune=args["num_tune"],
         num_iters=args["num_iters"],
-        num_samples=args["num_samples"],
+        num_samples=1,
         prior_set=args["prior_set"],
         like_type=args["like_type"],
         num_rounds=args["num_rounds"],
@@ -826,4 +849,6 @@ if __name__ == "__main__":
         free_Wpec=args["free_Wpec"],
         free_roll=args["free_roll"],
         auto_run=args["auto_run"],
+        individual_Upec=args["individual_Upec"],
+        individual_Vpec=args["individual_Vpec"],
     )
