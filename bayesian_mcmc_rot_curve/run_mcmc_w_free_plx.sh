@@ -1,7 +1,8 @@
 #!/bin/bash
 num_cores=10
 
-echo "==== MCMC w/ plx as model parameter ===="
+echo "==== MCMC w/ plx as model parameter + individual Upec & Vpec ===="
+echo "Cauchy PDF until no outliers rejected then Gaussian PDF"
 
 echo "=== Testing real data ==="
 python mcmc_w_free_plx.py /home/chengi/Documents/coop2021/data/hii_v2_20201203.db \

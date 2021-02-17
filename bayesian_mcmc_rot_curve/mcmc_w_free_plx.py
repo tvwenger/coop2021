@@ -704,10 +704,10 @@ def main(infile, num_cores=None, num_chains=None, num_tune=2000, num_iters=5000,
             load_database = False
             with open(infile, "rb") as f:
                 data = dill.load(f)["data"]
-            if this_round != 1:
-                # Override like_type to "cauchy"
-                # since model does not converge with "gauss"
-                like_type = "cauchy"
+            # if this_round != 1:
+            #     # Override like_type to "cauchy"
+            #     # since model does not converge with "gauss"
+            #     like_type = "cauchy"
 
         num_sources = run_MCMC(
             data,
@@ -727,9 +727,15 @@ def main(infile, num_cores=None, num_chains=None, num_tune=2000, num_iters=5000,
         # Else: do outlier rejection
         num_sources_cleaned = clean.main(
             prior_set, num_samples, this_round, return_num_sources_cleaned=True)
-        if num_sources == num_sources_cleaned:
+
+        if like_type == "gauss" and num_sources == num_sources_cleaned:
             print(f"No more outliers rejected after round {this_round}. Exiting")
             break
+
+        if like_type == "cauchy" and num_sources == num_sources_cleaned:
+            print(f"No more outliers rejected after round {this_round}. "
+                  "Changing to Gaussian log-likelihood")
+            like_type = "gauss"
 
         # Set auto-generated cleaned pickle file as next infile
         filename = f"mcmc_outfile_{prior_set}_{num_samples}dist_{this_round}_clean.pkl"
