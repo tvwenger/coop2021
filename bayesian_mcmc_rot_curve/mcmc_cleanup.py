@@ -216,7 +216,7 @@ def cleanup_data(data, trace, like_type, reject_method, num_samples,
             ln_threshold = -4.5  # ln(exponential part) = -(3^2)/2
         elif like_type == "cauchy":
             # ln_threshold = -2.0139  # -ln[1 + (3^2 / (2ln2))], 3 sigma
-            ln_threshold = -1.3572  # -ln[1 + (2^2 / (2ln2))], 2 sigma
+            ln_threshold = -0.9643  # -ln[1 + (1.5^2 / (2ln2))], 1.5 sigma
         elif like_type == "sivia":
             ln_threshold = -2.2084 # ln[(1-exp(-(3^2)/2)) / (3^2)]
         else:
