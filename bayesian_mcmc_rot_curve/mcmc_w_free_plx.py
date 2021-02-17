@@ -388,7 +388,7 @@ def run_MCMC(
         R0 = pm.Normal("R0", mu=8.178, sigma=0.026)  # kpc (from GRAVITY Collaboration)
         a2 = pm.Uniform("a2", lower=0.7, upper=1.5)  # dimensionless
         a3 = pm.Uniform("a3", lower=1.5, upper=1.8)  # dimensionless
-        plx = pm.Normal("plx", mu=plx_orig, sigma=e_plx, shape=num_sources)  # mas/yr
+        plx = pm.TruncatedNormal("plx", mu=plx_orig, sigma=e_plx, shape=num_sources, lower=0.01)  # mas/yr
         if individual_Upec:
           # Use best-fit mean value from A5 priors & conservative sigma
           print("+ individual Upecs", end=" ", flush=True)
@@ -748,7 +748,7 @@ def main(infile, num_cores=None, num_chains=None, num_tune=2000, num_iters=5000,
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="MCMC stuff",
-        prog="MCMC_w_dist_uncer.py",
+        prog="mcmc_w_free_plx.py",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument(
         "infile",

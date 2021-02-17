@@ -5,12 +5,11 @@ echo "==== MCMC w/ plx as model parameter + individual Upec & Vpec ===="
 echo "Cauchy PDF until no outliers rejected (1.5 sigma lnlike threshold) then Gaussian PDF"
 
 echo "=== Testing real data ==="
-python mcmc_w_free_plx.py \
-    # /home/chengi/Documents/coop2021/data/hii_v2_20201203.db \
-    /home/chengi/Documents/coop2021/bayesian_mcmc_rot_curve/mcmc_outfile_A1_1dist_4_clean.pkl \
+python mcmc_w_free_plx.py /home/chengi/Documents/coop2021/data/hii_v2_20201203.db \
     --num_cores $num_cores --num_chains $num_cores --num_tune 2000 --num_iter 10000 \
     --prior_set A1 --like_type cauchy --num_rounds 3 --reject_method lnlike \
     --free_Zsun --free_roll --auto_run --individual_Upec --individual_Vpec
+
 
 # echo "==== Testing simulated data ===="
 # python MCMC_w_dist_uncer.py \
