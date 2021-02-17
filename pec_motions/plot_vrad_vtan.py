@@ -215,7 +215,7 @@ def get_pos_and_residuals_and_vrad_vtan(data, trace, free_Zsun=False, free_roll=
         radius, azimuth, height, v_radial=v_rad, v_tangent=v_circ_res, v_vertical=v_vert
     )
 
-    # Change galactocentric coordinates to Reid's convention
+    # Change galactocentric coordinates to Reid's convention (rotate 90 deg CW)
     # (our convention is detailed in the docstring of trans.gcen_cyl_to_gcen_cart)
     x, y = y, -x
     vx_res, vy_res = vy_res, -vx_res
@@ -266,7 +266,7 @@ def get_cart_pos_and_cyl_residuals(data, trace, free_Zsun=False, free_roll=False
     # to galactocentric Cartesian residuals
     x, y, z, = trans.gcen_cyl_to_gcen_cart(radius, azimuth, height)
 
-    # Change galactocentric coordinates to Reid's convention
+    # Change galactocentric coordinates to Reid's convention (rotate 90 deg CW)
     # (our convention is detailed in the docstring of trans.gcen_cyl_to_gcen_cart)
     x, y = y, -x
 
