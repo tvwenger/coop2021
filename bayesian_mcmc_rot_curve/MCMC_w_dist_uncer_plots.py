@@ -146,22 +146,28 @@ def plot_MCMC(
     )
     plt.show()
 
-    if num_samples != 1 or not individual_Upec or not individual_Vpec:
+    if not individual_Upec or not individual_Vpec:
         # Break out of function
         return None
 
-    # Else: plot plx, Upec, Vpec posterior distributions for 1 source
+    # Else: plot Upec & Vpec (& maybe plx) posterior distributions for 1 source
     source_idx = 0  # index of source to plot
-    plx_1source = trace["plx"][:, source_idx]
     Upec_1source = trace["Upec"][:, source_idx]
     Vpec_1source = trace["Vpec"][:, source_idx]
-    samples_1source = np.array([plx_1source, Upec_1source, Vpec_1source])
+
+    if num_samples == 1:  # parallax is a model parameter
+        plx_1source = trace["plx"][:, source_idx]
+        samples_1source = np.array([plx_1source, Upec_1source, Vpec_1source])
+        varnames_1source = [
+            f"Parallax[{source_idx}]",
+            f"Upec[{source_idx}]",
+            f"Vpec[{source_idx}]",
+        ]
+    else:
+        samples_1source = np.array([Upec_1source, Vpec_1source])
+        varnames_1source = [f"Upec[{source_idx}]", f"Vpec[{source_idx}]"]
     params_1source = [param.reshape((num_chains, num_iters)) for param in samples_1source]
-    varnames_1source = [
-        f"Parallax[{source_idx}]",
-        f"Upec[{source_idx}]",
-        f"Vpec[{source_idx}]",
-    ]
+
     fig3, axes3 = plt.subplots(np.shape(params_1source)[0], figsize=plt.figaspect(1.5))
 
     for ax, parameter, varname in zip(axes3, params_1source, varnames_1source):

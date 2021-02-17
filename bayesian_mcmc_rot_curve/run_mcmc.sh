@@ -1,11 +1,15 @@
 #!/bin/bash
 num_cores=10
 
+echo "==== MCMC w/ individual Upec + Vpec ===="
+
 echo "=== Testing real data ==="
 python MCMC_w_dist_uncer.py /home/chengi/Documents/coop2021/data/hii_v2_20201203.db \
     --num_cores $num_cores --num_chains $num_cores --num_tune 1000 --num_iter 1000 \
-    --num_samples 100 --prior_set D --like_type cauchy \
-    --num_rounds 3 --reject_method lnlike --free_Zsun --free_roll --auto_run
+    --num_samples 100 --prior_set A1 --like_type cauchy --num_rounds 3 \
+    --reject_method lnlike --free_Zsun --free_roll --auto_run \
+    --individual_Upec --individual_Vpec
+
 
 # echo "==== Testing simulated data ===="
 # python MCMC_w_dist_uncer.py \
@@ -23,3 +27,5 @@ python MCMC_w_dist_uncer.py /home/chengi/Documents/coop2021/data/hii_v2_20201203
 #              galactocentric frame be free parameter)
 # --auto_run (let MCMC program run until no more outliers rejected.
 #             Will override num_rounds)
+# --individual_Upec (let Upec vary per source)
+# --individual_Vpec (let Vpec vary per source)
