@@ -21,7 +21,6 @@ def plot_MCMC(
     free_Wpec=False,
     individual_Upec=False,
     individual_Vpec=False,
-
 ):
     """
     Plots walkers and corner plot from trace. Returns None
@@ -64,7 +63,6 @@ def plot_MCMC(
     # === Plot MCMC chains for each parameter ===
     # Reshape to (# params, # chains, # iter per chain)
     param_lst = [param.reshape((num_chains, num_iters)) for param in samples]
-    # print("param_lst shape", np.shape(param_lst))
 
     # Make # subplots same as # params & make figure twice as tall as is wide
     fig1, axes1 = plt.subplots(np.shape(param_lst)[0], figsize=plt.figaspect(2))
@@ -90,45 +88,26 @@ def plot_MCMC(
     else:
         suptitle += f"\nEach distance sampled {num_samples}×"
     if individual_Upec and individual_Vpec:
-        suptitle += "\nIndividual Upec \& Vpec (plotting median over all sources per iteration)"
+        suptitle += (
+            "\nIndividual Upec \& Vpec (plotting median over all sources per iteration)"
+        )
     elif individual_Upec:
         suptitle += "\nIndividual Upec (plotting median over all sources per iteration)"
     elif individual_Vpec:
         suptitle += "\nIndividual Vpec (plotting median over all sources per iteration)"
 
     if like_type == "gauss":
-        # fig1.suptitle(
-        #     f"MCMC walkers: {num_chains} chains with {num_iters} iters each. "
-        #     f"Each distance sampled {num_samples}×."
-        #     f"\nGaussian (+ Cauchy) PDF with {prior_set} priors. {num_rounds} MCMC fits."
-        #     f"\n{num_sources} sources used in fit. Outlier rejection method: {reject_method}",
-        #     fontsize=9,
-        # )
         fig1.suptitle(
             suptitle
             + f"\nGaussian (+ Cauchy) PDF with {prior_set} priors. {num_rounds} MCMC fits.",
             fontsize=9,
         )
     elif like_type == "cauchy":
-        # fig1.suptitle(
-        #     f"MCMC walkers: {num_chains} chains with {num_iters} iters each. "
-        #     f"Each distance sampled {num_samples}×."
-        #     f"\nCauchy PDF with {prior_set} priors. {num_rounds} MCMC fits."
-        #     f"\n{num_sources} sources used in fit. Outlier rejection method: {reject_method}",
-        #     fontsize=9,
-        # )
         fig1.suptitle(
             suptitle + f"\nCauchy PDF with {prior_set} priors. {num_rounds} MCMC fits.",
             fontsize=9,
         )
     else:  # like_type == "sivia"
-        # fig1.suptitle(
-        #     f"MCMC walkers: {num_chains} chains with {num_iters} iters each. "
-        #     f"Each distance sampled {num_samples}×."
-        #     f"\nSivia & Skilling (2006) PDF with {prior_set} priors. {num_rounds} MCMC fits."
-        #     f"\n{num_sources} sources used in fit. Outlier rejection method: {reject_method}",
-        #     fontsize=9,
-        # )
         fig1.suptitle(
             suptitle
             + f"\nSivia & Skilling (2006) PDF with {prior_set} priors. {num_rounds} MCMC fits.",
@@ -167,15 +146,23 @@ def plot_MCMC(
     )
     plt.show()
 
-    # Plot plx, Upec, Vpec posterior distributions for 1 source
+    if num_samples != 1 or not individual_Upec or not individual_Vpec:
+        # Break out of function
+        return None
+
+    # Else: plot plx, Upec, Vpec posterior distributions for 1 source
     source_idx = 0  # index of source to plot
     plx_1source = trace["plx"][:, source_idx]
     Upec_1source = trace["Upec"][:, source_idx]
     Vpec_1source = trace["Vpec"][:, source_idx]
     samples_1source = np.array([plx_1source, Upec_1source, Vpec_1source])
     params_1source = [param.reshape((num_chains, num_iters)) for param in samples_1source]
-    varnames_1source = [f"Parallax[{source_idx}]", f"Upec[{source_idx}]", f"Vpec[{source_idx}]"]
-    fig3, axes3 = plt.subplots(np.shape(param_lst)[0], figsize=plt.figaspect(2))
+    varnames_1source = [
+        f"Parallax[{source_idx}]",
+        f"Upec[{source_idx}]",
+        f"Vpec[{source_idx}]",
+    ]
+    fig3, axes3 = plt.subplots(np.shape(params_1source)[0], figsize=plt.figaspect(1.5))
 
     for ax, parameter, varname in zip(axes3, params_1source, varnames_1source):
         for chain in parameter:
@@ -197,7 +184,7 @@ def plot_MCMC(
     )
     plt.show()
 
-    # Plot histogram of parameters
+    # Plot histogram for 1 source
     fig4 = corner.corner(
         samples_1source.T,
         labels=varnames_1source,
@@ -216,6 +203,7 @@ def plot_MCMC(
         bbox_inches="tight",
     )
     plt.show()
+
 
 def main(prior_set, num_samples, num_rounds):
     # Binary file to read
@@ -268,7 +256,6 @@ def main(prior_set, num_samples, num_rounds):
         free_Wpec=free_Wpec,
         individual_Upec=individual_Upec,
         individual_Vpec=individual_Vpec,
-
     )
 
 
