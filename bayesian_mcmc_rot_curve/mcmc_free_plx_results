@@ -1,4 +1,154 @@
 ==========================================================================================
+==== MCMC A1 (equivalent to A5) RUN w/ 10 chains, all Cauchy then Gaussian PDF,
+==== 2000 tunings + 10000 iterations each chain, and init="advi, TRUNCATED NORMAL
+==========================================================================================
+==== MCMC w/ plx as model parameter (truncated normal) + individual Upec & Vpec ====
+Cauchy PDF until no outliers rejected then Gaussian PDF
+=== Testing real data ===
+=========
+Running Bayesian MCMC until convergence w/ A1 priors, cauchy PDF, & reject_method = lnlike
+===
+Running round 1
+===
+Starting with fresh data from database
+Only filter sources with R < 4 kpc
+Number of data points used: 183
++ individual Upecs + individual Vpecs
+===
+Using prior set A1
++ free parallaxes + free Zsun parameter + free roll parameter
+Using Cauchy PDF
+Using 10 cores, 10 chains, 2000 tunings, and 10000 iterations.
+===
+Auto-assigning NUTS sampler...
+Initializing NUTS using advi...
+Convergence achieved at 89100██████████████-----------------------------------------------------| 44.45% [88898/200000 01:13<01:31 Average Loss = 1,321.2]]
+Interrupted at 89,099 [44%]: Average Loss = 12,162
+Multiprocess sampling (10 chains in 10 jobs)
+NUTS: [roll, Zsun, Wsun, Vsun, Usun, Vpec, Upec, plx, a3, a2, R0]
+Sampling 10 chains for 2_000 tune and 10_000 draw iterations (20_000 + 100_000 draws total) took 231 seconds.03:38<00:00 Sampling 10 chains, 0 divergences]
+The number of effective samples is smaller than 10% for some parameters.
+        mean     sd  hdi_3%  hdi_97%  mcse_mean  mcse_sd  ess_mean    ess_sd  ess_bulk  ess_tail  r_hat
+R0     8.179  0.026   8.131    8.228      0.000    0.000   90450.0   90449.0   90436.0   69986.0    1.0
+Zsun   5.446  9.955 -13.517   24.022      0.029    0.030  115595.0   55411.0  115582.0   70710.0    1.0
+Usun  10.197  1.021   8.303   12.126      0.005    0.004   39476.0   39467.0   39471.0   57708.0    1.0
+Vsun  11.312  1.985   7.569   15.039      0.020    0.014   10036.0    9931.0   10044.0   18135.0    1.0
+Wsun   7.732  0.662   6.473    8.959      0.002    0.001  106549.0  105903.0  106547.0   72914.0    1.0
+roll  -0.000  0.099  -0.187    0.185      0.000    0.000  130947.0   39443.0  130994.0   70823.0    1.0
+a2     0.964  0.072   0.828    1.099      0.001    0.001    9124.0    9124.0    9345.0   11002.0    1.0
+a3     1.622  0.013   1.598    1.646      0.000    0.000   14040.0   14040.0   14056.0   26756.0    1.0
+=== Calculating BIC (A1 priors & 1 MCMC rounds) ===
+Number of sources: 183
+Likelihood function: cauchy
+(Assuming parallax is an MCMC model parameter)
+Number of parameters: 11
+Bayesian Information Criterion: 2544.9720278219775
+===
+Executing outlier rejection after round 1
+prior_set: A1
+like_type: cauchy
+num parallax samples: 1
+num sources before filtering: 183
+(Assuming parallax is a model parameter)
+Using log-likelihood to reject data
+num sources after filtering: 179
+===
+Running round 2
+===
+Using data from pickle file
+Number of data points used: 179
++ individual Upecs + individual Vpecs
+===
+Using prior set A1
++ free parallaxes + free Zsun parameter + free roll parameter
+Using Cauchy PDF
+Using 10 cores, 10 chains, 2000 tunings, and 10000 iterations.
+===
+Auto-assigning NUTS sampler...
+Initializing NUTS using advi...
+Convergence achieved at 77000█████████----------------------------------------------------------| 38.41% [76825/200000 01:04<01:42 Average Loss = 1,281.1]]
+Interrupted at 76,999 [38%]: Average Loss = 13,617
+Multiprocess sampling (10 chains in 10 jobs)
+NUTS: [roll, Zsun, Wsun, Vsun, Usun, Vpec, Upec, plx, a3, a2, R0]
+Sampling 10 chains for 2_000 tune and 10_000 draw iterations (20_000 + 100_000 draws total) took 238 seconds.03:45<00:00 Sampling 10 chains, 0 divergences]
+The number of effective samples is smaller than 25% for some parameters.
+        mean     sd  hdi_3%  hdi_97%  mcse_mean  mcse_sd  ess_mean    ess_sd  ess_bulk  ess_tail  r_hat
+R0     8.179  0.026   8.131    8.228      0.000    0.000   90578.0   90578.0   90579.0   73813.0    1.0
+Zsun   5.535  9.895 -13.294   23.864      0.029    0.029  115840.0   56262.0  115849.0   71094.0    1.0
+Usun  10.288  1.019   8.345   12.172      0.005    0.004   39415.0   39415.0   39415.0   57215.0    1.0
+Vsun  11.098  1.967   7.379   14.765      0.020    0.014   10000.0    9964.0   10002.0   20488.0    1.0
+Wsun   7.709  0.665   6.448    8.945      0.002    0.001  114623.0  113682.0  114618.0   70544.0    1.0
+roll  -0.000  0.099  -0.189    0.183      0.000    0.000  130687.0   39427.0  130691.0   69546.0    1.0
+a2     0.977  0.071   0.841    1.109      0.001    0.000   10179.0   10179.0   10283.0   14250.0    1.0
+a3     1.622  0.013   1.598    1.646      0.000    0.000   14095.0   14095.0   14103.0   26826.0    1.0
+=== Calculating BIC (A1 priors & 2 MCMC rounds) ===
+Number of sources: 179
+Likelihood function: cauchy
+(Assuming parallax is an MCMC model parameter)
+Number of parameters: 11
+Bayesian Information Criterion: 2457.6438288543523
+===
+Executing outlier rejection after round 2
+prior_set: A1
+like_type: cauchy
+num parallax samples: 1
+num sources before filtering: 179
+(Assuming parallax is a model parameter)
+Using log-likelihood to reject data
+num sources after filtering: 179
+No more outliers rejected after round 2. Changing to Gaussian log-likelihood
+===
+Running round 3
+===
+Using data from pickle file
+Number of data points used: 179
++ individual Upecs + individual Vpecs
+===
+Using prior set A1
++ free parallaxes + free Zsun parameter + free roll parameter
+Using Gaussian PDF
+Using 10 cores, 10 chains, 2000 tunings, and 10000 iterations.
+===
+Auto-assigning NUTS sampler...
+Initializing NUTS using advi...
+Finished [100%]: Average Loss = 1,218.1█████████████████████████████████████████████████████████| 100.00% [200000/200000 02:40<00:00 Average Loss = 1,218]]
+Multiprocess sampling (10 chains in 10 jobs)
+NUTS: [roll, Zsun, Wsun, Vsun, Usun, Vpec, Upec, plx, a3, a2, R0]
+Sampling 10 chains for 2_000 tune and 10_000 draw iterations (20_000 + 100_000 draws total) took 248 seconds.03:55<00:00 Sampling 10 chains, 0 divergences]
+The number of effective samples is smaller than 10% for some parameters.
+        mean     sd  hdi_3%  hdi_97%  mcse_mean  mcse_sd  ess_mean    ess_sd  ess_bulk  ess_tail  r_hat
+R0     8.177  0.026   8.128    8.225      0.000    0.000  142960.0  142960.0  142893.0   74519.0    1.0
+Zsun   5.626  9.846 -12.556   24.415      0.020    0.030  244636.0   55189.0  244690.0   71018.0    1.0
+Usun  10.125  0.976   8.271   11.941      0.004    0.003   48663.0   48663.0   48662.0   65755.0    1.0
+Vsun  11.508  1.755   8.208   14.805      0.016    0.011   12321.0   12303.0   12319.0   25352.0    1.0
+Wsun   7.773  0.544   6.775    8.811      0.001    0.001  221490.0  218464.0  221523.0   76013.0    1.0
+roll  -0.001  0.098  -0.184    0.186      0.000    0.000  225812.0   36881.0  225800.0   72451.0    1.0
+a2     0.960  0.063   0.841    1.078      0.001    0.000    9926.0    9926.0    9974.0   14591.0    1.0
+a3     1.619  0.011   1.599    1.641      0.000    0.000   15926.0   15926.0   15934.0   33152.0    1.0
+=== Calculating BIC (A1 priors & 3 MCMC rounds) ===
+Number of sources: 179
+Likelihood function: gauss
+(Assuming parallax is an MCMC model parameter)
+Number of parameters: 11
+Bayesian Information Criterion: 2935.486141120691
+===
+Executing outlier rejection after round 3
+prior_set: A1
+like_type: gauss
+num parallax samples: 1
+num sources before filtering: 179
+(Assuming parallax is a model parameter)
+Using log-likelihood to reject data
+num sources after filtering: 179
+No more outliers rejected after round 3. Exiting
+===
+3 Bayesian MCMC runs complete
+=========
+
+
+
+
+==========================================================================================
 ==== MCMC A1 (equivalent to A5) RUN w/ 10 chains, all Cauchy PDF,
 ==== 2000 tunings + 10000 iterations each chain, and init="advi
 ==========================================================================================
@@ -99,6 +249,690 @@ No more outliers rejected after round 2. Exiting
 ===
 2 Bayesian MCMC runs complete
 =========
+
+
+==========================================================================================
+==== MCMC A1 (equivalent to A5) RUN w/ 10 chains, Cauchy then Gaussian PDF,
+==== 2000 tunings + 10000 iterations each chain, and init="advi
+==========================================================================================
+==== MCMC w/ plx as model parameter + individual Upec & Vpec ====
+=== Testing real data ===
+=========
+Running Bayesian MCMC until convergence w/ A1 priors, cauchy PDF, & reject_method = lnlike
+===
+Running round 1
+===
+Starting with fresh data from database
+Only filter sources with R < 4 kpc
+Number of data points used: 183
++ individual Upecs + individual Vpecs
+===
+Using prior set A1
++ free parallaxes + free Zsun parameter + free roll parameter
+Using Cauchy PDF
+Using 10 cores, 10 chains, 2000 tunings, and 10000 iterations.
+===
+Auto-assigning NUTS sampler...
+Initializing NUTS using advi...
+Convergence achieved at 89200██████████████-----------------------------------------------------| 44.51% [89025/200000 01:12<01:30 Average Loss = 1,323]1]]
+Interrupted at 89,199 [44%]: Average Loss = 6,382.3
+Multiprocess sampling (10 chains in 10 jobs)
+NUTS: [roll, Zsun, Wsun, Vsun, Usun, Vpec, Upec, plx, a3, a2, R0]
+Sampling 10 chains for 2_000 tune and 10_000 draw iterations (20_000 + 100_000 draws total) took 392 seconds.06:19<00:00 Sampling 10 chains, 0 divergences]
+The number of effective samples is smaller than 10% for some parameters.
+        mean     sd  hdi_3%  hdi_97%  mcse_mean  mcse_sd  ess_mean    ess_sd  ess_bulk  ess_tail  r_hat
+R0     8.179  0.026   8.132    8.229      0.000    0.000  100292.0  100292.0  100329.0   70996.0    1.0
+Zsun   5.429  9.934 -13.541   23.830      0.030    0.030  110121.0   55985.0  110155.0   68441.0    1.0
+Usun  10.203  1.025   8.290   12.140      0.004    0.003   52881.0   52755.0   52878.0   61216.0    1.0
+Vsun  11.309  1.989   7.564   15.051      0.016    0.011   15950.0   15776.0   15967.0   26300.0    1.0
+Wsun   7.736  0.662   6.481    8.964      0.002    0.001  104117.0  103172.0  104127.0   71960.0    1.0
+roll  -0.000  0.099  -0.189    0.184      0.000    0.000  117827.0   40537.0  117806.0   69000.0    1.0
+a2     0.964  0.072   0.825    1.097      0.001    0.000   15280.0   15280.0   15487.0   18430.0    1.0
+a3     1.622  0.013   1.598    1.646      0.000    0.000   21162.0   21162.0   21183.0   36194.0    1.0
+=== Calculating BIC (A1 priors & 1 MCMC rounds) ===
+Number of sources: 183
+Likelihood function: cauchy
+(Assuming parallax is an MCMC model parameter)
+Number of parameters: 11
+Bayesian Information Criterion: 2544.9980404167923
+===
+Executing outlier rejection after round 1
+prior_set: A1
+like_type: cauchy
+num parallax samples: 1
+num sources before filtering: 183
+(Assuming parallax is a model parameter)
+Using log-likelihood to reject data
+num sources after filtering: 179
+===
+Running round 2
+===
+Using data from pickle file
+Number of data points used: 179
++ individual Upecs + individual Vpecs
+===
+Using prior set A1
++ free parallaxes + free Zsun parameter + free roll parameter
+Using Gaussian PDF
+Using 10 cores, 10 chains, 2000 tunings, and 10000 iterations.
+===
+Auto-assigning NUTS sampler...
+Initializing NUTS using advi...
+Finished [100%]: Average Loss = 4,198.7████████████████████████████████████████████████████████| 100.00% [200000/200000 02:43<00:00 Average Loss = 4,200.5]
+Multiprocess sampling (10 chains in 10 jobs)
+NUTS: [roll, Zsun, Wsun, Vsun, Usun, Vpec, Upec, plx, a3, a2, R0]
+Sampling 10 chains for 2_000 tune and 10_000 draw iterations (20_000 + 100_000 draws total) took 562 seconds.<00:00 Sampling 10 chains, 82,702 divergences]
+There were 8875 divergences after tuning. Increase `target_accept` or reparameterize.
+The acceptance probability does not match the target. It is 0.5148847611400946, but should be close to 0.8. Try to increase the number of tuning steps.
+There were 7598 divergences after tuning. Increase `target_accept` or reparameterize.
+There were 8360 divergences after tuning. Increase `target_accept` or reparameterize.
+The acceptance probability does not match the target. It is 0.7036250266783376, but should be close to 0.8. Try to increase the number of tuning steps.
+There were 8521 divergences after tuning. Increase `target_accept` or reparameterize.
+The acceptance probability does not match the target. It is 0.709923990729206, but should be close to 0.8. Try to increase the number of tuning steps.
+There were 7734 divergences after tuning. Increase `target_accept` or reparameterize.
+There were 7015 divergences after tuning. Increase `target_accept` or reparameterize.
+There were 8749 divergences after tuning. Increase `target_accept` or reparameterize.
+The acceptance probability does not match the target. It is 0.6498339453542611, but should be close to 0.8. Try to increase the number of tuning steps.
+There were 7123 divergences after tuning. Increase `target_accept` or reparameterize.
+There were 9983 divergences after tuning. Increase `target_accept` or reparameterize.
+The acceptance probability does not match the target. It is 0.26501377829490946, but should be close to 0.8. Try to increase the number of tuning steps.
+There were 8744 divergences after tuning. Increase `target_accept` or reparameterize.
+The acceptance probability does not match the target. It is 0.6348523592042983, but should be close to 0.8. Try to increase the number of tuning steps.
+The rhat statistic is larger than 1.2 for some parameters.
+The estimated number of effective samples is smaller than 200 for some parameters.
+        mean     sd  hdi_3%  hdi_97%  mcse_mean  mcse_sd  ess_mean  ess_sd  ess_bulk  ess_tail  r_hat
+R0     8.175  0.027   8.118    8.223      0.003    0.002      70.0    70.0      73.0      70.0   1.09
+Zsun  22.762  9.692   5.435   41.460      0.701    0.496     191.0   191.0     189.0    1155.0   1.04
+Usun   6.430  0.911   4.719    8.093      0.078    0.055     137.0   137.0     137.0    1038.0   1.06
+Vsun  13.989  1.386  11.329   16.647      0.087    0.062     251.0   251.0     238.0     614.0   1.04
+Wsun  15.237  0.534  14.260   16.266      0.043    0.031     152.0   149.0     154.0     753.0   1.04
+roll  -0.078  0.097  -0.259    0.101      0.004    0.003     495.0   495.0     497.0    1696.0   1.01
+a2     0.811  0.058   0.704    0.910      0.007    0.005      77.0    77.0      78.0     306.0   1.10
+a3     1.564  0.011   1.542    1.585      0.000    0.000     561.0   561.0     551.0    1073.0   1.03
+===
+STOPPED PYMC3 AFTER THIS SINCE IT WILL NOT CONVERGE
+
+
+
+==========================================================================================
+==== MCMC A1 (equivalent to A5) RUN w/ 10 chains, all Cauchy then Gaussian PDF,
+==== 2000 tunings + 10000 iterations each chain, and init="advi
+==========================================================================================
+==== MCMC w/ plx as model parameter + individual Upec & Vpec ====
+Cauchy PDF until no outliers rejected (2 sigma lnlike threshold) then Gaussian PDF
+=== Testing real data ===
+=========
+Running Bayesian MCMC until convergence w/ A1 priors, cauchy PDF, & reject_method = lnlike
+===
+Running round 1
+===
+Starting with fresh data from database
+Only filter sources with R < 4 kpc
+Number of data points used: 183
++ individual Upecs + individual Vpecs
+===
+Using prior set A1
++ free parallaxes + free Zsun parameter + free roll parameter
+Using Cauchy PDF
+Using 10 cores, 10 chains, 2000 tunings, and 10000 iterations.
+===
+Auto-assigning NUTS sampler...
+Initializing NUTS using advi...
+Convergence achieved at 78300█████████----------------------------------------------------------| 39.05% [78108/200000 01:06<01:43 Average Loss = 1,324.5]]
+Interrupted at 78,299 [39%]: Average Loss = 7,078.9
+Multiprocess sampling (10 chains in 10 jobs)
+NUTS: [roll, Zsun, Wsun, Vsun, Usun, Vpec, Upec, plx, a3, a2, R0]
+Sampling 10 chains for 2_000 tune and 10_000 draw iterations (20_000 + 100_000 draws total) took 391 seconds.06:18<00:00 Sampling 10 chains, 0 divergences]
+The number of effective samples is smaller than 25% for some parameters.
+        mean     sd  hdi_3%  hdi_97%  mcse_mean  mcse_sd  ess_mean    ess_sd  ess_bulk  ess_tail  r_hat
+R0     8.179  0.026   8.130    8.227      0.000    0.000   94753.0   94752.0   94741.0   70943.0    1.0
+Zsun   5.458  9.897 -13.034   24.173      0.030    0.030  107902.0   53650.0  107917.0   67142.0    1.0
+Usun  10.203  1.014   8.287   12.101      0.004    0.003   51883.0   51518.0   51895.0   60461.0    1.0
+Vsun  11.325  1.987   7.701   15.158      0.016    0.011   15961.0   15864.0   15976.0   28371.0    1.0
+Wsun   7.734  0.658   6.490    8.971      0.002    0.001  105681.0  105422.0  105677.0   70758.0    1.0
+roll  -0.000  0.099  -0.186    0.185      0.000    0.000  121493.0   40193.0  121507.0   70517.0    1.0
+a2     0.964  0.072   0.826    1.097      0.001    0.000   14953.0   14953.0   15327.0   17390.0    1.0
+a3     1.622  0.013   1.598    1.646      0.000    0.000   21051.0   21051.0   21075.0   32813.0    1.0
+=== Calculating BIC (A1 priors & 1 MCMC rounds) ===
+Number of sources: 183
+Likelihood function: cauchy
+(Assuming parallax is an MCMC model parameter)
+Number of parameters: 11
+Bayesian Information Criterion: 2544.9829475947436
+===
+Executing outlier rejection after round 1
+prior_set: A1
+like_type: cauchy
+num parallax samples: 1
+num sources before filtering: 183
+(Assuming parallax is a model parameter)
+Using log-likelihood to reject data
+num sources after filtering: 172
+===
+Running round 2
+===
+Using data from pickle file
+Number of data points used: 172
++ individual Upecs + individual Vpecs
+===
+Using prior set A1
++ free parallaxes + free Zsun parameter + free roll parameter
+Using Cauchy PDF
+Using 10 cores, 10 chains, 2000 tunings, and 10000 iterations.
+===
+Auto-assigning NUTS sampler...
+Initializing NUTS using advi...
+Convergence achieved at 79900██████████---------------------------------------------------------| 39.88% [79759/200000 01:04<01:37 Average Loss = 1,230.5]]
+Interrupted at 79,899 [39%]: Average Loss = 6,560.5
+Multiprocess sampling (10 chains in 10 jobs)
+NUTS: [roll, Zsun, Wsun, Vsun, Usun, Vpec, Upec, plx, a3, a2, R0]
+Sampling 10 chains for 2_000 tune and 10_000 draw iterations (20_000 + 100_000 draws total) took 235 seconds.03:42<00:00 Sampling 10 chains, 0 divergences]
+The number of effective samples is smaller than 10% for some parameters.
+        mean     sd  hdi_3%  hdi_97%  mcse_mean  mcse_sd  ess_mean    ess_sd  ess_bulk  ess_tail  r_hat
+R0     8.179  0.026   8.131    8.228      0.000    0.000   85817.0   85817.0   85791.0   72313.0    1.0
+Zsun   5.559  9.922 -13.261   24.128      0.031    0.030  105371.0   56554.0  105375.0   70062.0    1.0
+Usun  10.337  1.027   8.412   12.265      0.005    0.004   36685.0   36666.0   36679.0   56328.0    1.0
+Vsun  10.855  2.010   7.163   14.697      0.020    0.014   10306.0   10222.0   10312.0   19524.0    1.0
+Wsun   7.734  0.661   6.479    8.965      0.002    0.001  104168.0  103797.0  104191.0   73641.0    1.0
+roll   0.002  0.099  -0.183    0.189      0.000    0.000  124879.0   40155.0  124934.0   70790.0    1.0
+a2     0.977  0.071   0.843    1.111      0.001    0.001   10021.0   10021.0   10198.0   12959.0    1.0
+a3     1.626  0.013   1.601    1.651      0.000    0.000   13521.0   13521.0   13521.0   25178.0    1.0
+=== Calculating BIC (A1 priors & 2 MCMC rounds) ===
+Number of sources: 172
+Likelihood function: cauchy
+(Assuming parallax is an MCMC model parameter)
+Number of parameters: 11
+Bayesian Information Criterion: 2347.583974523833
+===
+Executing outlier rejection after round 2
+prior_set: A1
+like_type: cauchy
+num parallax samples: 1
+num sources before filtering: 172
+(Assuming parallax is a model parameter)
+Using log-likelihood to reject data
+num sources after filtering: 171
+===
+Running round 3
+===
+Using data from pickle file
+Number of data points used: 171
++ individual Upecs + individual Vpecs
+===
+Using prior set A1
++ free parallaxes + free Zsun parameter + free roll parameter
+Using Cauchy PDF
+Using 10 cores, 10 chains, 2000 tunings, and 10000 iterations.
+===
+Auto-assigning NUTS sampler...
+Initializing NUTS using advi...
+Convergence achieved at 79800██████████---------------------------------------------------------| 39.82% [79633/200000 01:06<01:39 Average Loss = 1,223.7]]
+Interrupted at 79,799 [39%]: Average Loss = 6,538.6
+Multiprocess sampling (10 chains in 10 jobs)
+NUTS: [roll, Zsun, Wsun, Vsun, Usun, Vpec, Upec, plx, a3, a2, R0]
+Sampling 10 chains for 2_000 tune and 10_000 draw iterations (20_000 + 100_000 draws total) took 241 seconds.03:47<00:00 Sampling 10 chains, 0 divergences]
+The number of effective samples is smaller than 10% for some parameters.
+        mean     sd  hdi_3%  hdi_97%  mcse_mean  mcse_sd  ess_mean    ess_sd  ess_bulk  ess_tail  r_hat
+R0     8.179  0.026   8.131    8.228      0.000    0.000   88438.0   88431.0   88427.0   71548.0    1.0
+Zsun   5.468  9.933 -12.989   24.377      0.030    0.030  106501.0   56008.0  106503.0   70949.0    1.0
+Usun  10.334  1.028   8.418   12.284      0.005    0.004   37387.0   37376.0   37384.0   54526.0    1.0
+Vsun  10.803  1.998   7.044   14.553      0.020    0.014    9909.0    9909.0    9909.0   22098.0    1.0
+Wsun   7.783  0.660   6.565    9.037      0.002    0.001  105029.0  104545.0  105045.0   72913.0    1.0
+roll   0.003  0.099  -0.184    0.189      0.000    0.000  126063.0   40332.0  126096.0   71421.0    1.0
+a2     0.980  0.071   0.847    1.113      0.001    0.000   10370.0   10370.0   10452.0   14332.0    1.0
+a3     1.627  0.013   1.602    1.652      0.000    0.000   13768.0   13768.0   13778.0   24955.0    1.0
+=== Calculating BIC (A1 priors & 3 MCMC rounds) ===
+Number of sources: 171
+Likelihood function: cauchy
+(Assuming parallax is an MCMC model parameter)
+Number of parameters: 11
+Bayesian Information Criterion: 2336.084660336077
+===
+Executing outlier rejection after round 3
+prior_set: A1
+like_type: cauchy
+num parallax samples: 1
+num sources before filtering: 171
+(Assuming parallax is a model parameter)
+Using log-likelihood to reject data
+num sources after filtering: 170
+===
+Running round 4
+===
+Using data from pickle file
+Number of data points used: 170
++ individual Upecs + individual Vpecs
+===
+Using prior set A1
++ free parallaxes + free Zsun parameter + free roll parameter
+Using Cauchy PDF
+Using 10 cores, 10 chains, 2000 tunings, and 10000 iterations.
+===
+Auto-assigning NUTS sampler...
+Initializing NUTS using advi...
+Convergence achieved at 78900██████████---------------------------------------------------------| 39.41% [78810/200000 01:04<01:38 Average Loss = 1,215.7]]
+Interrupted at 78,899 [39%]: Average Loss = 6,568.7
+Multiprocess sampling (10 chains in 10 jobs)
+NUTS: [roll, Zsun, Wsun, Vsun, Usun, Vpec, Upec, plx, a3, a2, R0]
+Sampling 10 chains for 2_000 tune and 10_000 draw iterations (20_000 + 100_000 draws total) took 237 seconds.03:44<00:00 Sampling 10 chains, 0 divergences]
+The number of effective samples is smaller than 10% for some parameters.
+        mean     sd  hdi_3%  hdi_97%  mcse_mean  mcse_sd  ess_mean    ess_sd  ess_bulk  ess_tail  r_hat
+R0     8.179  0.026   8.131    8.228      0.000    0.000   86265.0   86265.0   86274.0   69368.0    1.0
+Zsun   5.499  9.918 -13.226   23.854      0.031    0.030  103843.0   54448.0  103845.0   69246.0    1.0
+Usun  10.285  1.032   8.358   12.237      0.005    0.004   37016.0   37016.0   37020.0   55155.0    1.0
+Vsun  10.784  2.007   7.033   14.577      0.020    0.014   10570.0   10552.0   10572.0   20634.0    1.0
+Wsun   7.784  0.664   6.542    9.040      0.002    0.001  107868.0  107095.0  107893.0   68621.0    1.0
+roll   0.002  0.098  -0.185    0.185      0.000    0.000  124948.0   40996.0  124941.0   71001.0    1.0
+a2     0.979  0.071   0.842    1.109      0.001    0.000   10359.0   10359.0   10435.0   14030.0    1.0
+a3     1.627  0.013   1.601    1.652      0.000    0.000   13639.0   13639.0   13646.0   25793.0    1.0
+=== Calculating BIC (A1 priors & 4 MCMC rounds) ===
+Number of sources: 170
+Likelihood function: cauchy
+(Assuming parallax is an MCMC model parameter)
+Number of parameters: 11
+Bayesian Information Criterion: 2321.1235495603173
+===
+Executing outlier rejection after round 4
+prior_set: A1
+like_type: cauchy
+num parallax samples: 1
+num sources before filtering: 170
+(Assuming parallax is a model parameter)
+Using log-likelihood to reject data
+num sources after filtering: 170
+No more outliers rejected after round 4. Changing to Gaussian log-likelihood
+===
+Running round 5
+===
+Using data from pickle file
+Number of data points used: 170
++ individual Upecs + individual Vpecs
+===
+Using prior set A1
++ free parallaxes + free Zsun parameter + free roll parameter
+Using Gaussian PDF
+Using 10 cores, 10 chains, 2000 tunings, and 10000 iterations.
+===
+Auto-assigning NUTS sampler...
+Initializing NUTS using advi...
+Finished [100%]: Average Loss = 3,707.2████████████████████████████████████████████████████████| 100.00% [200000/200000 02:37<00:00 Average Loss = 3,708.1]
+Multiprocess sampling (10 chains in 10 jobs)
+NUTS: [roll, Zsun, Wsun, Vsun, Usun, Vpec, Upec, plx, a3, a2, R0]
+Sampling 10 chains for 2_000 tune and 10_000 draw iterations (20_000 + 100_000 draws total) took 847 seconds.<00:00 Sampling 10 chains, 91,053 divergences]
+There were 9547 divergences after tuning. Increase `target_accept` or reparameterize.
+The acceptance probability does not match the target. It is 0.5435305286268739, but should be close to 0.8. Try to increase the number of tuning steps.
+There were 9907 divergences after tuning. Increase `target_accept` or reparameterize.
+The acceptance probability does not match the target. It is 0.5400338171404466, but should be close to 0.8. Try to increase the number of tuning steps.
+There were 8533 divergences after tuning. Increase `target_accept` or reparameterize.
+There were 8886 divergences after tuning. Increase `target_accept` or reparameterize.
+There were 9715 divergences after tuning. Increase `target_accept` or reparameterize.
+The acceptance probability does not match the target. It is 0.648675900729505, but should be close to 0.8. Try to increase the number of tuning steps.
+There were 8702 divergences after tuning. Increase `target_accept` or reparameterize.
+There were 8360 divergences after tuning. Increase `target_accept` or reparameterize.
+There were 9630 divergences after tuning. Increase `target_accept` or reparameterize.
+There were 9754 divergences after tuning. Increase `target_accept` or reparameterize.
+The acceptance probability does not match the target. It is 0.7042999742523547, but should be close to 0.8. Try to increase the number of tuning steps.
+There were 8019 divergences after tuning. Increase `target_accept` or reparameterize.
+The acceptance probability does not match the target. It is 0.2583109684863186, but should be close to 0.8. Try to increase the number of tuning steps.
+The rhat statistic is larger than 1.4 for some parameters. The sampler did not converge.
+The estimated number of effective samples is smaller than 200 for some parameters.
+        mean     sd  hdi_3%  hdi_97%  mcse_mean  mcse_sd  ess_mean  ess_sd  ess_bulk  ess_tail  r_hat
+R0     8.175  0.024   8.133    8.223      0.003    0.002      69.0    69.0      74.0     170.0   1.09
+Zsun  20.590  9.275   3.138   38.319      0.548    0.456     286.0   207.0     292.0     649.0   1.09
+Usun   7.186  1.005   5.379    8.797      0.158    0.117      41.0    38.0      41.0     193.0   1.16
+Vsun  12.235  1.609   8.815   14.754      0.247    0.176      42.0    42.0      45.0     224.0   1.15
+Wsun  13.417  0.554  12.369   14.529      0.074    0.054      55.0    54.0      57.0      55.0   1.11
+roll  -0.040  0.096  -0.223    0.133      0.007    0.005     175.0   175.0     192.0     688.0   1.05
+a2     0.849  0.058   0.718    0.947      0.003    0.002     499.0   499.0     461.0     516.0   1.17
+a3     1.570  0.014   1.544    1.595      0.002    0.001      48.0    47.0      46.0      40.0   1.15
+=== Calculating BIC (A1 priors & 5 MCMC rounds) ===
+Number of sources: 170
+Likelihood function: gauss
+(Assuming parallax is an MCMC model parameter)
+Number of parameters: 11
+Bayesian Information Criterion: 2774.780247615619
+===
+Executing outlier rejection after round 5
+prior_set: A1
+like_type: gauss
+num parallax samples: 1
+num sources before filtering: 170
+(Assuming parallax is a model parameter)
+Using log-likelihood to reject data
+num sources after filtering: 159
+===
+STOPPED PYMC3 AFTER THIS SINCE IT DID NOT CONVERGE
+NEXT: cleaned last Cauchy PDF pickle file with lnlike threshold = 1.5 sigma & re-ran
+MCMC to see if convergence is possible
+==== MCMC w/ plx as model parameter + individual Upec & Vpec ====
+Cauchy PDF until no outliers rejected (1.5 sigma lnlike threshold) then Gaussian PDF
+=== Testing real data ===
+=========
+Running Bayesian MCMC until convergence w/ A1 priors, cauchy PDF, & reject_method = lnlike
+===
+Running round 5
+===
+Using data from pickle file
+Number of data points used: 157
++ individual Upecs + individual Vpecs
+===
+Using prior set A1
++ free parallaxes + free Zsun parameter + free roll parameter
+Using Cauchy PDF
+Using 10 cores, 10 chains, 2000 tunings, and 10000 iterations.
+===
+Auto-assigning NUTS sampler...
+Initializing NUTS using advi...
+Convergence achieved at 80400██████████---------------------------------------------------------| 40.09% [80186/200000 01:01<01:31 Average Loss = 1,108.9]]
+Interrupted at 80,399 [40%]: Average Loss = 6,005.4
+Multiprocess sampling (10 chains in 10 jobs)
+NUTS: [roll, Zsun, Wsun, Vsun, Usun, Vpec, Upec, plx, a3, a2, R0]
+Sampling 10 chains for 2_000 tune and 10_000 draw iterations (20_000 + 100_000 draws total) took 214 seconds.03:21<00:00 Sampling 10 chains, 0 divergences]
+The number of effective samples is smaller than 25% for some parameters.
+        mean     sd  hdi_3%  hdi_97%  mcse_mean  mcse_sd  ess_mean    ess_sd  ess_bulk  ess_tail  r_hat
+R0     8.180  0.026   8.131    8.228      0.000    0.000  102538.0  102536.0  102531.0   71744.0    1.0
+Zsun   5.035  9.925 -13.376   24.012      0.028    0.030  126149.0   53305.0  126169.0   69808.0    1.0
+Usun  10.485  1.037   8.544   12.436      0.005    0.003   44694.0   44694.0   44696.0   60503.0    1.0
+Vsun  10.517  2.042   6.716   14.372      0.019    0.013   12023.0   11730.0   12046.0   19661.0    1.0
+Wsun   7.736  0.668   6.495    9.007      0.002    0.001  128485.0  127222.0  128477.0   71820.0    1.0
+roll  -0.004  0.099  -0.186    0.188      0.000    0.000  147214.0   38744.0  147191.0   70208.0    1.0
+a2     0.989  0.074   0.850    1.127      0.001    0.000   11107.0   11107.0   11437.0   13850.0    1.0
+a3     1.623  0.014   1.597    1.649      0.000    0.000   14817.0   14817.0   14837.0   24639.0    1.0
+=== Calculating BIC (A1 priors & 5 MCMC rounds) ===
+Number of sources: 157
+Likelihood function: cauchy
+(Assuming parallax is an MCMC model parameter)
+Number of parameters: 11
+Bayesian Information Criterion: 2099.237295033662
+===
+Executing outlier rejection after round 5
+prior_set: A1
+like_type: cauchy
+num parallax samples: 1
+num sources before filtering: 157
+(Assuming parallax is a model parameter)
+Using log-likelihood to reject data
+num sources after filtering: 156
+===
+Running round 6
+===
+Using data from pickle file
+Number of data points used: 156
++ individual Upecs + individual Vpecs
+===
+Using prior set A1
++ free parallaxes + free Zsun parameter + free roll parameter
+Using Cauchy PDF
+Using 10 cores, 10 chains, 2000 tunings, and 10000 iterations.
+===
+Auto-assigning NUTS sampler...
+Initializing NUTS using advi...
+Convergence achieved at 82300███████████--------------------------------------------------------| 41.13% [82268/200000 01:04<01:32 Average Loss = 1,099.1]]
+Interrupted at 82,299 [41%]: Average Loss = 5,863.4
+Multiprocess sampling (10 chains in 10 jobs)
+NUTS: [roll, Zsun, Wsun, Vsun, Usun, Vpec, Upec, plx, a3, a2, R0]
+Sampling 10 chains for 2_000 tune and 10_000 draw iterations (20_000 + 100_000 draws total) took 219 seconds.03:26<00:00 Sampling 10 chains, 0 divergences]
+The number of effective samples is smaller than 25% for some parameters.
+        mean     sd  hdi_3%  hdi_97%  mcse_mean  mcse_sd  ess_mean    ess_sd  ess_bulk  ess_tail  r_hat
+R0     8.180  0.026   8.132    8.229      0.000    0.000  104295.0  104295.0  104332.0   71408.0    1.0
+Zsun   5.006  9.905 -13.662   23.675      0.028    0.031  123872.0   52265.0  123863.0   69619.0    1.0
+Usun  10.495  1.031   8.562   12.437      0.005    0.003   45475.0   45475.0   45480.0   60385.0    1.0
+Vsun  10.535  2.064   6.623   14.381      0.018    0.013   12482.0   12358.0   12489.0   21358.0    1.0
+Wsun   7.686  0.670   6.427    8.946      0.002    0.001  127671.0  127267.0  127653.0   74247.0    1.0
+roll  -0.004  0.099  -0.189    0.184      0.000    0.000  149133.0   38112.0  149128.0   70628.0    1.0
+a2     0.989  0.074   0.850    1.127      0.001    0.000   12271.0   12271.0   12428.0   16413.0    1.0
+a3     1.623  0.014   1.597    1.648      0.000    0.000   15990.0   15990.0   16043.0   26654.0    1.0
+=== Calculating BIC (A1 priors & 6 MCMC rounds) ===
+Number of sources: 156
+Likelihood function: cauchy
+(Assuming parallax is an MCMC model parameter)
+Number of parameters: 11
+Bayesian Information Criterion: 2082.3292696810413
+===
+Executing outlier rejection after round 6
+prior_set: A1
+like_type: cauchy
+num parallax samples: 1
+num sources before filtering: 156
+(Assuming parallax is a model parameter)
+Using log-likelihood to reject data
+num sources after filtering: 155
+===
+Running round 7
+===
+Using data from pickle file
+Number of data points used: 155
++ individual Upecs + individual Vpecs
+===
+Using prior set A1
++ free parallaxes + free Zsun parameter + free roll parameter
+Using Cauchy PDF
+Using 10 cores, 10 chains, 2000 tunings, and 10000 iterations.
+===
+Auto-assigning NUTS sampler...
+Initializing NUTS using advi...
+Convergence achieved at 75800████████-----------------------------------------------------------| 37.86% [75714/200000 00:59<01:37 Average Loss = 1,093.3]]
+Interrupted at 75,799 [37%]: Average Loss = 6,257.3
+Multiprocess sampling (10 chains in 10 jobs)
+NUTS: [roll, Zsun, Wsun, Vsun, Usun, Vpec, Upec, plx, a3, a2, R0]
+Sampling 10 chains for 2_000 tune and 10_000 draw iterations (20_000 + 100_000 draws total) took 220 seconds.03:27<00:00 Sampling 10 chains, 0 divergences]
+The number of effective samples is smaller than 25% for some parameters.
+        mean     sd  hdi_3%  hdi_97%  mcse_mean  mcse_sd  ess_mean    ess_sd  ess_bulk  ess_tail  r_hat
+R0     8.180  0.026   8.132    8.229      0.000    0.000  108036.0  108020.0  108030.0   70541.0    1.0
+Zsun   5.137  9.912 -13.321   24.029      0.028    0.030  125389.0   53752.0  125387.0   70571.0    1.0
+Usun  10.494  1.034   8.564   12.444      0.005    0.003   45159.0   45159.0   45172.0   59796.0    1.0
+Vsun  10.552  2.046   6.741   14.414      0.018    0.013   12447.0   12401.0   12436.0   23931.0    1.0
+Wsun   7.659  0.662   6.440    8.930      0.002    0.001  124967.0  123911.0  124961.0   72795.0    1.0
+roll  -0.003  0.099  -0.189    0.184      0.000    0.000  156547.0   37592.0  156619.0   68070.0    1.0
+a2     0.987  0.074   0.849    1.125      0.001    0.000   11439.0   11439.0   11492.0   16529.0    1.0
+a3     1.622  0.014   1.596    1.648      0.000    0.000   15956.0   15956.0   15990.0   28703.0    1.0
+=== Calculating BIC (A1 priors & 7 MCMC rounds) ===
+Number of sources: 155
+Likelihood function: cauchy
+(Assuming parallax is an MCMC model parameter)
+Number of parameters: 11
+Bayesian Information Criterion: 2066.9849640415005
+===
+Executing outlier rejection after round 7
+prior_set: A1
+like_type: cauchy
+num parallax samples: 1
+num sources before filtering: 155
+(Assuming parallax is a model parameter)
+Using log-likelihood to reject data
+num sources after filtering: 155
+No more outliers rejected after round 7. Changing to Gaussian log-likelihood
+===
+Running round 8
+===
+Using data from pickle file
+Number of data points used: 155
++ individual Upecs + individual Vpecs
+===
+Using prior set A1
++ free parallaxes + free Zsun parameter + free roll parameter
+Using Gaussian PDF
+Using 10 cores, 10 chains, 2000 tunings, and 10000 iterations.
+===
+Auto-assigning NUTS sampler...
+Initializing NUTS using advi...
+Finished [100%]: Average Loss = 2,105██████████████████████████████████████████████████████████| 100.00% [200000/200000 02:33<00:00 Average Loss = 2,104.9]
+Multiprocess sampling (10 chains in 10 jobs)
+NUTS: [roll, Zsun, Wsun, Vsun, Usun, Vpec, Upec, plx, a3, a2, R0]
+Sampling 10 chains for 2_000 tune and 10_000 draw iterations (20_000 + 100_000 draws total) took 668 seconds.<00:00 Sampling 10 chains, 18,082 divergences]
+There were 3416 divergences after tuning. Increase `target_accept` or reparameterize.
+There were 1356 divergences after tuning. Increase `target_accept` or reparameterize.
+The acceptance probability does not match the target. It is 0.9194569301950439, but should be close to 0.8. Try to increase the number of tuning steps.
+There were 1347 divergences after tuning. Increase `target_accept` or reparameterize.
+The acceptance probability does not match the target. It is 0.913362079212686, but should be close to 0.8. Try to increase the number of tuning steps.
+There were 2112 divergences after tuning. Increase `target_accept` or reparameterize.
+There were 2055 divergences after tuning. Increase `target_accept` or reparameterize.
+There were 2483 divergences after tuning. Increase `target_accept` or reparameterize.
+There were 2416 divergences after tuning. Increase `target_accept` or reparameterize.
+There were 2076 divergences after tuning. Increase `target_accept` or reparameterize.
+There were 242 divergences after tuning. Increase `target_accept` or reparameterize.
+The acceptance probability does not match the target. It is 0.9539439724307768, but should be close to 0.8. Try to increase the number of tuning steps.
+There were 579 divergences after tuning. Increase `target_accept` or reparameterize.
+The acceptance probability does not match the target. It is 0.9372203995698452, but should be close to 0.8. Try to increase the number of tuning steps.
+The rhat statistic is larger than 1.2 for some parameters.
+The estimated number of effective samples is smaller than 200 for some parameters.
+        mean     sd  hdi_3%  hdi_97%  mcse_mean  mcse_sd  ess_mean   ess_sd  ess_bulk  ess_tail  r_hat
+R0     8.177  0.026   8.128    8.224      0.000    0.000   66860.0  66846.0   66886.0   52349.0    1.0
+Zsun  14.134  9.786  -4.197   32.589      0.034    0.028   82477.0  62923.0   82467.0   56750.0    1.0
+Usun   9.120  0.992   7.205   10.940      0.007    0.005   20754.0  20754.0   20719.0   29714.0    1.0
+Vsun  13.082  1.715   9.829   16.273      0.020    0.014    7505.0   7452.0    7499.0   17599.0    1.0
+Wsun  10.536  0.567   9.455   11.578      0.002    0.001   75626.0  75335.0   75623.0   56027.0    1.0
+roll  -0.066  0.099  -0.252    0.119      0.000    0.000   83758.0  42115.0   83756.0   53495.0    1.0
+a2     0.872  0.066   0.743    0.994      0.001    0.000    9542.0   9542.0    9301.0    8636.0    1.0
+a3     1.590  0.013   1.565    1.614      0.000    0.000   11540.0  11540.0   11561.0   19598.0    1.0
+=== Calculating BIC (A1 priors & 8 MCMC rounds) ===
+Number of sources: 155
+Likelihood function: gauss
+(Assuming parallax is an MCMC model parameter)
+Number of parameters: 11
+Bayesian Information Criterion: 2182.4733165129655
+===
+Executing outlier rejection after round 8
+prior_set: A1
+like_type: gauss
+num parallax samples: 1
+num sources before filtering: 155
+(Assuming parallax is a model parameter)
+Using log-likelihood to reject data
+num sources after filtering: 149
+===
+Running round 9
+===
+Using data from pickle file
+Number of data points used: 149
++ individual Upecs + individual Vpecs
+===
+Using prior set A1
++ free parallaxes + free Zsun parameter + free roll parameter
+Using Gaussian PDF
+Using 10 cores, 10 chains, 2000 tunings, and 10000 iterations.
+===
+Auto-assigning NUTS sampler...
+Initializing NUTS using advi...
+Convergence achieved at 142300██████████████████████████████████████----------------------------| 71.13% [142261/200000 01:48<00:44 Average Loss = 1,525.4]
+Interrupted at 142,299 [71%]: Average Loss = 5,522.8
+Multiprocess sampling (10 chains in 10 jobs)
+NUTS: [roll, Zsun, Wsun, Vsun, Usun, Vpec, Upec, plx, a3, a2, R0]
+Sampling 10 chains for 2_000 tune and 10_000 draw iterations (20_000 + 100_000 draws total) took 564 seconds.<00:00 Sampling 10 chains, 94,123 divergences]
+There were 9749 divergences after tuning. Increase `target_accept` or reparameterize.
+The acceptance probability does not match the target. It is 0.6744860595120032, but should be close to 0.8. Try to increase the number of tuning steps.
+There were 9675 divergences after tuning. Increase `target_accept` or reparameterize.
+The acceptance probability does not match the target. It is 0.5678682368569605, but should be close to 0.8. Try to increase the number of tuning steps.
+There were 9303 divergences after tuning. Increase `target_accept` or reparameterize.
+The acceptance probability does not match the target. It is 0.6603788185145673, but should be close to 0.8. Try to increase the number of tuning steps.
+There were 9006 divergences after tuning. Increase `target_accept` or reparameterize.
+There were 8967 divergences after tuning. Increase `target_accept` or reparameterize.
+There were 9035 divergences after tuning. Increase `target_accept` or reparameterize.
+There were 9040 divergences after tuning. Increase `target_accept` or reparameterize.
+There were 9952 divergences after tuning. Increase `target_accept` or reparameterize.
+The acceptance probability does not match the target. It is 0.5957260893502068, but should be close to 0.8. Try to increase the number of tuning steps.
+There were 9666 divergences after tuning. Increase `target_accept` or reparameterize.
+The acceptance probability does not match the target. It is 0.7164405763379252, but should be close to 0.8. Try to increase the number of tuning steps.
+There were 9730 divergences after tuning. Increase `target_accept` or reparameterize.
+The acceptance probability does not match the target. It is 0.6488097734170379, but should be close to 0.8. Try to increase the number of tuning steps.
+The rhat statistic is larger than 1.4 for some parameters. The sampler did not converge.
+The estimated number of effective samples is smaller than 200 for some parameters.
+        mean      sd  hdi_3%  hdi_97%  mcse_mean  mcse_sd  ess_mean  ess_sd  ess_bulk  ess_tail  r_hat
+R0     8.181   0.026   8.131    8.229      0.003    0.002      95.0    95.0      99.0     517.0   1.07
+Zsun   6.524  10.393 -12.739   26.984      0.761    0.617     186.0   143.0     201.0     196.0   1.05
+Usun  10.124   1.013   8.340   12.009      0.126    0.091      65.0    62.0      68.0     180.0   1.09
+Vsun   9.970   1.893   6.521   13.533      0.246    0.175      59.0    59.0      62.0      88.0   1.11
+Wsun   7.806   0.561   6.722    8.846      0.056    0.040     100.0    98.0     100.0     282.0   1.07
+roll   0.000   0.103  -0.190    0.191      0.012    0.008      78.0    78.0      82.0     115.0   1.08
+a2     0.993   0.069   0.866    1.113      0.008    0.006      68.0    67.0      71.0     248.0   1.10
+a3     1.617   0.016   1.591    1.648      0.003    0.002      26.0    26.0      27.0      41.0   1.28
+=== Calculating BIC (A1 priors & 9 MCMC rounds) ===
+Number of sources: 149
+Likelihood function: gauss
+(Assuming parallax is an MCMC model parameter)
+Number of parameters: 11
+Bayesian Information Criterion: 2014.0624603919198
+===
+Executing outlier rejection after round 9
+prior_set: A1
+like_type: gauss
+num parallax samples: 1
+num sources before filtering: 149
+(Assuming parallax is a model parameter)
+Using log-likelihood to reject data
+num sources after filtering: 148
+===
+Running round 10
+===
+Using data from pickle file
+Number of data points used: 148
++ individual Upecs + individual Vpecs
+===
+Using prior set A1
++ free parallaxes + free Zsun parameter + free roll parameter
+Using Gaussian PDF
+Using 10 cores, 10 chains, 2000 tunings, and 10000 iterations.
+===
+Auto-assigning NUTS sampler...
+Initializing NUTS using advi...
+Convergence achieved at 152000███████████████████████████████████████████-----------------------| 75.92% [151844/200000 01:55<00:36 Average Loss = 1,506.6]
+Interrupted at 151,999 [75%]: Average Loss = 5,309.9
+Multiprocess sampling (10 chains in 10 jobs)
+NUTS: [roll, Zsun, Wsun, Vsun, Usun, Vpec, Upec, plx, a3, a2, R0]
+Sampling 10 chains for 2_000 tune and 10_000 draw iterations (20_000 + 100_000 draws total) took 689 seconds.<00:00 Sampling 10 chains, 93,164 divergences]
+There were 9859 divergences after tuning. Increase `target_accept` or reparameterize.
+The acceptance probability does not match the target. It is 0.6551591645670011, but should be close to 0.8. Try to increase the number of tuning steps.
+There were 9380 divergences after tuning. Increase `target_accept` or reparameterize.
+The acceptance probability does not match the target. It is 0.7168421398927071, but should be close to 0.8. Try to increase the number of tuning steps.
+There were 9315 divergences after tuning. Increase `target_accept` or reparameterize.
+There were 9167 divergences after tuning. Increase `target_accept` or reparameterize.
+There were 9728 divergences after tuning. Increase `target_accept` or reparameterize.
+The acceptance probability does not match the target. It is 0.5979862300128495, but should be close to 0.8. Try to increase the number of tuning steps.
+There were 9153 divergences after tuning. Increase `target_accept` or reparameterize.
+The acceptance probability does not match the target. It is 0.6790261598843316, but should be close to 0.8. Try to increase the number of tuning steps.
+There were 9077 divergences after tuning. Increase `target_accept` or reparameterize.
+There were 8180 divergences after tuning. Increase `target_accept` or reparameterize.
+There were 9915 divergences after tuning. Increase `target_accept` or reparameterize.
+The acceptance probability does not match the target. It is 0.5640536647325756, but should be close to 0.8. Try to increase the number of tuning steps.
+There were 9390 divergences after tuning. Increase `target_accept` or reparameterize.
+The acceptance probability does not match the target. It is 0.6936370300241484, but should be close to 0.8. Try to increase the number of tuning steps.
+The rhat statistic is larger than 1.4 for some parameters. The sampler did not converge.
+The estimated number of effective samples is smaller than 200 for some parameters.
+        mean      sd  hdi_3%  hdi_97%  mcse_mean  mcse_sd  ess_mean  ess_sd  ess_bulk  ess_tail  r_hat
+R0     8.181   0.027   8.133    8.233      0.003    0.002     104.0   104.0     106.0     147.0   1.07
+Zsun   5.209  10.520 -14.035   24.745      1.276    0.906      68.0    68.0      69.0     105.0   1.10
+Usun  10.170   1.046   8.094   12.103      0.115    0.082      83.0    83.0      83.0     203.0   1.09
+Vsun  10.329   1.830   7.123   13.690      0.236    0.168      60.0    60.0      60.0     374.0   1.12
+Wsun   7.718   0.621   6.549    8.924      0.060    0.043     109.0   107.0     111.0      83.0   1.07
+roll  -0.010   0.098  -0.193    0.172      0.007    0.005     179.0   179.0     180.0    1010.0   1.04
+a2     0.986   0.061   0.881    1.106      0.006    0.004     111.0   111.0     111.0     607.0   1.06
+a3     1.619   0.014   1.594    1.644      0.002    0.001      46.0    46.0      45.0     168.0   1.15
+=== Calculating BIC (A1 priors & 10 MCMC rounds) ===
+Number of sources: 148
+Likelihood function: gauss
+(Assuming parallax is an MCMC model parameter)
+Number of parameters: 11
+Bayesian Information Criterion: 1997.3753720037862
+===
+Executing outlier rejection after round 10
+prior_set: A1
+like_type: gauss
+num parallax samples: 1
+num sources before filtering: 148
+(Assuming parallax is a model parameter)
+Using log-likelihood to reject data
+num sources after filtering: 148
+No more outliers rejected after round 10. Exiting
+===
+10 Bayesian MCMC runs complete
+=========
+RESULT: PYMC3 NOT CONVERGE even after 4 Cauchy (lnlike threshold = 2 sigma)
++ 3 Cauchy (lnlike threshold = 1.5 sigma) + 3 Gaussian (lnlike threshold = 3 sigma)
+
+- I think having parallax as a free parameter is creating too many local maxima
+with the Gaussian distribution that PyMC3 cannot get out of
+compared to the smoother Cauchy distribution.
+
 
 
 ==========================================================================================
