@@ -1,14 +1,14 @@
 #!/bin/bash
 num_cores=10
 
-echo "==== MCMC w/ plx as model parameter (truncated normal) + individual Upec & Vpec ===="
-echo "Cauchy PDF until no outliers rejected then Gaussian PDF"
+echo "==== MCMC w/ plx as model parameter (truncated normal) + mean Upec & Vpec ===="
+echo "Cauchy PDF then Gaussian PDF for round 2+"
 
 echo "=== Testing real data ==="
 python mcmc_w_free_plx.py /home/chengi/Documents/coop2021/data/hii_v2_20201203.db \
-    --num_cores $num_cores --num_chains $num_cores --num_tune 2000 --num_iter 10000 \
+    --num_cores $num_cores --num_chains $num_cores --num_tune 2500 --num_iter 12000 \
     --prior_set A1 --like_type cauchy --num_rounds 3 --reject_method lnlike \
-    --free_Zsun --free_roll --auto_run --individual_Upec --individual_Vpec
+    --free_Zsun --free_roll --auto_run
 
 
 # echo "==== Testing simulated data ===="
