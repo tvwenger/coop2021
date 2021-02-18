@@ -91,7 +91,7 @@ def filter_data(data, filter_e_plx):
         parallaxes, equatorial proper motions, and LSR velocities
         with all associated uncertainties
       filter_e_plx :: boolean
-        If False, only filter sources closer than 4 kpc tp galactic centre
+        If False, only filter sources closer than 4 kpc to galactic centre
         If True, also filter sources with parallax uncertainties > 20% of the parallax
 
     Returns: filtered_data
