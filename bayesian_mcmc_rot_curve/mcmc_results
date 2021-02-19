@@ -909,7 +909,7 @@ No more outliers rejected after round 5. Exiting
 
 
 ==========================================================================================
-==== MCMC A5 RUN w/ 10 chains, 1000 tunings + 1000 iterations each chain,
+==== MCMC A1 (equiv. to A5) RUN w/ 10 chains, 1000 tunings + 1000 iterations each chain,
 ==== 100 distance samples, and init="advi" w/ INDIVIDUAL UPEC & VPEC
 ==========================================================================================
 ==== MCMC w/ individual Upec + Vpec ====
