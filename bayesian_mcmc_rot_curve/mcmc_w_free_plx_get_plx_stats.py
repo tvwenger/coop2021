@@ -161,9 +161,9 @@ df = pd.DataFrame({
     "Vpec_hdi_plus1sigma": Vpec_hdi_plus1sigma,
 })
 
-np.savetxt(r"/home/chengi/Documents/coop2021/pec_motions/plx_Upec_Vpec.txt", df)
+np.savetxt(r"/home/chengi/Documents/coop2021/pec_motions/freeplx_freeUpecVpec.txt", df)
 df.to_csv(
-    path_or_buf=r"/home/chengi/Documents/coop2021/pec_motions/plx_Upec_Vpec.csv",
+    path_or_buf=r"/home/chengi/Documents/coop2021/pec_motions/freeplx_freeUpecVpec.csv",
     sep=",",
     index=False,
     header=True,

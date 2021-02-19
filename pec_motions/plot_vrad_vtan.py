@@ -4,6 +4,8 @@ plot_vrad_vtan.py
 Plots the peculiar (non-circular) motions of the sources,
 colour-coded by ratio of radial to azimuthal velocity
 
+! The code is a mess
+
 Isaac Cheng - February 2021
 """
 import sys
@@ -87,6 +89,7 @@ def data_to_gcen_cyl(data, trace, free_Zsun=False, free_roll=False):
     glon = data["glong"].values  # deg
     glat = data["glat"].values  # deg
     plx = data["plx"].values  # mas
+    # plx = np.mean(trace["plx"], axis=0)  # mas, use if parallax is a model parameter
     eqmux = data["mux"].values  # mas/yr (equatorial frame)
     eqmuy = data["muy"].values  # mas/y (equatorial frame)
     vlsr = data["vlsr"].values  # km/s
@@ -170,6 +173,7 @@ def data_to_vcirc_pred(data, trace, free_Zsun=False, free_roll=False):
     glon = data["glong"].values  # deg
     glat = data["glat"].values  # deg
     plx = data["plx"].values  # mas
+    # plx = np.mean(trace["plx"], axis=0)  # mas, use if parallax is a model parameter
 
     # === Calculate predicted values from optimal parameters ===
     # Parallax to distance
@@ -243,7 +247,101 @@ def get_pos_and_residuals_and_vrad_vtan(data, trace, free_Zsun=False, free_roll=
 
     return x, y, z, vx_res, vy_res, vz_res, vrad_vcirc
 
+# import sqlite3
+# from contextlib import closing
 
+# def get_data(db_file):
+#     """
+#     Puts all relevant data from db_file's Parallax table into pandas DataFrame.
+
+#     Inputs:
+#       db_file :: pathlib Path object
+#         Path object to SQL database containing maser galactic longitudes, latitudes,
+#         right ascensions, declinations, parallaxes, equatorial proper motions,
+#         and LSR velocities with all associated uncertainties
+
+#     Returns: data
+#       data :: pandas DataFrame
+#         Contains db_file data in pandas DataFrame. Specifically, it includes:
+#         ra (deg), dec (deg), glong (deg), glat (deg), plx (mas), e_plx (mas),
+#         mux (mas/yr), muy (mas/yr), vlsr (km/s) + all proper motion/vlsr uncertainties
+#     """
+
+#     with closing(sqlite3.connect(db_file).cursor()) as cur:  # context manager, auto-close
+#         cur.execute("SELECT ra, dec, glong, glat, plx, e_plx, "
+#                     "mux, muy, vlsr, e_mux, e_muy, e_vlsr FROM Parallax")
+#         data = pd.DataFrame(cur.fetchall(), columns=[desc[0] for desc in cur.description])
+
+#     return data
+
+
+# def filter_data(data, filter_e_plx):
+#     """
+#     Filters sources < 4 kpc from galactic centre and
+#     (optionally) filters sources with e_plx/plx > 20%
+
+#     Inputs:
+#       data :: pandas DataFrame
+#         Contains maser galactic longitudes, latitudes, right ascensions, declinations,
+#         parallaxes, equatorial proper motions, and LSR velocities
+#         with all associated uncertainties
+#       filter_e_plx :: boolean
+#         If False, only filter sources closer than 4 kpc to galactic centre
+#         If True, also filter sources with parallax uncertainties > 20% of the parallax
+
+#     Returns: filtered_data
+#       filtered_data :: pandas DataFrame
+#         Contains same data as input data DataFrame except with some sources removed
+#     """
+#     # Calculate galactocentric cylindrical radius
+#     #   N.B. We assume R0=8.15 kpc. This ensures we are rejecting the same set
+#     #   of sources each iteration. Also R0 is fairly well-constrained bc of Sgr A*
+#     all_radii = trans.get_gcen_cyl_radius(data["glong"], data["glat"], data["plx"])
+
+#     # Bad data criteria (N.B. casting to array prevents "+" not supported warnings)
+#     if filter_e_plx:  # Filtering used by Reid et al. (2019)
+#         print("Filter sources with R < 4 kpc & e_plx/plx > 20%")
+#         bad = (np.array(all_radii) < 4.0) + \
+#               (np.array(data["e_plx"] / data["plx"]) > 0.2)
+#     else:  # Only filter sources closer than 4 kpc to galactic centre
+#         print("Only filter sources with R < 4 kpc")
+#         bad = (np.array(all_radii) < 4.0)
+
+#     # Slice data into components
+#     ra = data["ra"][~bad]  # deg
+#     dec = data["dec"][~bad]  # deg
+#     glon = data["glong"][~bad]  # deg
+#     glat = data["glat"][~bad]  # deg
+#     plx = data["plx"][~bad]  # mas
+#     e_plx = data["e_plx"][~bad]  # mas
+#     eqmux = data["mux"][~bad]  # mas/yr (equatorial frame)
+#     e_eqmux = data["e_mux"][~bad]  # mas/y (equatorial frame)
+#     eqmuy = data["muy"][~bad]  # mas/y (equatorial frame)
+#     e_eqmuy = data["e_muy"][~bad]  # mas/y (equatorial frame)
+#     vlsr = data["vlsr"][~bad]  # km/s
+#     e_vlsr = data["e_vlsr"][~bad]  # km/s
+
+#     # Store filtered data in DataFrame
+#     filtered_data = pd.DataFrame(
+#         {
+#             "ra": ra,
+#             "dec": dec,
+#             "glong": glon,
+#             "glat": glat,
+#             "plx": plx,
+#             "e_plx": e_plx,
+#             "mux": eqmux,
+#             "e_mux": e_eqmux,
+#             "muy": eqmuy,
+#             "e_muy": e_eqmuy,
+#             "vlsr": vlsr,
+#             "e_vlsr": e_vlsr,
+#         }
+#     )
+
+#     return filtered_data
+
+# import arviz as az
 def get_cart_pos_and_cyl_residuals(data, trace, free_Zsun=False, free_roll=False):
     """
     Gets galactocentric Cartesian positions &
@@ -251,6 +349,14 @@ def get_cart_pos_and_cyl_residuals(data, trace, free_Zsun=False, free_roll=False
 
     TODO: finish docstring
     """
+    # data_pkl = data
+    # glong_pkl = data_pkl["glong"].values
+    # glat_pkl = data_pkl["glat"].values
+    # data = get_data(Path("/home/chengi/Documents/coop2021/data/hii_v2_20201203.db"))
+    # data = filter_data(data, False)
+    # print(len(data["plx"]))
+    # print(len(glong_pkl))
+
     # Convert pickled data to galactocentric cylindrical positions & velocities
     (radius, azimuth, height, v_rad, v_circ, v_vert,) = data_to_gcen_cyl(
         data, trace, free_Zsun=free_Zsun, free_roll=free_roll
@@ -261,6 +367,8 @@ def get_cart_pos_and_cyl_residuals(data, trace, free_Zsun=False, free_roll=False
         data, trace, free_Zsun=free_Zsun, free_roll=free_roll
     )
     v_circ_res = v_circ - v_circ_pred
+    # v_rad = -np.median(trace["Upec"], axis=0)
+    # v_circ_res = np.median(trace["Vpec"], axis=0)
 
     # Transform galactocentric cylindrical residual velocities
     # to galactocentric Cartesian residuals
@@ -283,15 +391,55 @@ def get_cart_pos_and_cyl_residuals(data, trace, free_Zsun=False, free_roll=False
     print("min & max magnitudes of peculiar velocity:", np.min(v_tot), np.max(v_tot))
     print("=" * 6)
 
-    # # Save coordinates & residual motions to .txt & .csv
-    # df = pd.DataFrame({"x": x, "y": y, "vr_res": v_rad, "vtan_res": v_circ_res})
-    # np.savetxt(r"/home/chengi/Documents/coop2021/pec_motions/pec_motion_data.txt", df)
+    # is_outlier = np.zeros(len(data["plx"]), int)
+    # for row in range(len(data["plx"])):
+    #   print(data["glong"].iloc[row])
+    #   if (data["glong"].iloc[row] not in glong_pkl) and (data["glat"].iloc[row] not in glat_pkl):
+    #     is_outlier[row] = 1
+
+    # Save to .txt & .csv
+
+    # df = pd.DataFrame({
+    # "glong": data["glong"],
+    # "glat": data["glat"],
+    # "plx": data["plx"],
+    # "e_plx": data["e_plx"],
+    # # "plx": np.mean(trace["plx"], axis=0),
+    # # "e_plx": np.std(trace["plx"], axis=0),
+    # "Upec": -v_rad,
+    # "Vpec": v_circ_res,
+    # "is_outlier": is_outlier,
+    # })
+    # np.savetxt(r"/home/chengi/Documents/coop2021/pec_motions/100dist_meanUpecVpec.txt", df)
     # df.to_csv(
-    #     path_or_buf=r"/home/chengi/Documents/coop2021/pec_motions/pec_motion_data.csv",
-    #     sep=" ",
+    #     path_or_buf=r"/home/chengi/Documents/coop2021/pec_motions/100dist_meanUpecVpec.csv",
+    #     sep=",",
     #     index=False,
     #     header=True,
     # )
+
+    # num_sources = np.shape(trace["plx"])[1]
+    # plx_hdi_minus1sigma = np.array([az.hdi(trace["plx"][:, idx], hdi_prob=.6827)[0] for idx in range(num_sources)])
+    # plx_hdi_plus1sigma = np.array([az.hdi(trace["plx"][:, idx], hdi_prob=.6827)[1] for idx in range(num_sources)])
+    # df2 = pd.DataFrame({
+    #     "glong": data["glong"],
+    #     "glat": data["glat"],
+    #     "plx_mean": np.mean(trace["plx"], axis=0),
+    #     "plx_med": np.median(trace["plx"], axis=0),
+    #     "plx_sd": np.std(trace["plx"], axis=0),
+    #     "plx_hdi_minus1sigma": plx_hdi_minus1sigma,
+    #     "plx_hdi_plus1sigma": plx_hdi_plus1sigma,
+    #     "Upec": -v_rad,
+    #     "Vpec": v_circ_res,
+    # })
+    # np.savetxt(r"/home/chengi/Documents/coop2021/pec_motions/freeplx_meanUpecVpec.txt", df2)
+    # df2.to_csv(
+    #     path_or_buf=r"/home/chengi/Documents/coop2021/pec_motions/freeplx_meanUpecVpec.csv",
+    #     sep=",",
+    #     index=False,
+    #     header=True,
+    # )
+
     # print("Saved to .csv & .txt!")
 
     return x, y, z, v_rad, v_circ_res, v_vert

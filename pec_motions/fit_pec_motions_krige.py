@@ -3,6 +3,8 @@ fit_pec_motions_krige.py
 
 Fits the vector peculiar motions of sources using kriging.
 
+! The code is a mess
+
 Isaac Cheng - February 2021
 """
 
@@ -250,242 +252,242 @@ def plot_cartesian_residuals(
     plt.show()
 
 
-def plot_cylindrical_residuals_old(
-    prior_set,
-    num_samples,
-    num_rounds,
-    data,
-    trace,
-    num_sources,
-    free_Zsun=False,
-    free_roll=False,
-):
-    """
-    Plots radial & tangential peculiar motion components
-    """
+# def plot_cylindrical_residuals_old(
+#     prior_set,
+#     num_samples,
+#     num_rounds,
+#     data,
+#     trace,
+#     num_sources,
+#     free_Zsun=False,
+#     free_roll=False,
+# ):
+#     """
+#     Plots radial & tangential peculiar motion components
+#     """
 
-    # Get residual motions & ratio of radial to circular velocity
-    # x, y, z, vx_res, _circ, vz_res, vrad_vcirc = get_pos_and_residuals_and_vrad_vtan(
-    #     data, trace, free_Zsun=free_Zsun, free_roll=free_roll
-    # )
-    x, y, z, v_rad_res, v_circ_res, v_vert_res = get_cart_pos_and_cyl_residuals(
-        data, trace, free_Zsun=free_Zsun, free_roll=free_roll
-    )
-    # Remove very far sources (not enough data to accurately interpolate)
-    print(len(y))
-    v_rad_res = v_rad_res[y > -5]
-    v_circ_res = v_circ_res[y > -5]
-    x = x[y > -5]
-    y = y[y > -5]
-    print(len(y))
+#     # Get residual motions & ratio of radial to circular velocity
+#     # x, y, z, vx_res, _circ, vz_res, vrad_vcirc = get_pos_and_residuals_and_vrad_vtan(
+#     #     data, trace, free_Zsun=free_Zsun, free_roll=free_roll
+#     # )
+#     x, y, z, v_rad_res, v_circ_res, v_vert_res = get_cart_pos_and_cyl_residuals(
+#         data, trace, free_Zsun=free_Zsun, free_roll=free_roll
+#     )
+#     # Remove very far sources (not enough data to accurately interpolate)
+#     print(len(y))
+#     v_rad_res = v_rad_res[y > -5]
+#     v_circ_res = v_circ_res[y > -5]
+#     x = x[y > -5]
+#     y = y[y > -5]
+#     print(len(y))
 
-    variogram_model = "power"  # use "gaussian" or "spherical"
-    print("Variogram Model:", variogram_model)
-    v_rad_res_fit = UniversalKriging(
-        x,
-        y,
-        v_rad_res,
-        variogram_model=variogram_model,
-        exact_values=False,
-        # verbose=False,
-        enable_plotting=True,
-    )
-    v_circ_res_fit = UniversalKriging(
-        x,
-        y,
-        v_circ_res,
-        variogram_model=variogram_model,
-        exact_values=False,
-        # verbose=False,
-        enable_plotting=True,
-    )
+#     variogram_model = "power"  # use "gaussian" or "spherical"
+#     print("Variogram Model:", variogram_model)
+#     v_rad_res_fit = UniversalKriging(
+#         x,
+#         y,
+#         v_rad_res,
+#         variogram_model=variogram_model,
+#         exact_values=False,
+#         # verbose=False,
+#         enable_plotting=True,
+#     )
+#     v_circ_res_fit = UniversalKriging(
+#         x,
+#         y,
+#         v_circ_res,
+#         variogram_model=variogram_model,
+#         exact_values=False,
+#         # verbose=False,
+#         enable_plotting=True,
+#     )
 
-    # gridx, gridy = np.mgrid[-8:12:500j, -5:15:500j]
-    gridx = np.linspace(-8, 12, 500)
-    gridy = np.linspace(-5, 15, 500)
+#     # gridx, gridy = np.mgrid[-8:12:500j, -5:15:500j]
+#     gridx = np.linspace(-8, 12, 500)
+#     gridy = np.linspace(-5, 15, 500)
 
-    # Interpolate
-    vrad_res_interp, vrad_res_interp_sigmasq = v_rad_res_fit.execute("grid", gridx, gridy)
-    vcirc_res_interp, vcirc_res_interp_sigmasq = v_circ_res_fit.execute(
-        "grid", gridx, gridy
-    )
+#     # Interpolate
+#     vrad_res_interp, vrad_res_interp_sigmasq = v_rad_res_fit.execute("grid", gridx, gridy)
+#     vcirc_res_interp, vcirc_res_interp_sigmasq = v_circ_res_fit.execute(
+#         "grid", gridx, gridy
+#     )
 
-    # Standard deviations of interpolated values
-    vrad_res_interp_sigma = np.sqrt(vrad_res_interp_sigmasq)
-    vcirc_res_interp_sigma = np.sqrt(vcirc_res_interp_sigmasq)
+#     # Standard deviations of interpolated values
+#     vrad_res_interp_sigma = np.sqrt(vrad_res_interp_sigmasq)
+#     vcirc_res_interp_sigma = np.sqrt(vcirc_res_interp_sigmasq)
 
-    print("mean vrad_res_interp:", np.mean(vrad_res_interp))
-    print("min & max vrad_res_interp:", np.min(vrad_res_interp), np.max(vrad_res_interp))
-    print("vrad_res_interp mean sd:", np.mean(vrad_res_interp_sigma))
-    print(
-        "vrad_res_interp min & max sd:",
-        np.min(vrad_res_interp_sigma),
-        np.max(vrad_res_interp_sigma),
-    )
-    print()
-    print("mean vcirc_res_interp:", np.mean(vcirc_res_interp))
-    print(
-        "min & max vcirc_res_interp:", np.min(vcirc_res_interp), np.max(vcirc_res_interp)
-    )
-    print("vcirc_res_interp mean sd:", np.mean(vcirc_res_interp_sigma))
-    print(
-        "vcirc_res_interp min & max sd:",
-        np.min(vcirc_res_interp_sigma),
-        np.max(vcirc_res_interp_sigma),
-    )
+#     print("mean vrad_res_interp:", np.mean(vrad_res_interp))
+#     print("min & max vrad_res_interp:", np.min(vrad_res_interp), np.max(vrad_res_interp))
+#     print("vrad_res_interp mean sd:", np.mean(vrad_res_interp_sigma))
+#     print(
+#         "vrad_res_interp min & max sd:",
+#         np.min(vrad_res_interp_sigma),
+#         np.max(vrad_res_interp_sigma),
+#     )
+#     print()
+#     print("mean vcirc_res_interp:", np.mean(vcirc_res_interp))
+#     print(
+#         "min & max vcirc_res_interp:", np.min(vcirc_res_interp), np.max(vcirc_res_interp)
+#     )
+#     print("vcirc_res_interp mean sd:", np.mean(vcirc_res_interp_sigma))
+#     print(
+#         "vcirc_res_interp min & max sd:",
+#         np.min(vcirc_res_interp_sigma),
+#         np.max(vcirc_res_interp_sigma),
+#     )
 
-    print("vrad_res_interp nan detected!") if np.sum(np.isnan(vrad_res_interp)) else None
-    print("vcirc_res_interp nan detected!") if np.sum(
-        np.isnan(vcirc_res_interp)
-    ) else None
-    print("vrad_res_interp_sigmasq nan detected!") if np.sum(
-        np.isnan(vrad_res_interp_sigmasq)
-    ) else None
-    print("vcirc_res_interp_sigmasq nan detected!") if np.sum(
-        np.isnan(vcirc_res_interp_sigmasq)
-    ) else None
-    print("=" * 6)
+#     print("vrad_res_interp nan detected!") if np.sum(np.isnan(vrad_res_interp)) else None
+#     print("vcirc_res_interp nan detected!") if np.sum(
+#         np.isnan(vcirc_res_interp)
+#     ) else None
+#     print("vrad_res_interp_sigmasq nan detected!") if np.sum(
+#         np.isnan(vrad_res_interp_sigmasq)
+#     ) else None
+#     print("vcirc_res_interp_sigmasq nan detected!") if np.sum(
+#         np.isnan(vcirc_res_interp_sigmasq)
+#     ) else None
+#     print("=" * 6)
 
-    # === Peculiar motion plot parameters ===
-    fig, ax = plt.subplots(1, 2, figsize=plt.figaspect(0.5))
-    cmap = "viridis"
+#     # === Peculiar motion plot parameters ===
+#     fig, ax = plt.subplots(1, 2, figsize=plt.figaspect(0.5))
+#     cmap = "viridis"
 
-    # Plot residual radial components
-    norm_rad = mpl.colors.Normalize(
-        vmin=np.min([np.min(vrad_res_interp), np.min(v_rad_res)]),
-        vmax=np.max([np.max(vrad_res_interp), np.max(v_rad_res)]),
-    )
-    ax[0].imshow(
-        vrad_res_interp.T, origin="lower", extent=(-8, 12, -5, 15), norm=norm_rad
-    )
-    cbar_rad = fig.colorbar(
-        mpl.cm.ScalarMappable(norm=norm_rad, cmap=cmap), ax=ax[0], format="%.0f"
-    )
-    ax[0].axhline(y=0, linewidth=0.5, linestyle="--", color="k")  # horizontal line
-    ax[0].axvline(x=0, linewidth=0.5, linestyle="--", color="k")  # vertical line
-    ax[0].set_xlabel("x (kpc)")
-    ax[0].set_ylabel("y (kpc)")
-    ax[0].set_title("Radial Component")
-    cbar_rad.ax.set_ylabel("Residual Radial Velocity", rotation=270)
-    cbar_rad.ax.get_yaxis().labelpad = 15
-    ax[0].set_aspect("equal")
-    ax[0].grid(False)
+#     # Plot residual radial components
+#     norm_rad = mpl.colors.Normalize(
+#         vmin=np.min([np.min(vrad_res_interp), np.min(v_rad_res)]),
+#         vmax=np.max([np.max(vrad_res_interp), np.max(v_rad_res)]),
+#     )
+#     ax[0].imshow(
+#         vrad_res_interp.T, origin="lower", extent=(-8, 12, -5, 15), norm=norm_rad
+#     )
+#     cbar_rad = fig.colorbar(
+#         mpl.cm.ScalarMappable(norm=norm_rad, cmap=cmap), ax=ax[0], format="%.0f"
+#     )
+#     ax[0].axhline(y=0, linewidth=0.5, linestyle="--", color="k")  # horizontal line
+#     ax[0].axvline(x=0, linewidth=0.5, linestyle="--", color="k")  # vertical line
+#     ax[0].set_xlabel("x (kpc)")
+#     ax[0].set_ylabel("y (kpc)")
+#     ax[0].set_title("Radial Component")
+#     cbar_rad.ax.set_ylabel("Residual Radial Velocity", rotation=270)
+#     cbar_rad.ax.get_yaxis().labelpad = 15
+#     ax[0].set_aspect("equal")
+#     ax[0].grid(False)
 
-    # Plot residual tangential components
-    norm_circ = mpl.colors.Normalize(
-        vmin=np.min([np.min(vcirc_res_interp), np.min(v_circ_res)]),
-        vmax=np.max([np.max(vcirc_res_interp), np.max(v_circ_res)]),
-    )
-    ax[1].imshow(
-        vcirc_res_interp.T, origin="lower", extent=(-8, 12, -5, 15), norm=norm_circ
-    )
-    cbar_circ = fig.colorbar(
-        mpl.cm.ScalarMappable(norm=norm_circ, cmap=cmap), ax=ax[1], format="%.0f"
-    )
-    ax[1].axhline(y=0, linewidth=0.5, linestyle="--", color="k")  # horizontal line
-    ax[1].axvline(x=0, linewidth=0.5, linestyle="--", color="k")  # vertical line
-    ax[1].set_xlabel("x (kpc)")
-    ax[1].set_ylabel("y (kpc)")
-    ax[1].set_title("Tangential Component")
-    cbar_circ.ax.set_ylabel("Residual Tangential Velocity", rotation=270)
-    cbar_circ.ax.get_yaxis().labelpad = 15
-    ax[1].set_aspect("equal")
-    ax[1].grid(False)
+#     # Plot residual tangential components
+#     norm_circ = mpl.colors.Normalize(
+#         vmin=np.min([np.min(vcirc_res_interp), np.min(v_circ_res)]),
+#         vmax=np.max([np.max(vcirc_res_interp), np.max(v_circ_res)]),
+#     )
+#     ax[1].imshow(
+#         vcirc_res_interp.T, origin="lower", extent=(-8, 12, -5, 15), norm=norm_circ
+#     )
+#     cbar_circ = fig.colorbar(
+#         mpl.cm.ScalarMappable(norm=norm_circ, cmap=cmap), ax=ax[1], format="%.0f"
+#     )
+#     ax[1].axhline(y=0, linewidth=0.5, linestyle="--", color="k")  # horizontal line
+#     ax[1].axvline(x=0, linewidth=0.5, linestyle="--", color="k")  # vertical line
+#     ax[1].set_xlabel("x (kpc)")
+#     ax[1].set_ylabel("y (kpc)")
+#     ax[1].set_title("Tangential Component")
+#     cbar_circ.ax.set_ylabel("Residual Tangential Velocity", rotation=270)
+#     cbar_circ.ax.get_yaxis().labelpad = 15
+#     ax[1].set_aspect("equal")
+#     ax[1].grid(False)
 
-    # Plot actual residual motion data
-    ax[0].scatter(
-        x, y, c=v_rad_res, norm=norm_rad, cmap=cmap, s=10, edgecolors="k", label="Masers"
-    )
-    ax[0].set_xlim(-8, 12)
-    ax[0].set_xticks([-5, 0, 5, 10])
-    ax[0].set_ylim(-5, 15)
-    ax[0].set_yticks([-5, 0, 5, 10, 15])
-    ax[0].legend(loc="lower left", fontsize=9)
-    ax[1].scatter(
-        x,
-        y,
-        c=v_circ_res,
-        norm=norm_circ,
-        cmap=cmap,
-        s=10,
-        edgecolors="k",
-        label="Masers",
-    )
-    ax[1].set_xlim(-8, 12)
-    ax[1].set_xticks([-5, 0, 5, 10])
-    ax[1].set_ylim(-5, 15)
-    ax[1].set_yticks([-5, 0, 5, 10, 15])
-    ax[1].legend(loc="lower left", fontsize=9)
+#     # Plot actual residual motion data
+#     ax[0].scatter(
+#         x, y, c=v_rad_res, norm=norm_rad, cmap=cmap, s=10, edgecolors="k", label="Masers"
+#     )
+#     ax[0].set_xlim(-8, 12)
+#     ax[0].set_xticks([-5, 0, 5, 10])
+#     ax[0].set_ylim(-5, 15)
+#     ax[0].set_yticks([-5, 0, 5, 10, 15])
+#     ax[0].legend(loc="lower left", fontsize=9)
+#     ax[1].scatter(
+#         x,
+#         y,
+#         c=v_circ_res,
+#         norm=norm_circ,
+#         cmap=cmap,
+#         s=10,
+#         edgecolors="k",
+#         label="Masers",
+#     )
+#     ax[1].set_xlim(-8, 12)
+#     ax[1].set_xticks([-5, 0, 5, 10])
+#     ax[1].set_ylim(-5, 15)
+#     ax[1].set_yticks([-5, 0, 5, 10, 15])
+#     ax[1].legend(loc="lower left", fontsize=9)
 
-    fig.suptitle(
-        f"Interpolated Peculiar Motions of {num_sources} Masers\n"
-        fr"(Universal Kriging, \texttt{{variogram\_model={variogram_model}}})"
-    )
-    # fig.suptitle("Interpolated Peculiar Motions of", len(x), "Masers")
-    fig.tight_layout()
-    filename = f"pec_mot_krige_{prior_set}_{num_samples}dist_{num_rounds}_cyl.jpg"
-    fig.savefig(
-        Path(__file__).parent / filename, format="jpg", dpi=300, bbox_inches="tight",
-    )
-    plt.show()
+#     fig.suptitle(
+#         f"Interpolated Peculiar Motions of {num_sources} Masers\n"
+#         fr"(Universal Kriging, \texttt{{variogram\_model={variogram_model}}})"
+#     )
+#     # fig.suptitle("Interpolated Peculiar Motions of", len(x), "Masers")
+#     fig.tight_layout()
+#     filename = f"pec_mot_krige_{prior_set}_{num_samples}dist_{num_rounds}_cyl.jpg"
+#     fig.savefig(
+#         Path(__file__).parent / filename, format="jpg", dpi=300, bbox_inches="tight",
+#     )
+#     plt.show()
 
-    # === Standard deviation of pec motion plot parameters ===
-    fig2, ax2 = plt.subplots(1, 2, figsize=plt.figaspect(0.5))
-    cmap2 = "viridis"
+#     # === Standard deviation of pec motion plot parameters ===
+#     fig2, ax2 = plt.subplots(1, 2, figsize=plt.figaspect(0.5))
+#     cmap2 = "viridis"
 
-    # Plot residual radial component standard deviations
-    norm_rad_sd = mpl.colors.Normalize(
-        vmin=np.min(vrad_res_interp_sigma), vmax=np.max(vrad_res_interp_sigma),
-    )
-    ax2[0].imshow(
-        vrad_res_interp_sigma.T, origin="lower", extent=(-8, 12, -5, 15), norm=norm_rad_sd
-    )
-    cbar2_rad = fig2.colorbar(
-        mpl.cm.ScalarMappable(norm=norm_rad_sd, cmap=cmap2), ax=ax2[0], format="%.0f"
-    )
-    ax2[0].axhline(y=0, linewidth=0.5, linestyle="--", color="k")  # horizontal line
-    ax2[0].axvline(x=0, linewidth=0.5, linestyle="--", color="k")  # vertical line
-    ax2[0].set_xlabel("x (kpc)")
-    ax2[0].set_ylabel("y (kpc)")
-    ax2[0].set_title("Radial Component")
-    cbar2_rad.ax.set_ylabel("Standard Deviation", rotation=270)
-    cbar2_rad.ax.get_yaxis().labelpad = 15
-    ax2[0].set_aspect("equal")
-    ax2[0].grid(False)
+#     # Plot residual radial component standard deviations
+#     norm_rad_sd = mpl.colors.Normalize(
+#         vmin=np.min(vrad_res_interp_sigma), vmax=np.max(vrad_res_interp_sigma),
+#     )
+#     ax2[0].imshow(
+#         vrad_res_interp_sigma.T, origin="lower", extent=(-8, 12, -5, 15), norm=norm_rad_sd
+#     )
+#     cbar2_rad = fig2.colorbar(
+#         mpl.cm.ScalarMappable(norm=norm_rad_sd, cmap=cmap2), ax=ax2[0], format="%.0f"
+#     )
+#     ax2[0].axhline(y=0, linewidth=0.5, linestyle="--", color="k")  # horizontal line
+#     ax2[0].axvline(x=0, linewidth=0.5, linestyle="--", color="k")  # vertical line
+#     ax2[0].set_xlabel("x (kpc)")
+#     ax2[0].set_ylabel("y (kpc)")
+#     ax2[0].set_title("Radial Component")
+#     cbar2_rad.ax.set_ylabel("Standard Deviation", rotation=270)
+#     cbar2_rad.ax.get_yaxis().labelpad = 15
+#     ax2[0].set_aspect("equal")
+#     ax2[0].grid(False)
 
-    # Plot residual tangential component standard deviations
-    norm_circ_sd = mpl.colors.Normalize(
-        vmin=np.min(vcirc_res_interp_sigma), vmax=np.max(vcirc_res_interp_sigma),
-    )
-    ax2[1].imshow(
-        vcirc_res_interp_sigma.T,
-        origin="lower",
-        extent=(-8, 12, -5, 15),
-        norm=norm_circ_sd,
-    )
-    cbar2_circ = fig2.colorbar(
-        mpl.cm.ScalarMappable(norm=norm_circ_sd, cmap=cmap2), ax=ax2[1], format="%.1f"
-    )
-    ax2[1].axhline(y=0, linewidth=0.5, linestyle="--", color="k")  # horizontal line
-    ax2[1].axvline(x=0, linewidth=0.5, linestyle="--", color="k")  # vertical line
-    ax2[1].set_xlabel("x (kpc)")
-    ax2[1].set_ylabel("y (kpc)")
-    ax2[1].set_title("Tangential Component")
-    cbar2_circ.ax.set_ylabel("Standard Deviation", rotation=270)
-    cbar2_circ.ax.get_yaxis().labelpad = 15
-    ax2[1].set_aspect("equal")
-    ax2[1].grid(False)
+#     # Plot residual tangential component standard deviations
+#     norm_circ_sd = mpl.colors.Normalize(
+#         vmin=np.min(vcirc_res_interp_sigma), vmax=np.max(vcirc_res_interp_sigma),
+#     )
+#     ax2[1].imshow(
+#         vcirc_res_interp_sigma.T,
+#         origin="lower",
+#         extent=(-8, 12, -5, 15),
+#         norm=norm_circ_sd,
+#     )
+#     cbar2_circ = fig2.colorbar(
+#         mpl.cm.ScalarMappable(norm=norm_circ_sd, cmap=cmap2), ax=ax2[1], format="%.1f"
+#     )
+#     ax2[1].axhline(y=0, linewidth=0.5, linestyle="--", color="k")  # horizontal line
+#     ax2[1].axvline(x=0, linewidth=0.5, linestyle="--", color="k")  # vertical line
+#     ax2[1].set_xlabel("x (kpc)")
+#     ax2[1].set_ylabel("y (kpc)")
+#     ax2[1].set_title("Tangential Component")
+#     cbar2_circ.ax.set_ylabel("Standard Deviation", rotation=270)
+#     cbar2_circ.ax.get_yaxis().labelpad = 15
+#     ax2[1].set_aspect("equal")
+#     ax2[1].grid(False)
 
-    fig2.suptitle(
-        f"Standard Deviations of Interpolated Peculiar Motions ({num_sources} Masers)\n"
-        fr"(Universal Kriging, \texttt{{variogram\_model={variogram_model}}})"
-    )
-    fig2.tight_layout()
-    filename2 = f"pec_mot_krige_{prior_set}_{num_samples}dist_{num_rounds}_cyl_sd.jpg"
-    fig2.savefig(
-        Path(__file__).parent / filename2, format="jpg", dpi=300, bbox_inches="tight",
-    )
-    plt.show()
+#     fig2.suptitle(
+#         f"Standard Deviations of Interpolated Peculiar Motions ({num_sources} Masers)\n"
+#         fr"(Universal Kriging, \texttt{{variogram\_model={variogram_model}}})"
+#     )
+#     fig2.tight_layout()
+#     filename2 = f"pec_mot_krige_{prior_set}_{num_samples}dist_{num_rounds}_cyl_sd.jpg"
+#     fig2.savefig(
+#         Path(__file__).parent / filename2, format="jpg", dpi=300, bbox_inches="tight",
+#     )
+#     plt.show()
 
 
 def plot_cylindrical_residuals(
@@ -501,19 +503,38 @@ def plot_cylindrical_residuals(
     """
     Plots radial & tangential peculiar motion components
     """
+    plx_UpecVpec_type = "db_mean"  # db_mean, fit_mean, fit_fit
+
+    if plx_UpecVpec_type == "db_mean":
+        plx_UpecVpec_str = r"Database Parallaxes and Derived $U_{pec}$ \& $V_{pec}$"
+    elif plx_UpecVpec_type == "fit_mean":
+        plx_UpecVpec_str = r"Fitted Parallaxes and Derived $U_{pec}$ \& $V_{pec}$"
+    else:
+        plx_UpecVpec_str = r"Fitted Parallaxes and Fitted $U_{pec}$ \& $V_{pec}$"
+    print(plx_UpecVpec_str)
 
     # Get residual motions & ratio of radial to circular velocity
     x, y, z, v_rad_res, v_circ_res, v_vert_res = get_cart_pos_and_cyl_residuals(
         data, trace, free_Zsun=free_Zsun, free_roll=free_roll
     )
+    # v_rad_res = -np.median(trace["Upec"], axis=0)
+    # e_v_rad_res = np.std(trace["Upec"], axis=0)
+    # v_circ_res = np.median(trace["Vpec"], axis=0)
+    # e_v_circ_res = np.std(trace["Vpec"], axis=0)
 
     # Remove very far sources (not enough data to accurately interpolate)
     # print(len(y))
     v_rad_res = v_rad_res[y > -5]
     v_circ_res = v_circ_res[y > -5]
+    # e_v_rad_res = e_v_rad_res[y > -5]
+    # e_v_circ_res = e_v_circ_res[y > -5]
     x = x[y > -5]
     y = y[y > -5]
     # print(len(y))
+    # xlim_low = np.min(x)
+    # xlim_high = np.max(x)
+    # ylim_low = np.min(y)
+    # ylim_high = np.max(y)
 
     # Data coordinates (size=(num_data, 2))
     coord_obs = np.vstack((x, y)).T
@@ -525,13 +546,14 @@ def plot_cylindrical_residuals(
     coord_interp = np.vstack((gridx.flatten(), gridy.flatten())).T
 
     # Universal kriging with linear drift term
-    variogram_model = "gaussian"  # "gaussian", "spherical", or "exponential"
+    variogram_model = "spherical"  # "gaussian", "spherical", or "exponential"
     print("Variogram Model:", variogram_model)
 
     vrad_res_interp, vrad_res_interp_sigmasq = kriging.kriging(
         coord_obs,
         v_rad_res,
         coord_interp,
+        # e_data_obs=e_v_rad_res,
         model=variogram_model,
         deg=1,
         nbins=10,
@@ -543,6 +565,7 @@ def plot_cylindrical_residuals(
         coord_obs,
         v_circ_res,
         coord_interp,
+        # e_data_obs=e_v_circ_res,
         model=variogram_model,
         deg=1,
         nbins=10,
@@ -554,7 +577,7 @@ def plot_cylindrical_residuals(
     vrad_res_interp_sigmasq = vrad_res_interp_sigmasq.reshape(500, 500)
     vcirc_res_interp = vcirc_res_interp.reshape(500, 500)
     vcirc_res_interp_sigmasq = vcirc_res_interp_sigmasq.reshape(500, 500)
-    print("min vcirc variance", np.min(vcirc_res_interp_sigmasq))
+    # print("min vcirc variance", np.min(vcirc_res_interp_sigmasq))
 
     # Standard deviations of interpolated values
     vrad_res_interp_sigma = np.sqrt(vrad_res_interp_sigmasq)
@@ -622,8 +645,9 @@ def plot_cylindrical_residuals(
 
     # Plot residual radial components
     norm_rad = mpl.colors.Normalize(
-        vmin=np.nanmin([np.nanmin(vrad_res_interp), np.nanmin(v_rad_res)]),
-        vmax=np.nanmax([np.nanmax(vrad_res_interp), np.nanmax(v_rad_res)]),
+        vmin=-52, vmax=17,
+        # vmin=np.nanmin([np.nanmin(vrad_res_interp), np.nanmin(v_rad_res)]),
+        # vmax=np.nanmax([np.nanmax(vrad_res_interp), np.nanmax(v_rad_res)]),
     )
     ax[0].imshow(
         vrad_res_interp.T, origin="lower", extent=(-8, 12, -5, 15), norm=norm_rad
@@ -643,8 +667,9 @@ def plot_cylindrical_residuals(
 
     # Plot residual tangential components
     norm_circ = mpl.colors.Normalize(
-        vmin=np.nanmin([np.nanmin(vcirc_res_interp), np.nanmin(v_circ_res)]),
-        vmax=np.nanmax([np.nanmax(vcirc_res_interp), np.nanmax(v_circ_res)]),
+        vmin=-31, vmax=15
+        # vmin=np.nanmin([np.nanmin(vcirc_res_interp), np.nanmin(v_circ_res)]),
+        # vmax=np.nanmax([np.nanmax(vcirc_res_interp), np.nanmax(v_circ_res)]),
     )
     ax[1].imshow(
         vcirc_res_interp.T, origin="lower", extent=(-8, 12, -5, 15), norm=norm_circ
@@ -690,6 +715,7 @@ def plot_cylindrical_residuals(
     fig.suptitle(
         f"Interpolated Peculiar Motions of {num_sources} Masers\n"
         fr"(Universal Kriging, \texttt{{variogram\_model={variogram_model}}})"
+        + "\n" + plx_UpecVpec_str
     )
     # fig.suptitle("Interpolated Peculiar Motions of", len(x), "Masers")
     fig.tight_layout()
@@ -711,7 +737,7 @@ def plot_cylindrical_residuals(
         vrad_res_interp_sigma.T, origin="lower", extent=(-8, 12, -5, 15), norm=norm_rad_sd
     )
     cbar2_rad = fig2.colorbar(
-        mpl.cm.ScalarMappable(norm=norm_rad_sd, cmap=cmap2), ax=ax2[0], format="%.0f"
+        mpl.cm.ScalarMappable(norm=norm_rad_sd, cmap=cmap2), ax=ax2[0], format="%.1f"
     )
     ax2[0].axhline(y=0, linewidth=0.5, linestyle="--", color="k")  # horizontal line
     ax2[0].axvline(x=0, linewidth=0.5, linestyle="--", color="k")  # vertical line
@@ -749,6 +775,7 @@ def plot_cylindrical_residuals(
     fig2.suptitle(
         f"Standard Deviations of Interpolated Peculiar Motions ({num_sources} Masers)\n"
         fr"(Universal Kriging, \texttt{{variogram\_model={variogram_model}}})"
+        + "\n" + plx_UpecVpec_str
     )
     fig2.tight_layout()
     filename2 = f"pec_mot_krige_{prior_set}_{num_samples}dist_{num_rounds}_cyl_sd_{variogram_model}.jpg"
@@ -795,10 +822,10 @@ def main(prior_set, num_samples, num_rounds):
 
 
 if __name__ == "__main__":
-    # prior_set_file = input("prior_set of file (A1, A5, B, C, D): ")
-    # num_samples_file = int(input("Number of distance samples per source in file (int): "))
-    # num_rounds_file = int(input("round number of file for best-fit parameters (int): "))
-    prior_set_file = "A5"
-    num_samples_file = 100
-    num_rounds_file = 5
+    prior_set_file = input("prior_set of file (A1, A5, B, C, D): ")
+    num_samples_file = int(input("Number of distance samples per source in file (int): "))
+    num_rounds_file = int(input("round number of file for best-fit parameters (int): "))
+    # prior_set_file = "A5"
+    # num_samples_file = 100
+    # num_rounds_file = 5
     main(prior_set_file, num_samples_file, num_rounds_file)
