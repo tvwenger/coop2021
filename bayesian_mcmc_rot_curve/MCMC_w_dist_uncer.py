@@ -443,7 +443,7 @@ def run_MCMC(
             Zsun = _ZSUN  # pc
         if free_roll:
             print("+ free roll parameter", end=" ", flush=True)
-            # Prior based on Reid et al. 2019
+            # Prior based on Anderson et al. 2019
             roll = pm.Normal("roll", mu=_ROLL, sigma=0.1)  # deg
         else:
             roll = _ROLL  # deg
