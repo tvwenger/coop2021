@@ -128,7 +128,7 @@ def cleanup_data(data, trace, like_type, reject_method, num_samples,
     Usun = np.median(trace["Usun"])  # km/s
     Wsun = np.median(trace["Wsun"])  # km/s
     Upec = np.median(trace["Upec"], axis=0) if individual_Upec else np.median(trace["Upec"])  # km/s
-    Vpec = np.median(trace["Vpec"], axis=0) if individual_Upec else np.median(trace["Vpec"])  # km/s
+    Vpec = np.median(trace["Vpec"], axis=0) if individual_Vpec else np.median(trace["Vpec"])  # km/s
     a2 = np.median(trace["a2"])  # dimensionless
     a3 = np.median(trace["a3"])  # dimensionless
     Zsun = np.median(trace["Zsun"]) if free_Zsun else _ZSUN  # pc
@@ -154,11 +154,11 @@ def cleanup_data(data, trace, like_type, reject_method, num_samples,
         print("(Assuming parallax is a model parameter)")
         # ? Maybe use mean(plx) if bad results?
         plx = np.median(trace["plx"], axis=0)
-        e_plx = np.std(trace["plx"], axis=0)
+        # e_plx = np.std(trace["plx"], axis=0)
     else:
         # Assuming using multiple distance samples
         plx = plx_orig
-        e_plx = e_plx_orig
+        # e_plx = e_plx_orig
 
     # === Calculate predicted values from optimal parameters ===
     # Parallax to distance
