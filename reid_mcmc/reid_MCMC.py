@@ -100,11 +100,11 @@ def run_MCMC(
         bad = (np.array(all_radii) < 4.0) + (np.array(data["e_plx"] / data["plx"]) > 0.2)
 
         # Slice data into components (using np.asarray to prevent PyMC3 error with pandas)
-        ra = data["ra"][~bad]  # deg
-        dec = data["dec"][~bad]  # deg
-        glon = data["glong"][~bad]  # deg
-        glat = data["glat"][~bad]  # deg
-        plx = data["plx"][~bad]  # mas
+        ra = data["ra"][~bad].values  # deg
+        dec = data["dec"][~bad].values  # deg
+        glon = data["glong"][~bad].values  # deg
+        glat = data["glat"][~bad].values  # deg
+        plx = data["plx"][~bad].values  # mas
         e_plx = data["e_plx"][~bad]  # mas
         eqmux = np.asarray(data["mux"][~bad])  # mas/yr (equatorial frame)
         e_eqmux = np.asarray(data["e_mux"][~bad])  # mas/y (equatorial frame)

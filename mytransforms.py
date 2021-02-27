@@ -347,14 +347,14 @@ def bary_to_gcen(
     # Roll CCW about the barycentric X-axis so that the Y-Z plane
     # is aligned with the Y-Z plane of the galactocentric frame
     #
-    # Xb1 = np.copy(Xb)  # OR: Xb1 = Xb
+    Xb1 = np.copy(Xb)  # OR: Xb1 = Xb
     Yb1 = cos_roll * Yb - sin_roll * Zb
     Zb1 = sin_roll * Yb + cos_roll * Zb
     #
     # Translate to the galactic center
     #
-    Xb1 = Xb - R0  # Need to use this if using parallax as MCMC model parameter
-    # Xb1 -= R0  # must use np.copy() above
+    # Xb1 = Xb - R0  # Need to use this if using parallax as MCMC model parameter
+    Xb1 -= R0  # must use np.copy() above. Need to use this for reid_MCMC.py
     # OR: Xb1 = Xb1 - R0
     #
     # Tilt to correct for Sun's height above midplane
