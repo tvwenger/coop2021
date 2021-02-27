@@ -49,18 +49,18 @@ def cleanup_data(data, trace):
 
     # === Get data ===
     # Slice data into components (using np.asarray to prevent PyMC3 error with pandas)
-    ra = data["ra"]  # deg
-    dec = data["dec"]  # deg
-    glon = data["glong"]  # deg
-    glat = data["glat"]  # deg
-    plx = data["plx"]  # mas
-    e_plx = data["e_plx"]  # mas
-    eqmux = data["mux"]  # mas/yr (equatorial frame)
-    e_eqmux = data["e_mux"]  # mas/y (equatorial frame)
-    eqmuy = data["muy"]  # mas/y (equatorial frame)
-    e_eqmuy = data["e_muy"]  # mas/y (equatorial frame)
-    vlsr = data["vlsr"]  # km/s
-    e_vlsr = data["e_vlsr"]  # km/s
+    ra = data["ra"].values  # deg
+    dec = data["dec"].values  # deg
+    glon = data["glong"].values  # deg
+    glat = data["glat"].values  # deg
+    plx = data["plx"].values  # mas
+    e_plx = data["e_plx"].values  # mas
+    eqmux = data["mux"].values  # mas/yr (equatorial frame)
+    e_eqmux = data["e_mux"].values  # mas/y (equatorial frame)
+    eqmuy = data["muy"].values  # mas/y (equatorial frame)
+    e_eqmuy = data["e_muy"].values  # mas/y (equatorial frame)
+    vlsr = data["vlsr"].values  # km/s
+    e_vlsr = data["e_vlsr"].values  # km/s
 
     # === Calculate predicted values from optimal parameters ===
     # Parallax to distance
@@ -113,10 +113,12 @@ def cleanup_data(data, trace):
     sigma_vlsr = np.sqrt(e_vlsr * e_vlsr + sigma_vir * sigma_vir)
 
     # Throw away data with proper motion or vlsr residuals > 3 sigma
+    sigma_threshold = 3
+    print("Threshold sigma:", sigma_threshold)
     bad_sigma = (
-        (np.array(abs(eqmux_pred - eqmux) / sigma_eqmux) > 3)
-        + (np.array(abs(eqmuy_pred - eqmuy) / sigma_eqmuy) > 3)
-        + (np.array(abs(vlsr_pred - vlsr) / sigma_vlsr) > 3)
+        (np.array(abs(eqmux_pred - eqmux) / sigma_eqmux) > sigma_threshold)
+        + (np.array(abs(eqmuy_pred - eqmuy) / sigma_eqmuy) > sigma_threshold)
+        + (np.array(abs(vlsr_pred - vlsr) / sigma_vlsr) > sigma_threshold)
     )
 
     # Refilter data
@@ -158,10 +160,10 @@ def cleanup_data(data, trace):
 
 def main():
     # Binary file to read
-    # infile = Path(__file__).parent / "reid_MCMC_outfile.pkl"
-    infile = Path(
-        "/home/chengi/Documents/coop2021/reid_mcmc/reid_MCMC_outfile.pkl"
-    )
+    infile = Path(__file__).parent / "reid_MCMC_outfile.pkl"
+    # infile = Path(
+    #     "/home/chengi/Documents/coop2021/reid_mcmc/reid_MCMC_outfile.pkl"
+    # )
 
     with open(infile, "rb") as f:
         file = dill.load(f)

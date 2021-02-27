@@ -64,11 +64,17 @@ def ln_siviaskilling(x, mean, weight):
     """
 
     residual = (x - mean) / weight
-    return tt.log((1 - tt.exp(-0.5 * residual * residual)) / (residual * residual))
+    lnlike = tt.log((1 - tt.exp(-0.5 * residual * residual)) / (residual * residual))
+
+    # Replace residuals near zero (i.e. near peak of ln(likelihood))
+    # with value at peak of ln(likelihood) to prevent nans. Peak = ln(0.5) = -0.69314718
+    # lnlike = tt.switch(residual < 1e-7, -0.69314718, lnlike)
+
+    return lnlike
 
 
 def run_MCMC(
-    data, num_iters, num_tune, num_chains, prior_set, like_type, is_database_data
+    data, num_cores, num_iters, num_tune, num_chains, prior_set, like_type, is_database_data
 ):
     """
     Runs Bayesian MCMC. Returns trace & number of sources used in fit.
@@ -128,9 +134,9 @@ def run_MCMC(
         # Slice data into components (using np.asarray to prevent PyMC3 error with pandas)
         # ra = data["ra"]  # deg
         # dec = data["dec"]  # deg
-        glon = data["glong"]  # deg
-        glat = data["glat"]  # deg
-        plx = data["plx"]  # mas
+        glon = data["glong"].values  # deg
+        glat = data["glat"].values  # deg
+        plx = data["plx"].values  # mas
         # e_plx = data["e_plx"]  # mas
         eqmux = np.asarray(data["mux"])  # mas/yr (equatorial frame)
         e_eqmux = np.asarray(data["e_mux"])  # mas/y (equatorial frame)
@@ -141,6 +147,10 @@ def run_MCMC(
     # Calculate number of sources used in fit
     num_sources = len(eqmux)
     print("Number of data points used:", num_sources)
+
+    num_samples = 100
+    plx = np.array([plx, ] * num_samples)
+    print("Num plx samples:", num_samples)
 
     # Parallax to distance
     gdist = trans.parallax_to_dist(plx)
@@ -156,46 +166,33 @@ def run_MCMC(
     #   R0, Usun, Vsun, Wsun, Upec, Vpec, a2, a3
     model_obj = pm.Model()
     with model_obj:
+        R0 = pm.Normal("R0", mu=8.15, sigma=0.75)  # kpc, conservative sigma
+        a2 = pm.Uniform("a2", lower=0.7, upper=1.5)  # dimensionless
+        a3 = pm.Uniform("a3", lower=1.5, upper=1.8)  # dimensionless
         if prior_set == "A1" or prior_set == "A5":  # Make model with SET A PRIORS
-            # R0 = pm.Uniform("R0", lower=0, upper=500.)  # kpc
-            R0 = pm.Uniform("R0", lower=7.0, upper=10.0)  # kpc
             Usun = pm.Normal("Usun", mu=11.1, sigma=1.2)  # km/s
             Vsun = pm.Normal("Vsun", mu=15.0, sigma=10.0)  # km/s
             Wsun = pm.Normal("Wsun", mu=7.2, sigma=1.1)  # km/s
             Upec = pm.Normal("Upec", mu=3.0, sigma=10.0)  # km/s
             Vpec = pm.Normal("Vpec", mu=-3.0, sigma=10.0)  # km/s
-            a2 = pm.Uniform("a2", lower=0.5, upper=1.5)  # dimensionless
-            a3 = pm.Uniform("a3", lower=1.5, upper=1.8)  # dimensionless
         elif prior_set == "B":
-            # R0 = pm.Uniform("R0", lower=0, upper=500.)  # kpc
-            R0 = pm.Uniform("R0", lower=7.0, upper=10.0)  # kpc
             Usun = pm.Normal("Usun", mu=11.1, sigma=1.2)  # km/s
             Vsun = pm.Normal("Vsun", mu=12.2, sigma=2.1)  # km/s
             Wsun = pm.Normal("Wsun", mu=7.2, sigma=1.1)  # km/s
             Upec = pm.Uniform("Upec", lower=-500.0, upper=500.0)  # km/s
             Vpec = pm.Uniform("Vpec", lower=-500.0, upper=500.0)  # km/s
-            a2 = pm.Uniform("a2", lower=0.5, upper=1.5)  # dimensionless
-            a3 = pm.Uniform("a3", lower=1.5, upper=1.8)  # dimensionless
         elif prior_set == "C":
-            R0 = pm.Uniform("R0", lower=0, upper=500.0)  # kpc
-            # R0 = pm.Uniform("R0", lower=7.0, upper=10.0)  # kpc
             Usun = pm.Uniform("Usun", lower=-500., upper=500.)  # km/s
             Vsun = pm.Uniform("Vsun", lower=-500., upper=500.)  # km/s
             Wsun = pm.Uniform("Wsun", lower=-500., upper=500.)  # km/s
             Upec = pm.Normal("Upec", mu=3.0, sigma=5.0)  # km/s
             Vpec = pm.Normal("Vpec", mu=-3.0, sigma=5.0)  # km/s
-            a2 = pm.Uniform("a2", lower=0.5, upper=1.5)  # dimensionless
-            a3 = pm.Uniform("a3", lower=1.5, upper=1.8)  # dimensionless
         elif prior_set == "D":
-            R0 = pm.Uniform("R0", lower=0, upper=500.0)  # kpc
-            # R0 = pm.Uniform("R0", lower=7.0, upper=10.0)  # kpc
             Usun = pm.Uniform("Usun", lower=-500., upper=500.)  # km/s
             Vsun = pm.Uniform("Vsun", lower=-5.0, upper=35.0)  # km/s
             Wsun = pm.Uniform("Wsun", lower=-500., upper=500.)  # km/s
             Upec = pm.Uniform("Upec", lower=-500., upper=500.)  # kpc
             Vpec = pm.Uniform("Vpec", lower=-23.0, upper=17.0)  # km/s
-            a2 = pm.Uniform("a2", lower=0.5, upper=1.5)  # dimensionless
-            a3 = pm.Uniform("a3", lower=1.5, upper=1.8)  # dimensionless
         else:
             raise ValueError("Illegal prior_set. Choose 'A1', 'A5', 'B', 'C', or 'D'.")
         print("Using prior set", prior_set)
@@ -275,16 +272,27 @@ def run_MCMC(
             )
 
         # === Full likelihood function (specified by log-probability) ===
-        likelihood = pm.Potential(
-            "likelihood", lnlike_eqmux + lnlike_eqmuy + lnlike_vlsr
-        )  # expects values instead of function
+        if num_samples == 1:
+            likelihood = pm.Potential(
+                "likelihood", (lnlike_eqmux + lnlike_eqmuy + lnlike_vlsr).sum()
+            )  # expects values instead of function
+        else:
+            # Joint likelihood
+            lnlike_tot = lnlike_eqmux + lnlike_eqmuy + lnlike_vlsr
+            # Marginalize over each distance samples
+            lnlike_sum = pm.logsumexp(lnlike_tot, axis=0)
+            lnlike_avg = lnlike_sum - tt.log(num_samples)
+            # Sum over sources
+            lnlike_final = lnlike_avg.sum()
+            # Likelihood function
+            likelihood = pm.Potential("likelihood", lnlike_final)
 
         # Run MCMC
         trace = pm.sample(
             num_iters,
             init="advi",
             tune=num_tune,
-            cores=2,
+            cores=num_cores,
             chains=num_chains,
             return_inferencedata=False,
         )  # walker
@@ -306,55 +314,89 @@ def run_MCMC(
             )
 
 
-def main():
+def main(prior_set, likelihood_type, load_database):
     # Specify Bayesian MCMC parameters
-    _NUM_ITERS = 2000  # number of iterations per chain
-    _NUM_TUNE = 2000  # number of tuning iterations (will be thrown away)
-    _NUM_CHAINS = 2  # number of parallel chains to run
-    _PRIOR_SET = "A1"  # Prior set from Reid et al. (2019)
-    _LIKELIHOOD_TYPE = "sivia"  # "gauss", "cauchy", or "sivia"
+    _NUM_ITERS = 1000  # number of iterations per chain
+    _NUM_TUNE = 1000  # number of tuning iterations (will be thrown away)
+    _NUM_CORES = 10  # number of CPU cores to use
+    _NUM_CHAINS = 10  # number of parallel chains to run
+    # _PRIOR_SET = "A5"  # Prior set from Reid et al. (2019)
+    # _LIKELIHOOD_TYPE = "gauss"  # "gauss", "cauchy", or "sivia"
 
-    # If data has already been filtered & using same prior set
-    if _LIKELIHOOD_TYPE == "gauss":
-        _LOAD_DATABASE = False  # Use data from pickle file
-    # If data has not been filtered & using new prior set
-    elif _LIKELIHOOD_TYPE == "cauchy" or _LIKELIHOOD_TYPE == "sivia":
-        _LOAD_DATABASE = True  # Use data from database
-    else:
+    # # If data has already been filtered & using same prior set
+    # if _LIKELIHOOD_TYPE == "gauss":
+    #     _LOAD_DATABASE = False  # Use data from pickle file
+    # # If data has not been filtered & using new prior set
+    # elif _LIKELIHOOD_TYPE == "cauchy" or _LIKELIHOOD_TYPE == "sivia":
+    #     _LOAD_DATABASE = False  # Use data from database
+    # else:
+    #     raise ValueError(
+    #         "Invalid _LIKELIHOOD_TYPE. Please choose 'gauss', 'cauchy', or 'sivia'."
+    #     )
+
+    # if _LOAD_DATABASE:
+    #     # # Specifying database file name & folder
+    #     filename = Path("data/hii_v2_20201203.db")
+    #     # # Database folder in parent directory of this script (call .parent twice)
+    #     db = Path(__file__).parent.parent / filename
+
+    if likelihood_type not in ["sivia", "cauchy", "gauss"]:
         raise ValueError(
             "Invalid _LIKELIHOOD_TYPE. Please choose 'gauss', 'cauchy', or 'sivia'."
         )
 
-    if _LOAD_DATABASE:
+    if load_database:
         # # Specifying database file name & folder
-        # filename = Path("data/hii_v2_20201203.db")
+        filename = Path("data/hii_v2_20201203.db")
         # # Database folder in parent directory of this script (call .parent twice)
-        # db = Path(__file__).parent.parent / filename
+        db = Path(__file__).parent.parent / filename
 
         # Specifying absolute file path instead
         # (allows file to be run in multiple locations as long as database location does not move)
-        db = Path("/home/chengi/Documents/coop2021/data/hii_v2_20201203.db")
+        # db = Path("/home/chengi/Documents/coop2021/data/hii_v2_20201203.db")
         data = get_data(db)  # all data from Parallax table
     else:
         # Load data from pickle file
-        # infile = Path(__file__).parent / "reid_MCMC_outfile.pkl"
-        infile = Path(
-            "/home/chengi/Documents/coop2021/reid_mcmc/reid_MCMC_outfile.pkl"
-        )
+        infile = Path(__file__).parent / "reid_MCMC_outfile.pkl"
+        # infile = Path(
+        #     "/home/chengi/Documents/coop2021/reid_mcmc/reid_MCMC_outfile.pkl"
+        # )
         with open(infile, "rb") as f:
             data = dill.load(f)["data"]
 
+    # # Run simulation
+    # run_MCMC(
+    #     data,
+    #     _NUM_ITERS,
+    #     _NUM_TUNE,
+    #     _NUM_CHAINS,
+    #     _PRIOR_SET,
+    #     _LIKELIHOOD_TYPE,
+    #     _LOAD_DATABASE,
+    # )
     # Run simulation
     run_MCMC(
         data,
+        _NUM_CORES,
         _NUM_ITERS,
         _NUM_TUNE,
         _NUM_CHAINS,
-        _PRIOR_SET,
-        _LIKELIHOOD_TYPE,
-        _LOAD_DATABASE,
+        prior_set,
+        likelihood_type,
+        load_database,
     )
 
 
 if __name__ == "__main__":
-    main()
+    prior = input("Prior set (A1, A5, B, C, D). Default A5: ")
+    liketype = input("Likelihood function (sivia, cauchy, gauss). Default cauchy: ")
+    fresh_data = input("Start with data from database (y/n). Default 'n': ")
+
+    # Replace empty inputs with default value
+    prior = "A5" if prior == "" else prior
+    liketype = "cauchy" if liketype == "" else liketype
+    if fresh_data == "" or fresh_data.lower() == "n" or fresh_data.lower() == "no":
+        fresh_data = False
+    else:
+        fresh_data = True
+    main(prior, liketype, fresh_data)
