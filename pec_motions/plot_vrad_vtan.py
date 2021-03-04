@@ -268,8 +268,7 @@ def get_pos_and_residuals_and_vrad_vtan(data, trace, free_Zsun=False, free_roll=
 #     """
 
 #     with closing(sqlite3.connect(db_file).cursor()) as cur:  # context manager, auto-close
-#         cur.execute("SELECT ra, dec, glong, glat, plx, e_plx, "
-#                     "mux, muy, vlsr, e_mux, e_muy, e_vlsr FROM Parallax")
+#         cur.execute("SELECT * FROM Parallax")
 #         data = pd.DataFrame(cur.fetchall(), columns=[desc[0] for desc in cur.description])
 
 #     return data
@@ -308,6 +307,8 @@ def get_pos_and_residuals_and_vrad_vtan(data, trace, free_Zsun=False, free_roll=
 #         bad = (np.array(all_radii) < 4.0)
 
 #     # Slice data into components
+#     gname = data["gname"][~bad]
+#     alias = data["alias"][~bad]
 #     ra = data["ra"][~bad]  # deg
 #     dec = data["dec"][~bad]  # deg
 #     glon = data["glong"][~bad]  # deg
@@ -324,6 +325,8 @@ def get_pos_and_residuals_and_vrad_vtan(data, trace, free_Zsun=False, free_roll=
 #     # Store filtered data in DataFrame
 #     filtered_data = pd.DataFrame(
 #         {
+#             "gname": gname,
+#             "alias": alias,
 #             "ra": ra,
 #             "dec": dec,
 #             "glong": glon,
@@ -341,7 +344,7 @@ def get_pos_and_residuals_and_vrad_vtan(data, trace, free_Zsun=False, free_roll=
 
 #     return filtered_data
 
-# import arviz as az
+
 def get_cart_pos_and_cyl_residuals(data, trace, free_Zsun=False, free_roll=False):
     """
     Gets galactocentric Cartesian positions &
@@ -352,8 +355,8 @@ def get_cart_pos_and_cyl_residuals(data, trace, free_Zsun=False, free_roll=False
     # data_pkl = data
     # glong_pkl = data_pkl["glong"].values
     # glat_pkl = data_pkl["glat"].values
-    # data = get_data(Path("/home/chengi/Documents/coop2021/data/hii_v2_20201203.db"))
-    # data = filter_data(data, False)
+    # data = get_data(Path("/mnt/c/Users/ichen/OneDrive/Documents/Jobs/WaterlooWorks/2A Job Search/ACCEPTED__NRC_EXT-10708-JuniorResearcher/Work Documents/coop2021/data/hii_v2_20201203.db"))
+    # # data = filter_data(data, False)
     # print(len(data["plx"]))
     # print(len(glong_pkl))
 
@@ -392,58 +395,76 @@ def get_cart_pos_and_cyl_residuals(data, trace, free_Zsun=False, free_roll=False
     print("=" * 6)
 
     # is_outlier = np.zeros(len(data["plx"]), int)
+    # is_tooclose = np.zeros(len(data["plx"]), int)
+    # all_radii = trans.get_gcen_cyl_radius(data["glong"], data["glat"], data["plx"]).values
     # for row in range(len(data["plx"])):
-    #   print(data["glong"].iloc[row])
-    #   if (data["glong"].iloc[row] not in glong_pkl) and (data["glat"].iloc[row] not in glat_pkl):
+    #   # print(data["glong"].iloc[row])
+    #   if all_radii[row] < 4:
+    #     is_tooclose[row] = 1
+    #   elif (data["glong"].iloc[row] not in glong_pkl) and (data["glat"].iloc[row] not in glat_pkl):
     #     is_outlier[row] = 1
 
     # Save to .txt & .csv
 
     # df = pd.DataFrame({
+    # "gname": data["gname"],
+    # "alias": data["alias"],
     # "glong": data["glong"],
     # "glat": data["glat"],
     # "plx": data["plx"],
     # "e_plx": data["e_plx"],
-    # # "plx": np.mean(trace["plx"], axis=0),
-    # # "e_plx": np.std(trace["plx"], axis=0),
+    # "mux": data["mux"],
+    # "e_mux": data["e_mux"],
+    # "muy": data["muy"],
+    # "e_muy": data["e_muy"],
+    # "vlsr": data["vlsr"],
+    # "e_vlsr": data["e_vlsr"],
     # "Upec": -v_rad,
     # "Vpec": v_circ_res,
+    # "Wpec": v_vert,
+    # "is_tooclose": is_tooclose,
     # "is_outlier": is_outlier,
     # })
-    # np.savetxt(r"/home/chengi/Documents/coop2021/pec_motions/100dist_meanUpecVpec.txt", df)
+    # # np.savetxt(r"/home/chengi/Documents/coop2021/pec_motions/100dist_meanUpecVpec_cauchyOutlierRejection.txt", df)
     # df.to_csv(
-    #     path_or_buf=r"/home/chengi/Documents/coop2021/pec_motions/100dist_meanUpecVpec.csv",
+    #     path_or_buf=Path(__file__).parent / Path("100dist_meanUpecVpec_cauchyOutlierRejection.csv"),
     #     sep=",",
     #     index=False,
     #     header=True,
     # )
 
-    # num_sources = np.shape(trace["plx"])[1]
-    # plx_hdi_minus1sigma = np.array([az.hdi(trace["plx"][:, idx], hdi_prob=.6827)[0] for idx in range(num_sources)])
-    # plx_hdi_plus1sigma = np.array([az.hdi(trace["plx"][:, idx], hdi_prob=.6827)[1] for idx in range(num_sources)])
-    # df2 = pd.DataFrame({
-    #     "glong": data["glong"],
-    #     "glat": data["glat"],
-    #     "plx_mean": np.mean(trace["plx"], axis=0),
-    #     "plx_med": np.median(trace["plx"], axis=0),
-    #     "plx_sd": np.std(trace["plx"], axis=0),
-    #     "plx_hdi_minus1sigma": plx_hdi_minus1sigma,
-    #     "plx_hdi_plus1sigma": plx_hdi_plus1sigma,
-    #     "Upec": -v_rad,
-    #     "Vpec": v_circ_res,
-    # })
-    # np.savetxt(r"/home/chengi/Documents/coop2021/pec_motions/freeplx_meanUpecVpec.txt", df2)
-    # df2.to_csv(
-    #     path_or_buf=r"/home/chengi/Documents/coop2021/pec_motions/freeplx_meanUpecVpec.csv",
-    #     sep=",",
-    #     index=False,
-    #     header=True,
-    # )
+    # # import arviz as az
+    # # num_sources = np.shape(trace["plx"])[1]
+    # # plx_hdi_minus1sigma = np.array([az.hdi(trace["plx"][:, idx], hdi_prob=.6827)[0] for idx in range(num_sources)])
+    # # plx_hdi_plus1sigma = np.array([az.hdi(trace["plx"][:, idx], hdi_prob=.6827)[1] for idx in range(num_sources)])
+    # # df2 = pd.DataFrame({
+    # #     "glong": data["glong"],
+    # #     "glat": data["glat"],
+    # #     "plx_mean": np.mean(trace["plx"], axis=0),
+    # #     "plx_med": np.median(trace["plx"], axis=0),
+    # #     "plx_sd": np.std(trace["plx"], axis=0),
+    # #     "plx_hdi_minus1sigma": plx_hdi_minus1sigma,
+    # #     "plx_hdi_plus1sigma": plx_hdi_plus1sigma,
+    # #     "Upec": -v_rad,
+    # #     "Vpec": v_circ_res,
+    # # })
+    # # np.savetxt(r"/home/chengi/Documents/coop2021/pec_motions/freeplx_meanUpecVpec.txt", df2)
+    # # df2.to_csv(
+    # #     path_or_buf=r"/home/chengi/Documents/coop2021/pec_motions/freeplx_meanUpecVpec.csv",
+    # #     sep=",",
+    # #     index=False,
+    # #     header=True,
+    # # )
 
     # print("Saved to .csv & .txt!")
 
     return x, y, z, v_rad, v_circ_res, v_vert
-
+# infile = Path("/mnt/c/Users/ichen/OneDrive/Documents/Jobs/WaterlooWorks/2A Job Search/ACCEPTED__NRC_EXT-10708-JuniorResearcher/Work Documents/coop2021/bayesian_mcmc_rot_curve/mcmc_outfile_A1_100dist_5.pkl")
+# with open(infile, "rb") as f:
+#     file = dill.load(f)
+#     data = file["data"]
+#     trace = file["trace"]
+# get_cart_pos_and_cyl_residuals(data, trace, True, True)
 
 def main(prior_set, num_samples, num_rounds):
     # Binary file to read
