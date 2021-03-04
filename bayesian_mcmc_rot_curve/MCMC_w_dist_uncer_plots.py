@@ -45,7 +45,7 @@ def plot_MCMC(
     else:
         samples.insert(4, trace["Vpec"])
     varnames.insert(4, "Upec")
-    if individual_Vpec:
+    if individual_Upec:
         # Take median Upec for all sources
         samples.insert(4, np.median(trace["Upec"], axis=1))
     else:
@@ -116,17 +116,29 @@ def plot_MCMC(
     fig1.tight_layout()  # Need this below suptitle()
     fig1.savefig(
         Path(__file__).parent
-        / f"MCMC_chains_{prior_set}_{num_samples}dist_{num_rounds}.jpg",
-        format="jpg",
-        dpi=300,
+        / f"MCMC_chains_{prior_set}_{num_samples}dist_{num_rounds}.pdf",
+        format="pdf",
+        # dpi=300,
         bbox_inches="tight",
     )
     plt.show()
 
     # Plot histogram of parameters
+    varname_labels = [
+        "$R_0$ (kpc)",
+        "$Z_\odot$ (pc)",
+        "$U_\odot$ (km s$^{-1}$)",
+        "$V_\odot$ (km s$^{-1}$)",
+        "$W_\odot$ (km s$^{-1}$)",
+        "$\overline{U_s}$ (km s$^{-1}$)",
+        "$\overline{V_s}$ (km s$^{-1}$)",
+        r"$\theta_{{\rm roll}}$",
+        "$a2$",
+        "$a3$",
+    ]
     fig2 = corner.corner(
         samples.T,
-        labels=varnames,
+        labels=varname_labels,
         quantiles=[0.16, 0.5, 0.84],
         show_titles=True,
         title_fmt=".2f",
@@ -139,9 +151,9 @@ def plot_MCMC(
         ax.minorticks_off()
     fig2.savefig(
         Path(__file__).parent
-        / f"MCMC_hist_{prior_set}_{num_samples}dist_{num_rounds}.jpg",
-        format="jpg",
-        dpi=300,
+        / f"MCMC_hist_{prior_set}_{num_samples}dist_{num_rounds}.pdf",
+        format="pdf",
+        # dpi=300,
         bbox_inches="tight",
     )
     plt.show()
@@ -213,11 +225,11 @@ def plot_MCMC(
 
 def main(prior_set, num_samples, num_rounds):
     # Binary file to read
-    # infile = Path(__file__).parent / "reid_MCMC_outfile.pkl"
-    infile = Path(
-        "/home/chengi/Documents/coop2021/bayesian_mcmc_rot_curve/"
-        f"mcmc_outfile_{prior_set}_{num_samples}dist_{num_rounds}.pkl"
-    )
+    infile = Path(__file__).parent / f"mcmc_outfile_{prior_set}_{num_samples}dist_{num_rounds}.pkl"
+    # infile = Path(
+    #     "/home/chengi/Documents/coop2021/bayesian_mcmc_rot_curve/"
+    #     f"mcmc_outfile_{prior_set}_{num_samples}dist_{num_rounds}.pkl"
+    # )
 
     with open(infile, "rb") as f:
         file = dill.load(f)
