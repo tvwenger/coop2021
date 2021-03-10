@@ -243,13 +243,21 @@ def parallax_to_dist(parallax, e_parallax=None):
         The errors associated with the distances
     """
 
-    dist = 1.0 / parallax
+    if e_parallax is None:
+      dist = 1.0 / parallax
 
-    if e_parallax is not None:
-        e_dist = dist * dist * e_parallax
-        return dist, e_dist
+      # if e_parallax is not None:
+      #     Calculate uncertainty
+      #     e_dist = dist * dist * e_parallax
+      #     return dist, e_dist
 
-    return dist
+      return dist
+
+    # Peak of parallax to distance PDF
+    mean_dist = 1 / parallax
+    sigma_sq = e_parallax * e_parallax
+    return (np.sqrt(8 * sigma_sq * mean_dist * mean_dist + 1) - 1) \
+           / (4 * sigma_sq * mean_dist)
 
 
 def dist_to_parallax(dist):
@@ -945,7 +953,7 @@ def get_gcen_cyl_radius_and_circ_velocity(
     return perp_distance, v_tangent
 
 
-def get_gcen_cyl_radius(glon, glat, plx, R0=_RSUN):
+def get_gcen_cyl_radius(glon, glat, plx, e_plx=None, R0=_RSUN):
     """
     Convert galactic longitude, latitude, and parallax to
     galactocentric cylindrical distances
@@ -961,7 +969,7 @@ def get_gcen_cyl_radius(glon, glat, plx, R0=_RSUN):
         Radial distanced perpendicular to z-axis in galactocentric cylindrical frame
     """
     # Parallax to distance
-    gdist = parallax_to_dist(plx)  # kpc
+    gdist = parallax_to_dist(plx, e_plx=e_plx)  # kpc
 
     # Transform from galactic to galactocentric Cartesian coordinates
     bary_x, bary_y, bary_z = gal_to_bary(glon, glat, gdist)  # kpc
@@ -1038,9 +1046,11 @@ def vbary_to_vlsr(vbary, glon, glat, e_vbary=None):
 
 def eq_and_gal_to_gcen_cyl(
     ra, dec, plx, glon, glat, eq_mux, eq_muy, vlsr,
+    e_plx=None, mc_dists=None,
     R0=_RSUN, Zsun=_ZSUN, roll=_ROLL,
     Usun=_USUN, Vsun=_VSUN, Wsun=_WSUN, Theta0=_THETA_0,
     use_theano=False, return_only_r_and_theta=True,
+    mc_dist=False,
 ):
     """
     Converts RA, dec, parallax, longitude, latitude,
@@ -1057,7 +1067,7 @@ def eq_and_gal_to_gcen_cyl(
     # === POSITION CONVERSIONS ===
 
     # Parallax to distance
-    gdist = parallax_to_dist(plx)
+    gdist = parallax_to_dist(plx, e_parallax=e_plx) if mc_dists is None else mc_dists
 
     # Transform from galactic to galactocentric Cartesian coordinates
     bary_x, bary_y, bary_z = gal_to_bary(glon, glat, gdist)

@@ -225,11 +225,11 @@ def plot_MCMC(
 
 def main(prior_set, num_samples, num_rounds):
     # Binary file to read
-    infile = Path(__file__).parent / f"mcmc_outfile_{prior_set}_{num_samples}dist_{num_rounds}.pkl"
-    # infile = Path(
-    #     "/home/chengi/Documents/coop2021/bayesian_mcmc_rot_curve/"
-    #     f"mcmc_outfile_{prior_set}_{num_samples}dist_{num_rounds}.pkl"
-    # )
+    # infile = Path(__file__).parent / f"mcmc_outfile_{prior_set}_{num_samples}dist_{num_rounds}.pkl"
+    infile = Path(
+        "/home/chengi/Documents/coop2021/bayesian_mcmc_rot_curve/"
+        f"mcmc_outfile_{prior_set}_{num_samples}dist_{num_rounds}.pkl"
+    )
 
     with open(infile, "rb") as f:
         file = dill.load(f)

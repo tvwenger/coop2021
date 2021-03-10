@@ -101,7 +101,8 @@ def filter_data(data, filter_e_plx):
     # Calculate galactocentric cylindrical radius
     #   N.B. We assume R0=8.15 kpc. This ensures we are rejecting the same set
     #   of sources each iteration. Also R0 is fairly well-constrained bc of Sgr A*
-    all_radii = trans.get_gcen_cyl_radius(data["glong"], data["glat"], data["plx"])
+    all_radii = trans.get_gcen_cyl_radius(
+        data["glong"], data["glat"], data["plx"], data["e_plx"])
 
     # Bad data criteria (N.B. casting to array prevents "+" not supported warnings)
     if filter_e_plx:  # Filtering used by Reid et al. (2019)

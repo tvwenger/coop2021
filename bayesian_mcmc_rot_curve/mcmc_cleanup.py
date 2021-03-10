@@ -152,41 +152,40 @@ def cleanup_data(data, trace, like_type, reject_method, num_samples,
 
     if num_samples == 1:
         print("(Assuming parallax is a model parameter)")
-        # ? Maybe use mean(plx) if bad results?
         plx = np.median(trace["plx"], axis=0)
-        # e_plx = np.std(trace["plx"], axis=0)
+        e_plx = np.std(trace["plx"], axis=0)
     else:
         # Assuming using multiple distance samples
         plx = plx_orig
-        # e_plx = e_plx_orig
+        e_plx = e_plx_orig
 
-    # === Calculate predicted values from optimal parameters ===
-    # Parallax to distance
-    gdist = trans.parallax_to_dist(plx)
-    # Galactic to barycentric Cartesian coordinates
-    bary_x, bary_y, bary_z = trans.gal_to_bary(glon, glat, gdist)
-    # Barycentric Cartesian to galactocentric Cartesian coodinates
-    gcen_x, gcen_y, gcen_z = trans.bary_to_gcen(
-        bary_x, bary_y, bary_z, R0=R0, Zsun=Zsun, roll=roll)
-    # Galactocentric Cartesian frame to galactocentric cylindrical frame
-    gcen_cyl_dist = np.sqrt(gcen_x * gcen_x + gcen_y * gcen_y)  # kpc
-    azimuth = (np.arctan2(gcen_y, -gcen_x) * _RAD_TO_DEG) % 360  # deg in [0,360)
-    v_circ_pred = urc(gcen_cyl_dist, a2=a2, a3=a3, R0=R0) + Vpec  # km/s
-    v_rad = -Upec  # km/s
-    Theta0 = urc(R0, a2=a2, a3=a3, R0=R0)  # km/s, LSR circular rotation speed
-
-    # Go in reverse!
-    # Galactocentric cylindrical to equatorial proper motions & LSR velocity
-    eqmux_pred, eqmuy_pred, vlsr_pred = trans.gcen_cyl_to_pm_and_vlsr(
-        gcen_cyl_dist, azimuth, gcen_z, v_rad, v_circ_pred, Wpec,
-        R0=R0, Zsun=Zsun, roll=roll,
-        Usun=Usun, Vsun=Vsun, Wsun=Wsun, Theta0=Theta0,
-        use_theano=False)
-
-    # Calculating conditions for data cleaning
-    # Reject all data w/ residuals larger than 3 sigma
+    # Conditions for data cleaning
     if reject_method == "sigma":
+        # Reject all data w/ residuals larger than 3 sigma
         print("Using Reid et al. (2014) weights to reject outliers")
+        # === Calculate predicted values from optimal parameters ===
+        # Parallax to distance
+        gdist = trans.parallax_to_dist(plx, e_plx=e_plx)
+        # Galactic to barycentric Cartesian coordinates
+        bary_x, bary_y, bary_z = trans.gal_to_bary(glon, glat, gdist)
+        # Barycentric Cartesian to galactocentric Cartesian coodinates
+        gcen_x, gcen_y, gcen_z = trans.bary_to_gcen(
+            bary_x, bary_y, bary_z, R0=R0, Zsun=Zsun, roll=roll)
+        # Galactocentric Cartesian frame to galactocentric cylindrical frame
+        gcen_cyl_dist = np.sqrt(gcen_x * gcen_x + gcen_y * gcen_y)  # kpc
+        azimuth = (np.arctan2(gcen_y, -gcen_x) * _RAD_TO_DEG) % 360  # deg in [0,360)
+        v_circ_pred = urc(gcen_cyl_dist, a2=a2, a3=a3, R0=R0) + Vpec  # km/s
+        v_rad = -Upec  # km/s
+        Theta0 = urc(R0, a2=a2, a3=a3, R0=R0)  # km/s, LSR circular rotation speed
+
+        # Go in reverse!
+        # Galactocentric cylindrical to equatorial proper motions & LSR velocity
+        eqmux_pred, eqmuy_pred, vlsr_pred = trans.gcen_cyl_to_pm_and_vlsr(
+            gcen_cyl_dist, azimuth, gcen_z, v_rad, v_circ_pred, Wpec,
+            R0=R0, Zsun=Zsun, roll=roll,
+            Usun=Usun, Vsun=Vsun, Wsun=Wsun, Theta0=Theta0,
+            use_theano=False)
+
         sigma_eqmux, sigma_eqmuy, sigma_vlsr = get_sigmas(
             plx, e_eqmux, e_eqmuy, e_vlsr)
 
@@ -216,7 +215,6 @@ def cleanup_data(data, trace, like_type, reject_method, num_samples,
             ln_threshold = -4.5  # ln(exponential part) = -(3^2)/2
         elif like_type == "cauchy":
             ln_threshold = -2.0139  # -ln[1 + (3^2 / (2ln2))], 3 sigma
-            # ln_threshold = -0.9643  # -ln[1 + (1.5^2 / (2ln2))], 1.5 sigma
         elif like_type == "sivia":
             ln_threshold = -2.2084 # ln[(1-exp(-(3^2)/2)) / (3^2)]
         else:
