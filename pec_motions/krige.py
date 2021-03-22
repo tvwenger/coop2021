@@ -69,16 +69,27 @@ def get_coords(data):
 def main():
     mc_type = "HPDmode"
     datafile = Path(__file__).parent / Path(f"csvfiles/alldata_{mc_type}.csv")
+    pearsonrfile = Path(__file__).parent / "pearsonr_cov.pkl"
     data = pd.read_csv(datafile)
+    with open(pearsonrfile, "rb") as f:
+        file = dill.load(f)
+        cov_Upec = file["cov_Upec"]
+        cov_Vpec = file["cov_Vpec"]
 
     # Only choose sources that have R > 4 kpc
-    data = data[data["is_tooclose"].values == 0]
+    is_tooclose = data["is_tooclose"].values == 1
+    data = data[~is_tooclose]
+    cov_Upec = cov_Upec[:, ~is_tooclose][~is_tooclose]
+    cov_Vpec = cov_Vpec[:, ~is_tooclose][~is_tooclose]
 
     R = data["R_mode"].values
     R_halfhpd = data["R_halfhpd"].values
     Upec = data["Upec_mode"].values
+    Upec_halfhpd = data["Upec_halfhpd"].values
     Vpec = data["Vpec_mode"].values
+    Vpec_halfhpd = data["Vpec_halfhpd"].values
     Wpec = data["Wpec_mode"].values
+    Wpec_halfhpd = data["Wpec_halfhpd"].values
     tot = np.sqrt(Upec ** 2 + Vpec ** 2 + Wpec ** 2)
     tot_xy = np.sqrt(Upec ** 2 + Vpec ** 2)
     Upec_halfhpd = data["Upec_halfhpd"].values
@@ -96,11 +107,32 @@ def main():
     x = data["x_mode"].values
     y = data["y_mode"].values
 
-    percentile = "tothalfhpd35"
-    is_good = (
-        (tot_halfhpd < 35.0)
-        & (R_halfhpd < 1)
-    )
+    # # Only choose good data for kriging
+    # condition = "halfhpd-tot35-R0.8"
+    # # condition = "all185-eobsdata"
+    # # condition = "tot35-R1-binnumTrue"
+    # # condition = "all202-tot35-R1-binnumTrue"
+    # is_good = (
+    #     # (R < 10000)
+    #     (tot_halfhpd < 35.0)
+    #     & (R_halfhpd < 0.8)
+    # )
+    #
+    # condition = "90ptile"
+    # percentile = 90
+    # lower = 0.5 * (100 - percentile)
+    # upper = 0.5 * (100 + percentile)
+    # is_good = (
+    #     (Upec > np.percentile(Upec, lower))
+    #     & (Upec < np.percentile(Upec, upper))
+    #     & (Vpec > np.percentile(Vpec, lower))
+    #     & (Vpec < np.percentile(Vpec, upper))
+    #     & (Wpec > np.percentile(Wpec, lower))
+    #     & (Wpec < np.percentile(Wpec, upper))
+    # )
+    condition = "no-mcmc-outlier-binnumberTrue"
+    is_good = data["is_outlier"].values == 0
+
     print("--- MC GOOD DATA STATS ---")
     print(np.mean(Upec[is_good]), np.mean(Vpec[is_good]), np.mean(Wpec[is_good]))
     print(np.median(Upec[is_good]), np.median(Vpec[is_good]), np.median(Wpec[is_good]))
@@ -118,71 +150,63 @@ def main():
     print(np.mean(tot_halfhpd[is_good]), np.median(tot_halfhpd[is_good]))
     num_good = sum(is_good)
     print("# sources used in kriging:", num_good)
-    # print(data["gname"][~is_good])
-    # return None
-    # print(Upec[is_good].mean(), Vpec[is_good].mean(), Wpec[is_good].mean())
-    # print(np.median(Upec[is_good]), np.median(Vpec[is_good]), np.median(Wpec[is_good]))
-    # print(np.std(Upec[is_good]), np.std(Vpec[is_good]), np.std(Wpec[is_good]))
-    # v_tot = np.sqrt(Upec[is_good]**2 + Vpec[is_good]**2 + Wpec[is_good]**2)
-    # print(np.mean(v_tot), np.median(v_tot), np.std(v_tot))
-
-    # # Load values calculated at peak dist for kriging
-    # mc_type = "peakDist"
-    # datafile = (
-    #     Path(__file__).parent / "100dist_meanUpecVpec_cauchyOutlierRejection_peakDist.csv"
-    # )
-    # data = pd.read_csv(datafile)
-    # # Only choose sources that have R > 4 kpc
-    # data = data[data["is_tooclose"].values == 0]
-    # Upec = data["Upec"].values
-    # Vpec = data["Vpec"].values
-    # Wpec = data["Wpec"].values
-    # tot = np.sqrt(Upec ** 2 + Vpec ** 2 + Wpec ** 2)
-    # x, y, z = get_coords(data)
-    # print("--- PEAK DIST KRIGING DATA STATS ---")
-    # print(np.mean(Upec[is_good]), np.mean(Vpec[is_good]), np.mean(Wpec[is_good]))
-    # print(np.median(Upec[is_good]), np.median(Vpec[is_good]), np.median(Wpec[is_good]))
-    # print(np.mean(tot[is_good]), np.median(tot[is_good]))
-
-    # Krig good data
+    #
+    # Krig only good data
+    #
     coord_obs = np.vstack((x[is_good], y[is_good])).T
-
+    #
+    # Initialize kriging object
+    #
+    Upec_krig = kriging.Kriging(
+        coord_obs,
+        Upec[is_good],
+        # e_obs_data=Upec_halfhpd[is_good],
+        obs_data_cov=cov_Upec[:, is_good][is_good],
+    )
+    Vpec_krig = kriging.Kriging(
+        coord_obs,
+        Vpec[is_good],
+        # e_obs_data=Vpec_halfhpd[is_good],
+        obs_data_cov=cov_Vpec[:, is_good][is_good],
+    )
+    #
+    # Fit semivariogram model
+    #
+    variogram_model = "gaussian"
+    nbins = 10
+    bin_number = True
+    lag_cutoff = 0.7
+    print("Semivariogram Model:", variogram_model)
+    Upec_semivar, Upec_corner = Upec_krig.fit(
+        model=variogram_model,
+        deg=1,
+        nbins=nbins,
+        bin_number=bin_number,
+        lag_cutoff=lag_cutoff,
+        nsims=1000,
+    )
+    Vpec_semivar, Vpec_corner = Vpec_krig.fit(
+        model=variogram_model,
+        deg=1,
+        nbins=nbins,
+        bin_number=bin_number,
+        lag_cutoff=lag_cutoff,
+        nsims=1000,
+    )
+    #
+    # Interpolate data
+    #
     xlow, xhigh = -8, 12
     ylow, yhigh = -5, 15
     gridx, gridy = np.mgrid[xlow:xhigh:500j, ylow:yhigh:500j]
     coord_interp = np.vstack((gridx.flatten(), gridy.flatten())).T
-
-    variogram_model = "gaussian"  # "gaussian", "spherical", or "exponential"
-    print("Variogram Model:", variogram_model)
-
-    Upec_interp, Upec_interp_var = kriging.kriging(
-        coord_obs,
-        Upec[is_good],
-        coord_interp,
-        e_data_obs=Upec_halfhpd[is_good],
-        model=variogram_model,
-        deg=1,
-        nbins=10,
-        bin_number=True,
-        plot=Path(__file__).parent
-        / f"semivariogram_Upec_{num_good}good_{percentile}_{variogram_model}_{mc_type}.pdf",
-    )
-    Vpec_interp, Vpec_interp_var = kriging.kriging(
-        coord_obs,
-        Vpec[is_good],
-        coord_interp,
-        e_data_obs=Vpec_halfhpd[is_good],
-        model=variogram_model,
-        deg=1,
-        nbins=10,
-        bin_number=True,
-        plot=Path(__file__).parent
-        / f"semivariogram_Vpec_{num_good}good_{percentile}_{variogram_model}_{mc_type}.pdf",
-    )
-    Upec_interp = Upec_interp.reshape(500, 500)
-    Upec_interp_sd = np.sqrt(Upec_interp_var).reshape(500, 500)
-    Vpec_interp = Vpec_interp.reshape(500, 500)
-    Vpec_interp_sd = np.sqrt(Vpec_interp_var).reshape(500, 500)
+    Upec_interp, Upec_interp_var = Upec_krig.interp(coord_interp)
+    Vpec_interp, Vpec_interp_var = Vpec_krig.interp(coord_interp)
+    # Reshape
+    Upec_interp = Upec_interp.reshape(gridx.shape)
+    Upec_interp_sd = np.sqrt(Upec_interp_var).reshape(gridx.shape)
+    Vpec_interp = Vpec_interp.reshape(gridx.shape)
+    Vpec_interp_sd = np.sqrt(Vpec_interp_var).reshape(gridx.shape)
     print("Min & Max of interpolated Upec:", np.min(Upec_interp), np.max(Upec_interp))
     print("Min & Max of interpolated Vpec:", np.min(Vpec_interp), np.max(Vpec_interp))
     print("Mean interpolated Upec & Vpec:", np.mean(Upec_interp), np.mean(Vpec_interp))
@@ -206,7 +230,40 @@ def main():
         np.median(v_tot_interp),
         np.std(v_tot_interp),
     )
-
+    #
+    # Show semivariograms
+    #
+    Upec_semivar.savefig(
+        Path(__file__).parent
+        / f"Upec_semivar_{num_good}good_{condition}_{variogram_model}_{mc_type}.pdf",
+        bbox_inches="tight",
+    )
+    Vpec_semivar.savefig(
+        Path(__file__).parent
+        / f"Vpec_semivar_{num_good}good_{condition}_{variogram_model}_{mc_type}.pdf",
+        bbox_inches="tight",
+    )
+    Upec_semivar.show()
+    Vpec_semivar.show()
+    #
+    # Plot corner plots
+    #
+    Upec_corner.savefig(
+        Path(__file__).parent
+        / f"Upec_corner_{num_good}good_{condition}_{variogram_model}_{mc_type}.pdf",
+        bbox_inches="tight",
+    )
+    Vpec_corner.savefig(
+        Path(__file__).parent
+        / f"Vpec_corner_{num_good}good_{condition}_{variogram_model}_{mc_type}.pdf",
+        bbox_inches="tight",
+    )
+    Upec_corner.show()
+    Vpec_corner.show()
+    plt.show()
+    #
+    # Plot interpolated kriging results
+    #
     fig, ax = plt.subplots(1, 2, figsize=plt.figaspect(0.5))
     cmap = "viridis"
     extent = (xlow, xhigh, ylow, yhigh)
@@ -307,7 +364,7 @@ def main():
     #     fr"(Universal Kriging, \texttt{{variogram\_model={variogram_model}}})"
     # )
     fig.tight_layout()
-    filename = f"krige_{num_good}good_{percentile}_{variogram_model}_{mc_type}.pdf"
+    filename = f"krige_{num_good}good_{condition}_{variogram_model}_{mc_type}.pdf"
     fig.savefig(
         Path(__file__).parent / filename, format="pdf", dpi=300, bbox_inches="tight",
     )
@@ -355,7 +412,7 @@ def main():
     #     fr"(Universal Kriging, \texttt{{variogram\_model={variogram_model}}})"
     # )
     fig.tight_layout()
-    filename = f"krige_sd_{num_good}good_{percentile}_{variogram_model}_{mc_type}.pdf"
+    filename = f"krige_sd_{num_good}good_{condition}_{variogram_model}_{mc_type}.pdf"
     fig.savefig(
         Path(__file__).parent / filename, format="pdf", dpi=300, bbox_inches="tight",
     )
