@@ -111,7 +111,6 @@ def main():
     Wpec = data100plx["Wpec"].values
     print(np.mean(Upec), np.mean(Vpec), np.mean(Wpec))
     print(np.median(Upec), np.median(Vpec), np.median(Wpec))
-    return None
 
     # Only choose good data for kriging
     # percentile = 90
@@ -165,6 +164,7 @@ def main():
 
     xlow, xhigh = -8, 12
     ylow, yhigh = -5, 15
+    # gridx, gridy = np.mgrid[xlow:xhigh:1225j, ylow:yhigh:1225j]
     gridx, gridy = np.mgrid[xlow:xhigh:500j, ylow:yhigh:500j]
     coord_interp = np.vstack((gridx.flatten(), gridy.flatten())).T
 
