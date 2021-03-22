@@ -9,13 +9,15 @@ import pandas as pd
 import astropy.units as u
 import astropy.coordinates as acoord
 from astropy.coordinates import CartesianDifferential as cd
-import mytransforms as trans
 
 # Want to add galaxymap.py as package:
 # Make a $PATH to coop2021 (twice parent folder of this file)
 _SCRIPT_DIR = str(Path.cwd() / Path(__file__).parent.parent)
 # Add coop2021 to $PATH
 sys.path.append(_SCRIPT_DIR)
+
+import mytransforms as trans
+from universal_rotcurve import urc
 
 # User-defined constants
 _RSUN = 8.15  # kpc (Reid et al. 2019)
@@ -29,6 +31,19 @@ _THETA_0 = 236  # km/s (Reid et al. 2019)
 # Universal rotation curve parameters (Persic et al. 1996)
 _A_TWO = 0.96  # (Reid et al. 2019)
 _A_THREE = 1.62  # (Reid et al. 2019)
+
+# # User-defined constants
+# _RSUN = 8.181  # kpc (our findings, A5 parameters)
+# _ZSUN = 5.6  # pc (our findings, A5 parameters)
+# _ROLL = 0  # deg (our findings, A5 parameters)
+# _LSR_X = 10.4  # km/s (our findings, A5 parameters)
+# _LSR_Y = 10.2  # km/s (our findings, A5 parameters)
+# _LSR_Z = 8.1  # km/s (our findings, A5 parameters)
+
+# # Universal rotation curve parameters (Persic et al. 1996)
+# _A_TWO = 0.97  # (our findings, A5 parameters)
+# _A_THREE = 1.62  # (our findings, A5 parameters)
+# _THETA_0 = urc(_RSUN, a2=_A_TWO, a3=_A_THREE, R0=_RSUN)  # km/s, circular rotation speed of Sun
 
 # IAU definition of the local standard of rest (km/s)
 _USTD = 10.27
@@ -435,10 +450,10 @@ def main():
     ax.plot(Rvals, Vvals, "r-.", linewidth=0.5)
 
     # Plot data
-    ax.plot(perp_distance, v_circular, "o", markersize=2)
+    ax.plot(perp_distance, v_circular, "ko", markersize=2)
 
     # Set title and labels. Then save figure
-    ax.set_title("Galactic Rotation Curve with Reid et al. Parameters")
+    # ax.set_title("Galactic Rotation Curve with Reid et al. Parameters")
     ax.set_xlabel("R (kpc)")
     ax.set_ylabel("$\Theta$ (km $\mathrm{s}^{-1})$")
     ax.set_xlim(0, 17)

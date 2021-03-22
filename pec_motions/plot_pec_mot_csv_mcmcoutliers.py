@@ -35,17 +35,22 @@ _ZSUN = 5.5  # pc
 
 def main(csvfile, tracefile):
     data = pd.read_csv(csvfile)
+    # Remove sources with R < 4 kpc
+    is_tooclose = data["is_tooclose"].values
+    data = data[is_tooclose==0]
 
     glon = data["glong"].values
     glat = data["glat"].values
     plx = data["plx"].values
+    e_plx = data["e_plx"].values
     Upec = data["Upec"].values
     Vpec = data["Vpec"].values
     Wpec = data["Wpec"].values
 
-    is_tooclose = data["is_tooclose"].values
+    # is_tooclose = data["is_tooclose"].values
     is_outlier = data["is_outlier"].values
-    good = (is_outlier==0) & (is_tooclose==0)
+    # good = (is_outlier==0) & (is_tooclose==0)
+    good = is_outlier==0
     print("Num R < 4 kpc:", sum(is_tooclose))
     print("Num outliers:", sum(is_outlier))
     print("Num good:", sum(good))
@@ -67,7 +72,7 @@ def main(csvfile, tracefile):
     R0, Zsun, roll = 8.181364, 5.5833244, 0.009740928
     a2, a3 = 0.97133905, 1.6247351
 
-    dist = trans.parallax_to_dist(plx)
+    dist = trans.parallax_to_dist(plx, e_parallax=e_plx)
     # Galactic to barycentric Cartesian coordinates
     bary_x, bary_y, bary_z = trans.gal_to_bary(glon, glat, dist)
     # Barycentric Cartesian to galactocentric Cartesian coodinates
@@ -137,17 +142,20 @@ def main(csvfile, tracefile):
         s=scattersize,
         label="Outlier",
     )
-    ax.scatter(
-        x[is_tooclose==1],
-        y[is_tooclose==1],
-        marker="v",
-        c="k",
-        # c=vrad_vcirc[is_tooclose == 1],
-        # cmap=cmap,
-        # norm=norm,
-        s=scattersize,
-        label="$R < 4$ kpc",
-    )
+    # ax.scatter(
+    #     x[is_tooclose==1],
+    #     y[is_tooclose==1],
+    #     marker="v",
+    #     c="k",
+    #     # c=vrad_vcirc[is_tooclose == 1],
+    #     # cmap=cmap,
+    #     # norm=norm,
+    #     s=scattersize,
+    #     label="$R < 4$ kpc",
+    # )
+    # Plot Sun
+    # ax.scatter(0, 8.181, marker="*", c="gold", edgecolor="k", linewidth=0.25, s=30, zorder=100)
+    ax.scatter(0, 8.181, marker="*", c="gold", s=30, zorder=100)
     # Plot residual motions
     vectors = ax.quiver(
         x, y, vx, vy, vrad_vcirc, cmap=cmap, norm=norm, scale=600, width=0.002
@@ -249,8 +257,11 @@ if __name__ == "__main__":
     # csvfilepath = input("Enter filepath of csv file: ")
     # tracefilepath = input("Enter filepath of pickle file (trace): ")
     csvfilepath = (
-        Path(__file__).parent / "100dist_meanUpecVpec_cauchyOutlierRejection.csv"
+        Path(__file__).parent / "100dist_meanUpecVpec_cauchyOutlierRejection_peakDist.csv"
     )
+    # csvfilepath = (
+    #     Path(__file__).parent / "100dist_meanUpecVpec_cauchyOutlierRejection.csv"
+    # )
     tracefilepath = (
         Path(__file__).parent.parent
         / "bayesian_mcmc_rot_curve/mcmc_outfile_A1_100dist_5.pkl"

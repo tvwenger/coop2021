@@ -28,6 +28,13 @@ def plot_MCMC(
     if like_type != "gauss" and like_type != "cauchy" and like_type != "sivia":
         raise ValueError("Invalid like_type. Allowed: 'gauss', 'cauchy', or 'sivia'.")
 
+    # Vsun_vals = trace["Vsun"]
+    # plt.hist(Vsun_vals, bins=50)
+    # plt.axvline(np.mean(Vsun_vals), color="k")
+    # plt.axvline(np.median(Vsun_vals), color="deeppink")
+    # plt.show()
+    # return None
+
     # Varnames order: [R0, Zsun, Usun, Vsun, Wsun, Upec, Vpec, Wpec, roll, a2, a3]
     varnames = ["R0", "Usun", "Vsun", "Wsun", "a2", "a3"]
     samples = [trace[varname] for varname in varnames]
@@ -225,11 +232,11 @@ def plot_MCMC(
 
 def main(prior_set, num_samples, num_rounds):
     # Binary file to read
-    # infile = Path(__file__).parent / f"mcmc_outfile_{prior_set}_{num_samples}dist_{num_rounds}.pkl"
-    infile = Path(
-        "/home/chengi/Documents/coop2021/bayesian_mcmc_rot_curve/"
-        f"mcmc_outfile_{prior_set}_{num_samples}dist_{num_rounds}.pkl"
-    )
+    infile = Path(__file__).parent / f"mcmc_outfile_{prior_set}_{num_samples}dist_{num_rounds}.pkl"
+    # infile = Path(
+    #     "/home/chengi/Documents/coop2021/bayesian_mcmc_rot_curve/"
+    #     f"mcmc_outfile_{prior_set}_{num_samples}dist_{num_rounds}.pkl"
+    # )
 
     with open(infile, "rb") as f:
         file = dill.load(f)

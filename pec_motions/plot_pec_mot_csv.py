@@ -38,40 +38,68 @@ def main(csvfile, tracefile):
     is_tooclose = data["is_tooclose"].values
     data_tooclose = data[is_tooclose == 1]  # 19 sources
     data = data[is_tooclose == 0]  # 183 sources
+    plot_tooclose = False
 
     glon = data["glong"].values
     glat = data["glat"].values
     plx = data["plx"].values
-    Upec = data["Upec"].values
-    Vpec = data["Vpec"].values
-    Wpec = data["Wpec"].values
+    e_plx = data["e_plx"].values
+    Upec = data["Upec_mode"].values
+    Vpec = data["Vpec_mode"].values
+    Wpec = data["Wpec_mode"].values
+    x = data["x_mode"].values
+    y = data["y_mode"].values
 
     glon_tooclose = data_tooclose["glong"].values
     glat_tooclose = data_tooclose["glat"].values
     plx_tooclose = data_tooclose["plx"].values
-    Upec_tooclose = data_tooclose["Upec"].values
-    Vpec_tooclose = data_tooclose["Vpec"].values
+    e_plx_tooclose = data_tooclose["e_plx"].values
+    Upec_tooclose = data_tooclose["Upec_mode"].values
+    Vpec_tooclose = data_tooclose["Vpec_mode"].values
+    x_tooclose = data_tooclose["x_mode"].values
+    y_tooclose = data_tooclose["y_mode"].values
+    # Rotate 90 deg CCW to galactocentric convention in mytransforms
+    x, y = -y, x
+    x_tooclose, y_tooclose = -y_tooclose, x_tooclose
 
     # is_outlier = data["is_outlier"].values
-    percentile = 90
-    lower = 0.5 * (100 - percentile)
-    upper = 0.5 * (100 + percentile)
-    good = (
-        (Upec > np.percentile(Upec, lower))
-        & (Upec < np.percentile(Upec, upper))
-        & (Vpec > np.percentile(Vpec, lower))
-        & (Vpec < np.percentile(Vpec, upper))
-        & (Wpec > np.percentile(Wpec, lower))
-        & (Wpec < np.percentile(Wpec, upper))
-    )
+    good = data["is_outlier"].values == 0
+    # percentile = 90
+    # lower = 0.5 * (100 - percentile)
+    # upper = 0.5 * (100 + percentile)
+    # good = (
+    #     (Upec > np.percentile(Upec, lower))
+    #     & (Upec < np.percentile(Upec, upper))
+    #     & (Vpec > np.percentile(Vpec, lower))
+    #     & (Vpec < np.percentile(Vpec, upper))
+    #     & (Wpec > np.percentile(Wpec, lower))
+    #     & (Wpec < np.percentile(Wpec, upper))
+    # )
     is_outlier = ~good
     print("Num R < 4 kpc:", sum(is_tooclose))
     print("Num outliers:", sum(is_outlier))
     print("Num good:", sum(good))
-    print("=== Sources that are outliers in MCMC but not outliers here/for kriging ===")
-    print(data["gname"][((good) & (data["is_outlier"].values == 1))])
-    print("=== Sources that are not outliers in MCMC but outliers here/for kriging ===")
-    print(data["gname"][((is_outlier) & (data["is_outlier"].values == 0))])
+    # print("=== Sources that are outliers in MCMC but not outliers here/for kriging ===")
+    # print(data["gname"][((good) & (data["is_outlier"].values == 1))])
+    # print("=== Sources that are not outliers in MCMC but outliers here/for kriging ===")
+    # print(data["gname"][((is_outlier) & (data["is_outlier"].values == 0))])
+    # print("=== Sources that are outliers in both MCMC and here/for kriging ===")
+    # print(data["gname"][((is_outlier) & (data["is_outlier"].values == 1))])
+    # print(
+    #     "Upec percentile thresholds:",
+    #     np.percentile(Upec, lower),
+    #     np.percentile(Upec, upper),
+    # )
+    # print(
+    #     "Vpec percentile thresholds:",
+    #     np.percentile(Vpec, lower),
+    #     np.percentile(Vpec, upper),
+    # )
+    # print(
+    #     "Wpec percentile thresholds:",
+    #     np.percentile(Wpec, lower),
+    #     np.percentile(Wpec, upper),
+    # )
 
     # with open(tracefile, "rb") as f:
     #     file = dill.load(f)
@@ -86,18 +114,32 @@ def main(csvfile, tracefile):
     # print(R0, Zsun, roll)
     # print(a2, a3)
 
-    # # Mean values from 100 distance, mean Upec/Vpec trace, Cauchy outlier rejection file
-    R0, Zsun, roll = 8.181364, 5.5833244, 0.009740928
-    a2, a3 = 0.97133905, 1.6247351
+    # # Mean values from 100 distance, mean Upec/Vpec trace, peak everything file
+    # R0_mean, Zsun_mean, roll_mean = 8.17845, 5.0649223, 0.0014527875
+    # Usun_mean, Vsun_mean, Wsun_mean = 10.879447, 10.540543, 8.1168785
+    # Upec_mean, Vpec_mean = 4.912622, -4.588946
+    # a2_mean, a3_mean = 0.96717525, 1.624953
 
-    dist = trans.parallax_to_dist(plx)
-    # Galactic to barycentric Cartesian coordinates
-    bary_x, bary_y, bary_z = trans.gal_to_bary(glon, glat, dist)
-    # Barycentric Cartesian to galactocentric Cartesian coodinates
-    x, y, z = trans.bary_to_gcen(bary_x, bary_y, bary_z, R0=R0, Zsun=Zsun, roll=roll)
+    # Mode of 100 distances, mean Upec/Vpec + peak everything
+    R0_mode = 8.174602364395952
+    Zsun_mode = 5.398550615892994
+    Usun_mode = 10.878914326160878
+    Vsun_mode = 10.696801784160257
+    Wsun_mode = 8.087892505141708
+    Upec_mode = 4.9071771802606285
+    Vpec_mode = -4.521832904300172
+    roll_mode = -0.010742182667190958
+    a2_mode = 0.9768982857793898
+    a3_mode = 1.626400628724733
+
+    # dist = trans.parallax_to_dist(plx, e_parallax=e_plx)
+    # # Galactic to barycentric Cartesian coordinates
+    # bary_x, bary_y, bary_z = trans.gal_to_bary(glon, glat, dist)
+    # # Barycentric Cartesian to galactocentric Cartesian coodinates
+    # x, y, z = trans.bary_to_gcen(bary_x, bary_y, bary_z, R0=R0, Zsun=Zsun, roll=roll)
     # Galactocentric cylindrical coordinates to get predicted circular velocity
     gcen_cyl_dist = np.sqrt(x * x + y * y)  # kpc
-    v_circ_pred = urc(gcen_cyl_dist, a2=a2, a3=a3, R0=R0) + Vpec  # km/s
+    v_circ_pred = urc(gcen_cyl_dist, a2=a2_mode, a3=a3_mode, R0=R0_mode) + Vpec  # km/s
     # Get vx & vy in Cartesian coordinates
     azimuth = (np.arctan2(y, -x) * _RAD_TO_DEG) % 360
     cos_az = np.cos(azimuth * _DEG_TO_RAD)
@@ -105,21 +147,21 @@ def main(csvfile, tracefile):
     vx = Upec * cos_az + Vpec * sin_az  # km/s
     vy = -Upec * sin_az + Vpec * cos_az  # km/s
 
-    dist_tooclose = trans.parallax_to_dist(plx_tooclose)
-    # Galactic to barycentric Cartesian coordinates
-    bary_x_tooclose, bary_y_tooclose, bary_z_tooclose = trans.gal_to_bary(
-        glon_tooclose, glat_tooclose, dist_tooclose
-    )
-    # Barycentric Cartesian to galactocentric Cartesian coodinates
-    x_tooclose, y_tooclose, z_tooclose = trans.bary_to_gcen(
-        bary_x_tooclose, bary_y_tooclose, bary_z_tooclose, R0=R0, Zsun=Zsun, roll=roll
-    )
-    # Galactocentric cylindrical coordinates to get predicted circular velocity
+    # dist_tooclose = trans.parallax_to_dist(plx_tooclose, e_parallax=e_plx_tooclose)
+    # # Galactic to barycentric Cartesian coordinates
+    # bary_x_tooclose, bary_y_tooclose, bary_z_tooclose = trans.gal_to_bary(
+    #     glon_tooclose, glat_tooclose, dist_tooclose
+    # )
+    # # Barycentric Cartesian to galactocentric Cartesian coodinates
+    # x_tooclose, y_tooclose, z_tooclose = trans.bary_to_gcen(
+    #     bary_x_tooclose, bary_y_tooclose, bary_z_tooclose, R0=R0, Zsun=Zsun, roll=roll
+    # )
+    # # Galactocentric cylindrical coordinates to get predicted circular velocity
     gcen_cyl_dist_tooclose = np.sqrt(
         x_tooclose * x_tooclose + y_tooclose * y_tooclose
     )  # kpc
     v_circ_pred_tooclose = (
-        urc(gcen_cyl_dist_tooclose, a2=a2, a3=a3, R0=R0) + Vpec_tooclose
+        urc(gcen_cyl_dist_tooclose, a2=a2_mode, a3=a3_mode, R0=R0_mode) + Vpec_tooclose
     )  # km/s
     # Get vx & vy in Cartesian coordinates
     azimuth_tooclose = (np.arctan2(y_tooclose, -x_tooclose) * _RAD_TO_DEG) % 360
@@ -137,22 +179,48 @@ def main(csvfile, tracefile):
     vx, vy = vy, -vx
     x_tooclose, y_tooclose = y_tooclose, -x_tooclose
     vx_tooclose, vy_tooclose = vy_tooclose, -vx_tooclose
-    print("Recall Upec = -v_rad")
+    #
+    # # Seeing what is the source with a very negative v_radial/v_circular
+    # vrad_vtan_tooclose = -Upec_tooclose / v_circ_pred_tooclose
+    # min_tooclose = np.min(vrad_vtan_tooclose)
+    # print(data_tooclose["gname"][vrad_vtan_tooclose ==  min_tooclose].values)
+    # print(min_tooclose)
+    # print(Upec_tooclose[vrad_vtan_tooclose ==  min_tooclose], v_circ_pred_tooclose[vrad_vtan_tooclose ==  min_tooclose])
+    # print(vx_tooclose[vrad_vtan_tooclose ==  min_tooclose], vy_tooclose[vrad_vtan_tooclose ==  min_tooclose])
+    # print()
+    # print(data_tooclose["gname"][vrad_vtan_tooclose < 0].to_string())
+    # print(-Upec_tooclose[vrad_vtan_tooclose < 0])
+    # print(v_circ_pred_tooclose[vrad_vtan_tooclose < 0])
+    # return None
+    #
+    # print("Recall Upec = -v_rad")
     print("Mean Upec & Vpec:", np.mean(Upec), np.mean(Vpec))
     print("Max & min Upec:", np.max(Upec), np.min(Upec))
     print("Max & min Vpec:", np.max(Vpec), np.min(Vpec))
+    print("---")
+    print("Mean Good Upec & Vpec:", np.mean(Upec[good]), np.mean(Vpec[good]))
+    print("Max & min Good Upec:", np.max(Upec[good]), np.min(Upec[good]))
+    print("Max & min Good Vpec:", np.max(Vpec[good]), np.min(Vpec[good]))
+    print("Max & min Good Wpec:", np.max(Wpec[good]), np.min(Wpec[good]))
     print("---")
     print("Mean vx & vy:", np.mean(vx), np.mean(vy))
     print("Max & min vx:", np.max(vx), np.min(vx))
     print("Max & min vy:", np.max(vy), np.min(vy))
     v_tot = np.sqrt(vx * vx + vy * vy)
     print("---")
-    print("Mean magnitude:", np.mean(v_tot))
-    print("Max & min magnitude:", np.max(v_tot), np.min(v_tot))
-    v_tot_tooclose = np.sqrt(vx_tooclose ** 2 + vy_tooclose ** 2)
-    print("Mean magnitude (of sources R < 4 kpc):", np.mean(v_tot_tooclose))
+    print("Mean magnitude (w/out Wpec):", np.mean(v_tot))
+    print("Max & min magnitude (w/out Wpec):", np.max(v_tot), np.min(v_tot))
+    print("---")
+    v_tot_good = np.sqrt(vx[good] * vx[good] + vy[good] * vy[good])
+    print("Mean good magnitude (w/out Wpec):", np.mean(v_tot_good))
     print(
-        "Max & min magnitude (of sources R < 4 kpc):",
+        "Max & min good magnitude (w/out Wpec):", np.max(v_tot_good), np.min(v_tot_good)
+    )
+    print("---")
+    v_tot_tooclose = np.sqrt(vx_tooclose ** 2 + vy_tooclose ** 2)
+    print("Mean magnitude (of sources R < 4 kpc) (w/out Wpec):", np.mean(v_tot_tooclose))
+    print(
+        "Max & min magnitude (of sources R < 4 kpc) (w/out Wpec):",
         np.max(v_tot_tooclose),
         np.min(v_tot_tooclose),
     )
@@ -164,12 +232,18 @@ def main(csvfile, tracefile):
     scattersize = 1
     fig, ax = plt.subplots()
     # Colorbar
-    cmap_min = (
-        np.floor(100 * np.min([np.min(vrad_vcirc), np.min(vrad_vcirc_tooclose)])) / 100
-    )
-    cmap_max = (
-        np.ceil(100 * np.max([np.max(vrad_vcirc), np.max(vrad_vcirc_tooclose)])) / 100
-    )
+    if plot_tooclose:
+        cmap_min = (
+            np.floor(100 * np.min([np.min(vrad_vcirc), np.min(vrad_vcirc_tooclose)])) / 100
+        )
+        cmap_max = (
+            np.ceil(100 * np.max([np.max(vrad_vcirc), np.max(vrad_vcirc_tooclose)])) / 100
+        )
+    else:
+        cmap_min = np.floor(100 * np.min(vrad_vcirc)) / 100
+        cmap_max = np.ceil(100 * np.max(vrad_vcirc)) / 100
+    # cmap_min = np.floor(100 * np.min(vrad_vcirc)) / 100
+    # cmap_max = np.ceil(100 * np.max(vrad_vcirc)) / 100
     # print(cmap_min, cmap_max)
     norm = mpl.colors.Normalize(vmin=cmap_min, vmax=cmap_max)
     cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax, format="%.1f")
@@ -198,32 +272,37 @@ def main(csvfile, tracefile):
         s=scattersize,
         label="Outlier",
     )
-    ax.scatter(
-        x_tooclose,
-        y_tooclose,
-        marker="v",
-        c="k",
-        # c=vrad_vcirc[is_tooclose == 1],
-        # cmap=cmap,
-        # norm=norm,
-        s=scattersize,
-        label="$R < 4$ kpc",
-    )
+    if plot_tooclose:
+        ax.scatter(
+            x_tooclose,
+            y_tooclose,
+            marker="v",
+            c="k",
+            # c=vrad_vcirc[is_tooclose == 1],
+            # cmap=cmap,
+            # norm=norm,
+            s=scattersize,
+            label="$R < 4$ kpc",
+        )
+    # Plot Sun
+    # ax.scatter(0, 8.181, marker="*", c="gold", edgecolor="k", linewidth=0.25, s=30, zorder=100)
+    ax.scatter(0, 8.181, marker="*", c="gold", s=30, zorder=100)
     # Plot residual motions
     vectors = ax.quiver(
         x, y, vx, vy, vrad_vcirc, cmap=cmap, norm=norm, scale=600, width=0.002
     )
-    vectors_tooclose = ax.quiver(
-        x_tooclose,
-        y_tooclose,
-        vx_tooclose,
-        vy_tooclose,
-        vrad_vcirc_tooclose,
-        cmap=cmap,
-        norm=norm,
-        scale=600,
-        width=0.002,
-    )
+    if plot_tooclose:
+        vectors_tooclose = ax.quiver(
+            x_tooclose,
+            y_tooclose,
+            vx_tooclose,
+            vy_tooclose,
+            vrad_vcirc_tooclose,
+            cmap=cmap,
+            norm=norm,
+            scale=600,
+            width=0.002,
+        )
     ax.quiverkey(
         vectors,
         X=0.25,
@@ -248,13 +327,13 @@ def main(csvfile, tracefile):
     for element in ax.get_legend().legendHandles:
         # element.set_color("k")
         element._sizes = [20]
-    # fig.savefig(
-    #     Path(__file__).parent / "pec_motions.pdf",
-    #     format="pdf",
-    #     # dpi=300,
-    #     bbox_inches="tight",
-    # )
-    # print("--- Showing plot ---")
+    fig.savefig(
+        Path(__file__).parent / "pec_motions.pdf",
+        format="pdf",
+        # dpi=300,
+        bbox_inches="tight",
+    )
+    print("--- Showing plot ---")
     plt.show()
 
     # Plot only good sources
@@ -262,7 +341,7 @@ def main(csvfile, tracefile):
     # Colorbar
     cmap_min = np.floor(100 * np.min(vrad_vcirc[good])) / 100
     cmap_max = np.ceil(100 * np.max(vrad_vcirc[good])) / 100
-    print(cmap_min, cmap_max)
+    # print(cmap_min, cmap_max)
     norm = mpl.colors.Normalize(vmin=cmap_min, vmax=cmap_max)
     cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax, format="%.2f")
     cbar.ax.set_ylabel(r"$v_{\rm radial}/v_{\rm circular}$", rotation=270)
@@ -309,24 +388,29 @@ def main(csvfile, tracefile):
     ax.set_ylim(-5, 15)
     ax.set_yticks([-5, 0, 5, 10, 15])
     ax.grid(False)
-    # fig.savefig(
-    #     Path(__file__).parent / "pec_motions_onlygood.pdf",
-    #     format="pdf",
-    #     # dpi=300,
-    #     bbox_inches="tight",
-    # )
+    fig.savefig(
+        Path(__file__).parent / "pec_motions_onlygood.pdf",
+        format="pdf",
+        # dpi=300,
+        bbox_inches="tight",
+    )
     plt.show()
 
 
 if __name__ == "__main__":
     # csvfilepath = input("Enter filepath of csv file: ")
     # tracefilepath = input("Enter filepath of pickle file (trace): ")
+    # csvfilepath = (
+    #     Path(__file__).parent
+    #     / "csvfiles/100dist_meanUpecVpec_cauchyOutlierRejection_peakEverything.csv"
+    # )
     csvfilepath = (
-        Path(__file__).parent / "100dist_meanUpecVpec_cauchyOutlierRejection.csv"
+        Path(__file__).parent
+        / "csvfiles/alldata_HPDmode.csv"
     )
     tracefilepath = (
         Path(__file__).parent.parent
-        / "bayesian_mcmc_rot_curve/mcmc_outfile_A1_100dist_5.pkl"
+        / "bayesian_mcmc_rot_curve/mcmc_outfile_A5_102dist_6.pkl"
     )
 
     main(csvfilepath, tracefilepath)

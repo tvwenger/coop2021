@@ -361,8 +361,8 @@ def bary_to_gcen(
     #
     # Translate to the galactic center
     #
-    # Xb1 = Xb - R0  # Need to use this if using parallax as MCMC model parameter
-    Xb1 -= R0  # must use np.copy() above. Need to use this for reid_MCMC.py
+    Xb1 = Xb - R0  # Need to use this if using parallax as MCMC model parameter
+    # Xb1 -= R0  # must use np.copy() above. Need to use this for reid_MCMC.py
     # OR: Xb1 = Xb1 - R0
     #
     # Tilt to correct for Sun's height above midplane
@@ -969,7 +969,7 @@ def get_gcen_cyl_radius(glon, glat, plx, e_plx=None, R0=_RSUN):
         Radial distanced perpendicular to z-axis in galactocentric cylindrical frame
     """
     # Parallax to distance
-    gdist = parallax_to_dist(plx, e_plx=e_plx)  # kpc
+    gdist = parallax_to_dist(plx, e_parallax=e_plx)  # kpc
 
     # Transform from galactic to galactocentric Cartesian coordinates
     bary_x, bary_y, bary_z = gal_to_bary(glon, glat, gdist)  # kpc

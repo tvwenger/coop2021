@@ -1,5 +1,5 @@
 ==========================================================================================
-==== MCMC A5 RUN w/ 10 chains, 1000 tunings + 1000 iterations each chain,
+==== MCMC A1/A5 RUN w/ 10 chains, 1000 tunings + 1000 iterations each chain,
 ==== 100 distance samples, and init="advi", initial distance rejection using peak of pdf
 ==========================================================================================
 ==== MCMC w/ Cauchy PDF for all outlier rejection ====

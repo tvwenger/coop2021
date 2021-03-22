@@ -1,9 +1,9 @@
 """
-fit_pec_motions_krige_csv.py
+krige.py
 
-Fits the vector peculiar motions of sources using kriging. Data from a csv file.
+Universal kriging of Upec and Vpec from data in .csv file
 
-Isaac Cheng - February 2021
+Isaac Cheng - March 2021
 """
 
 import sys
@@ -23,43 +23,25 @@ sys.path.append(_SCRIPT_DIR)
 
 import mytransforms as trans
 
-# Roll angle between galactic midplane and galactocentric frame
-_ROLL = 0.0  # deg (Anderson et al. 2019)
-# Sun's height above galactic midplane (Reid et al. 2019)
-_ZSUN = 5.5  # pc
 
+def get_coords(data):
+    # # Mean values from 100 distance, mean Upec/Vpec trace, peak everything file
+    # R0_mean, Zsun_mean, roll_mean = 8.17845, 5.0649223, 0.0014527875
+    # Usun_mean, Vsun_mean, Wsun_mean = 10.879447, 10.540543, 8.1168785
+    # Upec_mean, Vpec_mean = 4.912622, -4.588946
+    # a2_mean, a3_mean = 0.96717525, 1.624953
 
-def get_coords(data, tracefile):
-    # with open(tracefile, "rb") as f:
-    #     file = dill.load(f)
-    #     trace = file["trace"]
-    #     free_Zsun = file["free_Zsun"]
-    #     free_roll = file["free_roll"]
-
-    # === Get optimal parameters from MCMC trace ===
-    # R0 = np.mean(trace["R0"])  # kpc
-    # Zsun = np.mean(trace["Zsun"]) if free_Zsun else _ZSUN  # pc
-    # roll = np.mean(trace["roll"]) if free_roll else _ROLL  # deg
-    # a2 = np.mean(trace["a2"])
-    # a3 = np.mean(trace["a3"])
-    # print(R0, Zsun, roll)
-    # print(a2, a3)
-
-    # # Median values from 100 distance, mean Upec/Vpec trace, Gaussian outlier rejection file
-    # R0 = 8.17744864142579
-    # Zsun = 5.244659085536849
-    # roll = 0.004996518973221375
-
-    # # Median values from 100 distance, mean Upec/Vpec trace, Cauchy outlier rejection file
-    # R0, Zsun, roll = 8.181488, 5.691242, 0.009044973
-    # a2, a3 = 0.9727373, 1.6251589
-
-    # # Mean values from 100 distance, mean Upec/Vpec trace, Cauchy outlier rejection file
-    R0, Zsun, roll = 8.181364, 5.5833244, 0.009740928
-    a2, a3 = 0.97133905, 1.6247351
-
-    # # Median values from allfree pickle file
-    # R0, Zsun, roll = 8.176646, 5.5956845, -0.00089795317
+    # Mode of 100 distances, mean Upec/Vpec + peak everything
+    R0_mode = 8.174602364395952
+    Zsun_mode = 5.398550615892994
+    Usun_mode = 10.878914326160878
+    Vsun_mode = 10.696801784160257
+    Wsun_mode = 8.087892505141708
+    Upec_mode = 4.9071771802606285
+    Vpec_mode = -4.521832904300172
+    roll_mode = -0.010742182667190958
+    a2_mode = 0.9768982857793898
+    a3_mode = 1.626400628724733
 
     # === Get data ===
     glon = data["glong"].values  # deg
@@ -76,7 +58,7 @@ def get_coords(data, tracefile):
 
     # Barycentric Cartesian to galactocentric Cartesian coodinates
     gcen_x, gcen_y, gcen_z = trans.bary_to_gcen(
-        bary_x, bary_y, bary_z, R0=R0, Zsun=Zsun, roll=roll
+        bary_x, bary_y, bary_z, R0=R0_mode, Zsun=Zsun_mode, roll=roll_mode
     )
     # Rotate 90deg CW to Reid convention
     gcen_x, gcen_y = gcen_y, -gcen_x
@@ -85,80 +67,82 @@ def get_coords(data, tracefile):
 
 
 def main():
-    # tracefile = Path(
-    #     "/home/chengi/Documents/coop2021/bayesian_mcmc_rot_curve/"
-    #     "mcmc_outfile_A5_100dist_5.pkl"
-    # )
-    # datafile = Path(
-    #     "/home/chengi/Documents/coop2021/pec_motions/100dist_meanUpecVpec.csv"
-    # )
-    # datafile = Path(__file__).parent / Path("100dist_meanUpecVpec_cauchyOutlierRejection.csv")
-    datafile = Path(__file__).parent / Path(
-        "100dist_meanUpecVpec_cauchyOutlierRejection_peakDist.csv"
-    )
-    tracefile = Path(__file__).parent.parent / Path(
-        "bayesian_mcmc_rot_curve/mcmc_outfile_A1_100dist_5.pkl"
-    )
-    data100plx = pd.read_csv(datafile)
+    mc_type = "HPDmode"
+    datafile = Path(__file__).parent / Path(f"csvfiles/alldata_{mc_type}.csv")
+    data = pd.read_csv(datafile)
 
     # Only choose sources that have R > 4 kpc
-    data100plx = data100plx[data100plx["is_tooclose"].values == 0]
+    data = data[data["is_tooclose"].values == 0]
 
-    x, y, z = get_coords(data100plx, tracefile)
-
-    Upec = data100plx["Upec"].values
-    Vpec = data100plx["Vpec"].values
-    Wpec = data100plx["Wpec"].values
+    R = data["R_mode"].values
+    R_halfhpd = data["R_halfhpd"].values
+    Upec = data["Upec_mode"].values
+    Vpec = data["Vpec_mode"].values
+    Wpec = data["Wpec_mode"].values
+    tot = np.sqrt(Upec ** 2 + Vpec ** 2 + Wpec ** 2)
+    tot_xy = np.sqrt(Upec ** 2 + Vpec ** 2)
+    Upec_halfhpd = data["Upec_halfhpd"].values
+    Vpec_halfhpd = data["Vpec_halfhpd"].values
+    Wpec_halfhpd = data["Wpec_halfhpd"].values
+    tot_halfhpd = np.sqrt(Upec_halfhpd ** 2 + Vpec_halfhpd ** 2 + Wpec_halfhpd ** 2)
+    tot_xy_halfhpd = np.sqrt(Upec_halfhpd ** 2 + Vpec_halfhpd ** 2)
     print(np.mean(Upec), np.mean(Vpec), np.mean(Wpec))
     print(np.median(Upec), np.median(Vpec), np.median(Wpec))
-    return None
+    print(np.mean(tot), np.median(tot))
+    print(np.mean(Upec_halfhpd), np.mean(Vpec_halfhpd), np.mean(Wpec_halfhpd))
+    print(np.median(Upec_halfhpd), np.median(Vpec_halfhpd), np.median(Wpec_halfhpd))
+    print(np.mean(tot_halfhpd), np.median(tot_halfhpd))
 
-    # Only choose good data for kriging
-    # percentile = 90
-    # lower = 0.5 * (100 - percentile)
-    # upper = 0.5 * (100 + percentile)
-    # is_good = (
-    #     (Upec > np.percentile(Upec, lower))
-    #     & (Upec < np.percentile(Upec, upper))
-    #     & (Vpec > np.percentile(Vpec, lower))
-    #     & (Vpec < np.percentile(Vpec, upper))
-    #     & (Wpec > np.percentile(Wpec, lower))
-    #     & (Wpec < np.percentile(Wpec, upper))
-    # )
-    # print(sum(Upec < np.percentile(Upec, lower)))
-    # print(Upec[Upec < np.percentile(Upec, lower)])
-    # print(sum(Upec > np.percentile(Upec, upper)))
-    # print(Upec[Upec > np.percentile(Upec, upper)])
-    # percentile = "custom"
-    # is_good = (
-    #     (Upec > -40.0) & (Upec < 50.0) & (Vpec > -50.0) & (Wpec > -20.0) & (Wpec < 20.0)
-    # )
-    # upec_lower = -19
-    # percentile = str(upec_lower)
-    # is_good = (
-    #     (Upec > upec_lower) & (Upec < 39.0)
-    #     & (Vpec > -50)
-    #     # (Upec < 39.0)
-    # )
-    # print("Min & max Upec:", np.min(Upec[is_good]), np.max(Upec[is_good]))
-    # print(sum(Upec < upec_lower))
-    # print(Upec[Upec < upec_lower])
-    # print(sum(Upec > 39))
-    # print(Upec[Upec > 39])
-    # print(np.sort(Vpec[is_good]))
-    # return None
-    percentile = "all183"
-    # is_good = (data100plx["is_outlier"].values == 0) & (data100plx["is_tooclose"].values == 0)
-    is_good = data100plx["is_tooclose"].values == 0
+    x = data["x_mode"].values
+    y = data["y_mode"].values
+
+    percentile = "tothalfhpd35"
+    is_good = (
+        (tot_halfhpd < 35.0)
+        & (R_halfhpd < 1)
+    )
+    print("--- MC GOOD DATA STATS ---")
+    print(np.mean(Upec[is_good]), np.mean(Vpec[is_good]), np.mean(Wpec[is_good]))
+    print(np.median(Upec[is_good]), np.median(Vpec[is_good]), np.median(Wpec[is_good]))
+    print(np.mean(tot[is_good]), np.median(tot[is_good]))
+    print(
+        np.mean(Upec_halfhpd[is_good]),
+        np.mean(Vpec_halfhpd[is_good]),
+        np.mean(Wpec_halfhpd[is_good]),
+    )
+    print(
+        np.median(Upec_halfhpd[is_good]),
+        np.median(Vpec_halfhpd[is_good]),
+        np.median(Wpec_halfhpd[is_good]),
+    )
+    print(np.mean(tot_halfhpd[is_good]), np.median(tot_halfhpd[is_good]))
     num_good = sum(is_good)
     print("# sources used in kriging:", num_good)
-    # print(data100plx["gname"][~is_good])
+    # print(data["gname"][~is_good])
     # return None
     # print(Upec[is_good].mean(), Vpec[is_good].mean(), Wpec[is_good].mean())
     # print(np.median(Upec[is_good]), np.median(Vpec[is_good]), np.median(Wpec[is_good]))
     # print(np.std(Upec[is_good]), np.std(Vpec[is_good]), np.std(Wpec[is_good]))
     # v_tot = np.sqrt(Upec[is_good]**2 + Vpec[is_good]**2 + Wpec[is_good]**2)
     # print(np.mean(v_tot), np.median(v_tot), np.std(v_tot))
+
+    # # Load values calculated at peak dist for kriging
+    # mc_type = "peakDist"
+    # datafile = (
+    #     Path(__file__).parent / "100dist_meanUpecVpec_cauchyOutlierRejection_peakDist.csv"
+    # )
+    # data = pd.read_csv(datafile)
+    # # Only choose sources that have R > 4 kpc
+    # data = data[data["is_tooclose"].values == 0]
+    # Upec = data["Upec"].values
+    # Vpec = data["Vpec"].values
+    # Wpec = data["Wpec"].values
+    # tot = np.sqrt(Upec ** 2 + Vpec ** 2 + Wpec ** 2)
+    # x, y, z = get_coords(data)
+    # print("--- PEAK DIST KRIGING DATA STATS ---")
+    # print(np.mean(Upec[is_good]), np.mean(Vpec[is_good]), np.mean(Wpec[is_good]))
+    # print(np.median(Upec[is_good]), np.median(Vpec[is_good]), np.median(Wpec[is_good]))
+    # print(np.mean(tot[is_good]), np.median(tot[is_good]))
 
     # Krig good data
     coord_obs = np.vstack((x[is_good], y[is_good])).T
@@ -175,23 +159,25 @@ def main():
         coord_obs,
         Upec[is_good],
         coord_interp,
+        e_data_obs=Upec_halfhpd[is_good],
         model=variogram_model,
         deg=1,
         nbins=10,
         bin_number=True,
         plot=Path(__file__).parent
-        / f"semivariogram_Upec_{num_good}good_{percentile}_{variogram_model}_peakDist.pdf",
+        / f"semivariogram_Upec_{num_good}good_{percentile}_{variogram_model}_{mc_type}.pdf",
     )
     Vpec_interp, Vpec_interp_var = kriging.kriging(
         coord_obs,
         Vpec[is_good],
         coord_interp,
+        e_data_obs=Vpec_halfhpd[is_good],
         model=variogram_model,
         deg=1,
         nbins=10,
         bin_number=True,
         plot=Path(__file__).parent
-        / f"semivariogram_Vpec_{num_good}good_{percentile}_{variogram_model}_peakDist.pdf",
+        / f"semivariogram_Vpec_{num_good}good_{percentile}_{variogram_model}_{mc_type}.pdf",
     )
     Upec_interp = Upec_interp.reshape(500, 500)
     Upec_interp_sd = np.sqrt(Upec_interp_var).reshape(500, 500)
@@ -321,7 +307,7 @@ def main():
     #     fr"(Universal Kriging, \texttt{{variogram\_model={variogram_model}}})"
     # )
     fig.tight_layout()
-    filename = f"krige_{num_good}good_{percentile}_{variogram_model}_peakDist.pdf"
+    filename = f"krige_{num_good}good_{percentile}_{variogram_model}_{mc_type}.pdf"
     fig.savefig(
         Path(__file__).parent / filename, format="pdf", dpi=300, bbox_inches="tight",
     )
@@ -334,7 +320,7 @@ def main():
     )
     ax[0].imshow(Upec_interp_sd.T, origin="lower", extent=extent, norm=norm_Upec)
     cbar_Upec = fig.colorbar(
-        mpl.cm.ScalarMappable(norm=norm_Upec, cmap=cmap), ax=ax[0], format="%.1f"
+        mpl.cm.ScalarMappable(norm=norm_Upec, cmap=cmap), ax=ax[0], format="%.0f"
     )
     ax[0].axhline(y=0, linewidth=0.5, linestyle="--", color="k")  # horizontal line
     ax[0].axvline(x=0, linewidth=0.5, linestyle="--", color="k")  # vertical line
@@ -369,7 +355,7 @@ def main():
     #     fr"(Universal Kriging, \texttt{{variogram\_model={variogram_model}}})"
     # )
     fig.tight_layout()
-    filename = f"krige_sd_{num_good}good_{percentile}_{variogram_model}_peakDist.pdf"
+    filename = f"krige_sd_{num_good}good_{percentile}_{variogram_model}_{mc_type}.pdf"
     fig.savefig(
         Path(__file__).parent / filename, format="pdf", dpi=300, bbox_inches="tight",
     )

@@ -74,13 +74,13 @@ def data_to_gcen_cyl(data, trace, free_Zsun=False, free_roll=False):
     a3 = np.median(trace["a3"])  # dimensionless
     Zsun = np.median(trace["Zsun"]) if free_Zsun else _ZSUN  # pc
     roll = np.median(trace["roll"]) if free_roll else _ROLL  # deg
+    Upec = np.median(trace["Upec"])
+    Vpec = np.median(trace["Vpec"])
 
-    # R0 = 8.15
-    # Usun = 10.6
-    # Vsun = 10.7
-    # Wsun = 7.6
-    # a2 = 0.96
-    # a3 = 1.62
+    print(R0, Zsun, roll)
+    print(Usun, Vsun, Wsun)
+    print(Upec, Vpec)
+    print(a2, a3)
 
     # === Get data ===
     # Slice data into components
@@ -89,6 +89,7 @@ def data_to_gcen_cyl(data, trace, free_Zsun=False, free_roll=False):
     glon = data["glong"].values  # deg
     glat = data["glat"].values  # deg
     plx = data["plx"].values  # mas
+    e_plx = data["e_plx"].values  # mas
     # plx = np.mean(trace["plx"], axis=0)  # mas, use if parallax is a model parameter
     eqmux = data["mux"].values  # mas/yr (equatorial frame)
     eqmuy = data["muy"].values  # mas/y (equatorial frame)
@@ -105,6 +106,7 @@ def data_to_gcen_cyl(data, trace, free_Zsun=False, free_roll=False):
         eqmux,
         eqmuy,
         vlsr,
+        e_plx=e_plx,
         R0=R0,
         Zsun=Zsun,
         roll=roll,
@@ -173,11 +175,12 @@ def data_to_vcirc_pred(data, trace, free_Zsun=False, free_roll=False):
     glon = data["glong"].values  # deg
     glat = data["glat"].values  # deg
     plx = data["plx"].values  # mas
+    e_plx = data["e_plx"].values  # mas
     # plx = np.mean(trace["plx"], axis=0)  # mas, use if parallax is a model parameter
 
     # === Calculate predicted values from optimal parameters ===
     # Parallax to distance
-    dist = trans.parallax_to_dist(plx)
+    dist = trans.parallax_to_dist(plx, e_parallax=e_plx)
 
     # Galactic to barycentric Cartesian coordinates
     bary_x, bary_y, bary_z = trans.gal_to_bary(glon, glat, dist)
@@ -247,102 +250,105 @@ def get_pos_and_residuals_and_vrad_vtan(data, trace, free_Zsun=False, free_roll=
 
     return x, y, z, vx_res, vy_res, vz_res, vrad_vcirc
 
-# import sqlite3
-# from contextlib import closing
 
-# def get_data(db_file):
-#     """
-#     Puts all relevant data from db_file's Parallax table into pandas DataFrame.
-
-#     Inputs:
-#       db_file :: pathlib Path object
-#         Path object to SQL database containing maser galactic longitudes, latitudes,
-#         right ascensions, declinations, parallaxes, equatorial proper motions,
-#         and LSR velocities with all associated uncertainties
-
-#     Returns: data
-#       data :: pandas DataFrame
-#         Contains db_file data in pandas DataFrame. Specifically, it includes:
-#         ra (deg), dec (deg), glong (deg), glat (deg), plx (mas), e_plx (mas),
-#         mux (mas/yr), muy (mas/yr), vlsr (km/s) + all proper motion/vlsr uncertainties
-#     """
-
-#     with closing(sqlite3.connect(db_file).cursor()) as cur:  # context manager, auto-close
-#         cur.execute("SELECT * FROM Parallax")
-#         data = pd.DataFrame(cur.fetchall(), columns=[desc[0] for desc in cur.description])
-
-#     return data
+import sqlite3
+from contextlib import closing
 
 
-# def filter_data(data, filter_e_plx):
-#     """
-#     Filters sources < 4 kpc from galactic centre and
-#     (optionally) filters sources with e_plx/plx > 20%
+def get_data(db_file):
+    """
+    Puts all relevant data from db_file's Parallax table into pandas DataFrame.
 
-#     Inputs:
-#       data :: pandas DataFrame
-#         Contains maser galactic longitudes, latitudes, right ascensions, declinations,
-#         parallaxes, equatorial proper motions, and LSR velocities
-#         with all associated uncertainties
-#       filter_e_plx :: boolean
-#         If False, only filter sources closer than 4 kpc to galactic centre
-#         If True, also filter sources with parallax uncertainties > 20% of the parallax
+    Inputs:
+      db_file :: pathlib Path object
+        Path object to SQL database containing maser galactic longitudes, latitudes,
+        right ascensions, declinations, parallaxes, equatorial proper motions,
+        and LSR velocities with all associated uncertainties
 
-#     Returns: filtered_data
-#       filtered_data :: pandas DataFrame
-#         Contains same data as input data DataFrame except with some sources removed
-#     """
-#     # Calculate galactocentric cylindrical radius
-#     #   N.B. We assume R0=8.15 kpc. This ensures we are rejecting the same set
-#     #   of sources each iteration. Also R0 is fairly well-constrained bc of Sgr A*
-#     all_radii = trans.get_gcen_cyl_radius(data["glong"], data["glat"], data["plx"])
+    Returns: data
+      data :: pandas DataFrame
+        Contains db_file data in pandas DataFrame. Specifically, it includes:
+        ra (deg), dec (deg), glong (deg), glat (deg), plx (mas), e_plx (mas),
+        mux (mas/yr), muy (mas/yr), vlsr (km/s) + all proper motion/vlsr uncertainties
+    """
 
-#     # Bad data criteria (N.B. casting to array prevents "+" not supported warnings)
-#     if filter_e_plx:  # Filtering used by Reid et al. (2019)
-#         print("Filter sources with R < 4 kpc & e_plx/plx > 20%")
-#         bad = (np.array(all_radii) < 4.0) + \
-#               (np.array(data["e_plx"] / data["plx"]) > 0.2)
-#     else:  # Only filter sources closer than 4 kpc to galactic centre
-#         print("Only filter sources with R < 4 kpc")
-#         bad = (np.array(all_radii) < 4.0)
+    with closing(sqlite3.connect(db_file).cursor()) as cur:  # context manager, auto-close
+        cur.execute("SELECT * FROM Parallax")
+        data = pd.DataFrame(cur.fetchall(), columns=[desc[0] for desc in cur.description])
 
-#     # Slice data into components
-#     gname = data["gname"][~bad]
-#     alias = data["alias"][~bad]
-#     ra = data["ra"][~bad]  # deg
-#     dec = data["dec"][~bad]  # deg
-#     glon = data["glong"][~bad]  # deg
-#     glat = data["glat"][~bad]  # deg
-#     plx = data["plx"][~bad]  # mas
-#     e_plx = data["e_plx"][~bad]  # mas
-#     eqmux = data["mux"][~bad]  # mas/yr (equatorial frame)
-#     e_eqmux = data["e_mux"][~bad]  # mas/y (equatorial frame)
-#     eqmuy = data["muy"][~bad]  # mas/y (equatorial frame)
-#     e_eqmuy = data["e_muy"][~bad]  # mas/y (equatorial frame)
-#     vlsr = data["vlsr"][~bad]  # km/s
-#     e_vlsr = data["e_vlsr"][~bad]  # km/s
+    return data
 
-#     # Store filtered data in DataFrame
-#     filtered_data = pd.DataFrame(
-#         {
-#             "gname": gname,
-#             "alias": alias,
-#             "ra": ra,
-#             "dec": dec,
-#             "glong": glon,
-#             "glat": glat,
-#             "plx": plx,
-#             "e_plx": e_plx,
-#             "mux": eqmux,
-#             "e_mux": e_eqmux,
-#             "muy": eqmuy,
-#             "e_muy": e_eqmuy,
-#             "vlsr": vlsr,
-#             "e_vlsr": e_vlsr,
-#         }
-#     )
 
-#     return filtered_data
+def filter_data(data, filter_e_plx):
+    """
+    Filters sources < 4 kpc from galactic centre and
+    (optionally) filters sources with e_plx/plx > 20%
+
+    Inputs:
+      data :: pandas DataFrame
+        Contains maser galactic longitudes, latitudes, right ascensions, declinations,
+        parallaxes, equatorial proper motions, and LSR velocities
+        with all associated uncertainties
+      filter_e_plx :: boolean
+        If False, only filter sources closer than 4 kpc to galactic centre
+        If True, also filter sources with parallax uncertainties > 20% of the parallax
+
+    Returns: filtered_data
+      filtered_data :: pandas DataFrame
+        Contains same data as input data DataFrame except with some sources removed
+    """
+    # Calculate galactocentric cylindrical radius
+    #   N.B. We assume R0=8.15 kpc. This ensures we are rejecting the same set
+    #   of sources each iteration. Also R0 is fairly well-constrained bc of Sgr A*
+    all_radii = trans.get_gcen_cyl_radius(
+        data["glong"], data["glat"], data["plx"], e_plx=data["e_plx"]
+    )
+
+    # Bad data criteria (N.B. casting to array prevents "+" not supported warnings)
+    if filter_e_plx:  # Filtering used by Reid et al. (2019)
+        print("Filter sources with R < 4 kpc & e_plx/plx > 20%")
+        bad = (np.array(all_radii) < 4.0) + (np.array(data["e_plx"] / data["plx"]) > 0.2)
+    else:  # Only filter sources closer than 4 kpc to galactic centre
+        print("Only filter sources with R < 4 kpc")
+        bad = np.array(all_radii) < 4.0
+
+    # Slice data into components
+    gname = data["gname"][~bad]
+    alias = data["alias"][~bad]
+    ra = data["ra"][~bad]  # deg
+    dec = data["dec"][~bad]  # deg
+    glon = data["glong"][~bad]  # deg
+    glat = data["glat"][~bad]  # deg
+    plx = data["plx"][~bad]  # mas
+    e_plx = data["e_plx"][~bad]  # mas
+    eqmux = data["mux"][~bad]  # mas/yr (equatorial frame)
+    e_eqmux = data["e_mux"][~bad]  # mas/y (equatorial frame)
+    eqmuy = data["muy"][~bad]  # mas/y (equatorial frame)
+    e_eqmuy = data["e_muy"][~bad]  # mas/y (equatorial frame)
+    vlsr = data["vlsr"][~bad]  # km/s
+    e_vlsr = data["e_vlsr"][~bad]  # km/s
+
+    # Store filtered data in DataFrame
+    filtered_data = pd.DataFrame(
+        {
+            "gname": gname,
+            "alias": alias,
+            "ra": ra,
+            "dec": dec,
+            "glong": glon,
+            "glat": glat,
+            "plx": plx,
+            "e_plx": e_plx,
+            "mux": eqmux,
+            "e_mux": e_eqmux,
+            "muy": eqmuy,
+            "e_muy": e_eqmuy,
+            "vlsr": vlsr,
+            "e_vlsr": e_vlsr,
+        }
+    )
+
+    return filtered_data
 
 
 def get_cart_pos_and_cyl_residuals(data, trace, free_Zsun=False, free_roll=False):
@@ -352,13 +358,17 @@ def get_cart_pos_and_cyl_residuals(data, trace, free_Zsun=False, free_roll=False
 
     TODO: finish docstring
     """
-    # data_pkl = data
-    # glong_pkl = data_pkl["glong"].values
-    # glat_pkl = data_pkl["glat"].values
-    # data = get_data(Path("/mnt/c/Users/ichen/OneDrive/Documents/Jobs/WaterlooWorks/2A Job Search/ACCEPTED__NRC_EXT-10708-JuniorResearcher/Work Documents/coop2021/data/hii_v2_20201203.db"))
-    # # data = filter_data(data, False)
-    # print(len(data["plx"]))
-    # print(len(glong_pkl))
+    data_pkl = data
+    glong_pkl = data_pkl["glong"].values
+    glat_pkl = data_pkl["glat"].values
+    data = get_data(
+        Path(
+            "/mnt/c/Users/ichen/OneDrive/Documents/Jobs/WaterlooWorks/2A Job Search/ACCEPTED__NRC_EXT-10708-JuniorResearcher/Work Documents/coop2021/data/hii_v2_20201203.db"
+        )
+    )
+    # data = filter_data(data, False)
+    print(len(data["plx"]))
+    print(len(glong_pkl))
 
     # Convert pickled data to galactocentric cylindrical positions & velocities
     (radius, azimuth, height, v_rad, v_circ, v_vert,) = data_to_gcen_cyl(
@@ -371,7 +381,7 @@ def get_cart_pos_and_cyl_residuals(data, trace, free_Zsun=False, free_roll=False
     )
     v_circ_res = v_circ - v_circ_pred
     # v_rad = -np.median(trace["Upec"], axis=0)
-    # v_circ_res = np.median(trace["Vpec"], axis=0)
+    # v_circ_res = np.median(trace["Vpec"], axis=0)z
 
     # Transform galactocentric cylindrical residual velocities
     # to galactocentric Cartesian residuals
@@ -394,44 +404,53 @@ def get_cart_pos_and_cyl_residuals(data, trace, free_Zsun=False, free_roll=False
     print("min & max magnitudes of peculiar velocity:", np.min(v_tot), np.max(v_tot))
     print("=" * 6)
 
-    # is_outlier = np.zeros(len(data["plx"]), int)
-    # is_tooclose = np.zeros(len(data["plx"]), int)
-    # all_radii = trans.get_gcen_cyl_radius(data["glong"], data["glat"], data["plx"]).values
-    # for row in range(len(data["plx"])):
-    #   # print(data["glong"].iloc[row])
-    #   if all_radii[row] < 4:
-    #     is_tooclose[row] = 1
-    #   elif (data["glong"].iloc[row] not in glong_pkl) and (data["glat"].iloc[row] not in glat_pkl):
-    #     is_outlier[row] = 1
+    is_outlier = np.zeros(len(data["plx"]), int)
+    is_tooclose = np.zeros(len(data["plx"]), int)
+    all_radii = trans.get_gcen_cyl_radius(
+        data["glong"], data["glat"], data["plx"], e_plx=data["e_plx"]
+    ).values
+    for row in range(len(data["plx"])):
+        # print(data["glong"].iloc[row])
+        if all_radii[row] < 4:
+            is_tooclose[row] = 1
+        elif (data["glong"].iloc[row] not in glong_pkl) and (
+            data["glat"].iloc[row] not in glat_pkl
+        ):
+            is_outlier[row] = 1
 
     # Save to .txt & .csv
 
-    # df = pd.DataFrame({
-    # "gname": data["gname"],
-    # "alias": data["alias"],
-    # "glong": data["glong"],
-    # "glat": data["glat"],
-    # "plx": data["plx"],
-    # "e_plx": data["e_plx"],
-    # "mux": data["mux"],
-    # "e_mux": data["e_mux"],
-    # "muy": data["muy"],
-    # "e_muy": data["e_muy"],
-    # "vlsr": data["vlsr"],
-    # "e_vlsr": data["e_vlsr"],
-    # "Upec": -v_rad,
-    # "Vpec": v_circ_res,
-    # "Wpec": v_vert,
-    # "is_tooclose": is_tooclose,
-    # "is_outlier": is_outlier,
-    # })
-    # # np.savetxt(r"/home/chengi/Documents/coop2021/pec_motions/100dist_meanUpecVpec_cauchyOutlierRejection.txt", df)
-    # df.to_csv(
-    #     path_or_buf=Path(__file__).parent / Path("100dist_meanUpecVpec_cauchyOutlierRejection.csv"),
-    #     sep=",",
-    #     index=False,
-    #     header=True,
-    # )
+    df = pd.DataFrame(
+        {
+            "gname": data["gname"],
+            "alias": data["alias"],
+            "ra": data["ra"],
+            "dec": data["dec"],
+            "glong": data["glong"],
+            "glat": data["glat"],
+            "plx": data["plx"],
+            "e_plx": data["e_plx"],
+            "mux": data["mux"],
+            "e_mux": data["e_mux"],
+            "muy": data["muy"],
+            "e_muy": data["e_muy"],
+            "vlsr": data["vlsr"],
+            "e_vlsr": data["e_vlsr"],
+            "Upec": -v_rad,
+            "Vpec": v_circ_res,
+            "Wpec": v_vert,
+            "is_tooclose": is_tooclose,
+            "is_outlier": is_outlier,
+        }
+    )
+    # np.savetxt(r"/home/chengi/Documents/coop2021/pec_motions/100dist_meanUpecVpec_cauchyOutlierRejection.txt", df)
+    df.to_csv(
+        path_or_buf=Path(__file__).parent
+        / Path("100dist_meanUpecVpec_cauchyOutlierRejection_peakEverything.csv"),
+        sep=",",
+        index=False,
+        header=True,
+    )
 
     # # import arviz as az
     # # num_sources = np.shape(trace["plx"])[1]
@@ -456,15 +475,20 @@ def get_cart_pos_and_cyl_residuals(data, trace, free_Zsun=False, free_roll=False
     # #     header=True,
     # # )
 
-    # print("Saved to .csv & .txt!")
+    print("Saved to .csv & .txt!")
 
     return x, y, z, v_rad, v_circ_res, v_vert
-# infile = Path("/mnt/c/Users/ichen/OneDrive/Documents/Jobs/WaterlooWorks/2A Job Search/ACCEPTED__NRC_EXT-10708-JuniorResearcher/Work Documents/coop2021/bayesian_mcmc_rot_curve/mcmc_outfile_A1_100dist_5.pkl")
+
+
+# infile = Path(
+#     "/mnt/c/Users/ichen/OneDrive/Documents/Jobs/WaterlooWorks/2A Job Search/ACCEPTED__NRC_EXT-10708-JuniorResearcher/Work Documents/coop2021/bayesian_mcmc_rot_curve/mcmc_outfile_A5_102dist_6.pkl"
+# )
 # with open(infile, "rb") as f:
 #     file = dill.load(f)
 #     data = file["data"]
 #     trace = file["trace"]
 # get_cart_pos_and_cyl_residuals(data, trace, True, True)
+
 
 def main(prior_set, num_samples, num_rounds):
     # Binary file to read
