@@ -125,6 +125,8 @@ def krige(x, y):
       Upec_interp_var, Vpec_interp_var :: scalars (km/s)
         The variances of Upec_interp and Vpec_interp, respectively
     """
+    import numpy as np
+    from kriging import kriging
 
     coord_obs = np.array(
         [[ 0.52848393,  4.92364912], [ 0.52241911,  5.31311558],
@@ -285,6 +287,12 @@ def krige(x, y):
         bin_number=True,
     )
 
+    if np.size(x) == 1 and np.size(y) == 1:
+        Upec_interp = Upec_interp[0]
+        Upec_interp_var = Upec_interp_var[0]
+        Vpec_interp = Vpec_interp[0]
+        Vpec_interp_var = Vpec_interp_var[0]
+
     return Upec_interp, Upec_interp_var, Vpec_interp, Vpec_interp_var
 
 def get_kde(pkl_file):
@@ -373,10 +381,16 @@ if __name__ == "__main__":
     infile = (
         Path(__file__).parent.parent
         / Path("bayesian_mcmc_rot_curve")
-        / "mcmc_outfile_A1_100dist_5.pkl"
+        / "mcmc_outfile_A5_102dist_6.pkl"
     )
 
     kdes = get_kde(infile)
+
+    # Threshold values where Upec and Vpec are no longer reliable
+    # (Based on standard deviation)
+    # TODO: Update values after kriging
+    Upec_var_threshold = 121  # km^2/s^2, (11)^2
+    Vpec_var_threshold = 92.16  # km^2/s^2, (9.6)^2
 
     # Save KDE & kriging function to pickle file
     filename = "cw21_kde_krige.pkl"
@@ -396,7 +410,9 @@ if __name__ == "__main__":
                 "a2": kdes[9],
                 "a3": kdes[10],
                 "krige": krige,
+                "Upec_var_threshold": Upec_var_threshold,
+                "Vpec_var_threshold": Vpec_var_threshold,
             },
             f,
         )
-
+    print("Saved!")
