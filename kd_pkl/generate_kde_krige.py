@@ -9,6 +9,7 @@ import sys
 from pathlib import Path
 import numpy as np
 import dill
+import pandas as pd
 from kriging import kriging
 from scipy.stats import gaussian_kde
 
@@ -21,98 +22,11 @@ sys.path.append(_SCRIPT_DIR)
 import mytransforms as trans
 
 
-# def krige_old():
-#     import pandas as pd
-#     datafile = Path(__file__).parent.parent / Path("pec_motions/100dist_meanUpecVpec_cauchyOutlierRejection.csv")
-#     tracefile = Path(__file__).parent.parent / Path("bayesian_mcmc_rot_curve/mcmc_outfile_A1_100dist_5.pkl")
-#     data100plx = pd.read_csv(datafile)
-
-#     # Only choose sources that have R > 4 kpc
-#     data100plx = data100plx[data100plx["is_tooclose"].values == 0]
-
-#     # === Get galactocentric coordinates ===
-#     # Mean values from 100 distance, mean Upec/Vpec trace, Cauchy outlier rejection file
-#     R0, Zsun, roll = 8.181364, 5.5833244, 0.009740928
-#     # a2, a3 = 0.97133905, 1.6247351
-#     glon = data100plx["glong"].values  # deg
-#     glat = data100plx["glat"].values  # deg
-#     plx = data100plx["plx"].values  # mas
-#     # === Calculate predicted values from optimal parameters ===
-#     # Parallax to distance
-#     dist = trans.parallax_to_dist(plx)
-#     # Galactic to barycentric Cartesian coordinates
-#     bary_x, bary_y, bary_z = trans.gal_to_bary(glon, glat, dist)
-#     # Barycentric Cartesian to galactocentric Cartesian coodinates
-#     x, y, z = trans.bary_to_gcen(
-#         bary_x, bary_y, bary_z, R0=R0, Zsun=Zsun, roll=roll
-#     )
-#     # Rotate 90 deg CW to Reid convention
-#     x, y = y, -x
-
-#     # Peculiar motions
-#     Upec = data100plx["Upec"].values
-#     Vpec = data100plx["Vpec"].values
-#     Wpec = data100plx["Wpec"].values
-
-#     # Only choose good data for kriging
-#     percentile = 90
-#     lower = 0.5 * (100 - percentile)
-#     upper = 0.5 * (100 + percentile)
-#     is_good = (
-#         (Upec > np.percentile(Upec, lower))
-#         & (Upec < np.percentile(Upec, upper))
-#         & (Vpec > np.percentile(Vpec, lower))
-#         & (Vpec < np.percentile(Vpec, upper))
-#         & (Wpec > np.percentile(Wpec, lower))
-#         & (Wpec < np.percentile(Wpec, upper))
-#     )
-#     num_good = sum(is_good)
-#     print("# sources used in kriging:", num_good)
-#     # print(Upec[is_good].mean(), Vpec[is_good].mean(), Wpec[is_good].mean())
-#     # print(np.median(Upec[is_good]), np.median(Vpec[is_good]), np.median(Wpec[is_good]))
-#     # print(np.std(Upec[is_good]), np.std(Vpec[is_good]), np.std(Wpec[is_good]))
-#     # v_tot = np.sqrt(Upec[is_good]**2 + Vpec[is_good]**2 + Wpec[is_good]**2)
-#     # print(np.mean(v_tot), np.median(v_tot), np.std(v_tot))
-
-#     # Krig good data
-#     coord_obs = np.vstack((x[is_good], y[is_good])).T
-#     # filename = "rotcurve2021_kde.pkl"
-#     # outfile = Path(__file__).parent.parent / Path("bayesian_mcmc_rot_curve" / filename)
-
-#     xlow, xhigh = -8, 12
-#     ylow, yhigh = -5, 15
-#     gridx, gridy = np.mgrid[xlow:xhigh:500j, ylow:yhigh:500j]
-#     coord_interp = np.vstack((gridx.flatten(), gridy.flatten())).T
-#     print(coord_interp.shape)
-
-#     variogram_model = "gaussian"  # "gaussian", "spherical", or "exponential"
-#     print("Variogram Model:", variogram_model)
-
-#     with np.printoptions(threshold=sys.maxsize):
-#         print(np.array2string(Vpec[is_good], separator=", "))
-#     # Upec_interp, Upec_interp_var = kriging.kriging(
-#     #     coord_obs,
-#     #     Upec[is_good],
-#     #     coord_interp,
-#     #     model=variogram_model,
-#     #     deg=1,
-#     #     nbins=10,
-#     #     bin_number=True,
-#     # )
-#     # Vpec_interp, Vpec_interp_var = kriging.kriging(
-#     #     coord_obs,
-#     #     Vpec[is_good],
-#     #     coord_interp,
-#     #     model=variogram_model,
-#     #     deg=1,
-#     #     nbins=10,
-#     #     bin_number=True,
-#     # )
-
-def krige(x, y):
+def krige_old(x, y):
     """
     Calculates kriging result of Upec & Vpec and their variances at 1 position.
     Requires kriging module from https://github.com/tvwenger/kriging and numpy as np
+    N.B. Uses tvw's kriging v1.2. OUTDATED. DO NOT USE THIS!
 
     Inputs:
       x, y :: scalars (kpc)
@@ -297,18 +211,13 @@ def krige(x, y):
 
 def get_kde(pkl_file):
     with open(pkl_file, "rb") as f1:
-        file = dill.load(f1)
-        trace = file["trace"]
-        # prior_set = file["prior_set"]  # "A1", "A5", "B", "C", "D"
-        # like_type = file["like_type"]  # "gauss", "cauchy", or "sivia"
-        # num_sources = file["num_sources"]
-        # num_samples = file["num_samples"]
-        # reject_method = file["reject_method"] if num_rounds != 1 else None
-        free_Zsun = file["free_Zsun"]
-        free_roll = file["free_roll"]
-        free_Wpec = file["free_Wpec"]
-        individual_Upec = file["individual_Upec"]
-        individual_Vpec = file["individual_Vpec"]
+        file1 = dill.load(f1)
+        trace = file1["trace"]
+        free_Zsun = file1["free_Zsun"]
+        free_roll = file1["free_roll"]
+        free_Wpec = file1["free_Wpec"]
+        individual_Upec = file1["individual_Upec"]
+        individual_Vpec = file1["individual_Vpec"]
 
     # Varnames order: [R0, Zsun, Usun, Vsun, Wsun, Upec, Vpec, Wpec, roll, a2, a3]
     varnames = ["R0", "Usun", "Vsun", "Wsun", "a2", "a3"]
@@ -336,6 +245,7 @@ def get_kde(pkl_file):
         varnames.insert(1, "Zsun")
         samples.insert(1, trace["Zsun"])
     samples = np.array(samples)  # shape: (# params, # total iterations)
+    print("variables in kde:", varnames)
 
     # Create KDEs
     kde_full = gaussian_kde(samples)
@@ -386,11 +296,53 @@ if __name__ == "__main__":
 
     kdes = get_kde(infile)
 
+    # ---- Kriging
+    datafile = Path("/home/chengi/Documents/coop2021/pec_motions/csvfiles/alldata_HPDmode.csv")
+    pearsonrfile = Path("/home/chengi/Documents/coop2021/pec_motions/pearsonr_cov.pkl")
+    data = pd.read_csv(datafile)
+    with open(pearsonrfile, "rb") as f:
+        file = dill.load(f)
+        cov_Upec = file["cov_Upec"]
+        cov_Vpec = file["cov_Vpec"]
+    # Only choose sources that have R > 4 kpc & are not outliers
+    is_good = (data["is_tooclose"].values == 0) & (data["is_outlier"].values == 0)
+    data = data[is_good]
+    cov_Upec = cov_Upec[:, is_good][is_good]
+    cov_Vpec = cov_Vpec[:, is_good][is_good]
+    # Get data
+    Upec = data["Upec_mode"].values
+    Vpec = data["Vpec_mode"].values
+    x = data["x_mode"].values
+    y = data["y_mode"].values
+    coord_obs = np.vstack((x, y)).T
+    # Initialize kriging object
+    Upec_krige = kriging.Kriging(coord_obs, Upec, obs_data_cov=cov_Upec)
+    Vpec_krige = kriging.Kriging(coord_obs, Vpec, obs_data_cov=cov_Vpec)
+    # Fit semivariogram
+    variogram_model = "gaussian"
+    nbins = 10
+    bin_number = False
+    lag_cutoff = 0.55
+    Upec_semivar, Upec_corner = Upec_krige.fit(
+        model=variogram_model,
+        deg=1,
+        nbins=nbins,
+        bin_number=bin_number,
+        lag_cutoff=lag_cutoff,
+        nsims=1000,
+    )
+    Vpec_semivar, Vpec_corner = Vpec_krige.fit(
+        model=variogram_model,
+        deg=1,
+        nbins=nbins,
+        bin_number=bin_number,
+        lag_cutoff=lag_cutoff,
+        nsims=1000,
+    )
     # Threshold values where Upec and Vpec are no longer reliable
     # (Based on standard deviation)
-    # TODO: Update values after kriging
-    Upec_var_threshold = 121  # km^2/s^2, (11)^2
-    Vpec_var_threshold = 92.16  # km^2/s^2, (9.6)^2
+    Upec_var_threshold = 225.0  # km^2/s^2, (15)^2
+    Vpec_var_threshold = 225.0  # km^2/s^2, (15)^2
 
     # Save KDE & kriging function to pickle file
     filename = "cw21_kde_krige.pkl"
@@ -409,7 +361,8 @@ if __name__ == "__main__":
                 "roll": kdes[8],
                 "a2": kdes[9],
                 "a3": kdes[10],
-                "krige": krige,
+                "Upec_krige": Upec_krige,
+                "Vpec_krige": Vpec_krige,
                 "Upec_var_threshold": Upec_var_threshold,
                 "Vpec_var_threshold": Vpec_var_threshold,
             },

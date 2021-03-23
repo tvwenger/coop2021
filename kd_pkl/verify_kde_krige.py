@@ -11,21 +11,22 @@ from pathlib import Path
 import dill
 import numpy as np
 import matplotlib.pyplot as plt
-from kriging import kriging
+import matplotlib as mpl
+# from kriging import kriging
 
 #
-# CW21 A5 rotation model parameters
+# CW21 A6 rotation model parameters
 #
-__R0 = 8.181
-__Usun = 10.407
-__Vsun = 10.213
-__Wsun = 8.078
-__Upec = 4.430
-__Vpec = -4.823
-__a2 = 0.971
-__a3 = 1.625
-__Zsun = 5.583
-__roll = 0.010
+__R0 = 8.1746
+__Usun = 10.879
+__Vsun = 10.697
+__Wsun = 8.088
+__Upec = 4.907
+__Vpec = -4.522
+__a2 = 0.977
+__a3 = 1.626
+__Zsun = 5.399
+__roll = -0.011
 
 #
 # IAU defined LSR
@@ -129,21 +130,113 @@ def plot_kde():
     plt.show()
 
 
-# def plot_kriging():
-#     kdefile = Path(__file__).parent / "cw21_kdefull_krige.pkl"
-#     with open(kdefile, "rb") as f:
-#         krige = dill.load(f)["krige"]
-#     xlow, xhigh = -8, 12
-#     ylow, yhigh = -5, 15
-#     gridx, gridy = np.mgrid[xlow:xhigh:500j, ylow:yhigh:500j]
-#     coord_interp = np.vstack((gridx.flatten(), gridy.flatten())).T
+def plot_kriging():
+    krigefile = Path(__file__).parent / "cw21_kde_krige.pkl"
+    with open(krigefile, "rb") as f:
+        file = dill.load(f)
+        Upec_krige = file["Upec_krige"]
+        Vpec_krige = file["Vpec_krige"]
+    xlow, xhigh = -8, 12
+    ylow, yhigh = -5, 15
+    gridx, gridy = np.mgrid[xlow:xhigh:500j, ylow:yhigh:500j]
+    coord_interp = np.vstack((gridx.flatten(), gridy.flatten())).T
 
-#     # Can't do this... krige only takes one x- & one y-value
-#     Upec_interp, Upec_interp_var, Vpec_interp, Vpec_interp_var = krige(coord_interp)
+    Upec, Upec_var = Upec_krige.interp(coord_interp)
+    Vpec, Vpec_var = Vpec_krige.interp(coord_interp)
+    Upec_sd = np.sqrt(Upec_var)
+    Vpec_sd = np.sqrt(Vpec_var)
+    # Reshape
+    Upec = Upec.reshape(gridx.shape)
+    Upec_sd = Upec_sd.reshape(gridx.shape)
+    Vpec = Vpec.reshape(gridx.shape)
+    Vpec_sd = Vpec_sd.reshape(gridx.shape)
+    # ----
+    # Plot
+    # ----
+    fig, ax = plt.subplots(1, 2, figsize=plt.figaspect(0.5))
+    cmap = "viridis"
+    extent = (xlow, xhigh, ylow, yhigh)
+    # Plot interpolated Upec
+    norm_Upec = mpl.colors.Normalize(vmin=np.min(Upec), vmax=np.max(Upec))
+    ax[0].imshow(Upec.T, origin="lower", extent=extent, norm=norm_Upec)
+    cbar_Upec = fig.colorbar(
+        mpl.cm.ScalarMappable(norm=norm_Upec, cmap=cmap), ax=ax[0], format="%.0f"
+    )
+    ax[0].axhline(y=0, linewidth=0.5, linestyle="--", color="k")  # horizontal line
+    ax[0].axvline(x=0, linewidth=0.5, linestyle="--", color="k")  # vertical line
+    ax[0].set_xlabel("$x$ (kpc)")
+    ax[0].set_ylabel("$y$ (kpc)")
+    ax[0].set_title("$\overline{U_s}$")
+    cbar_Upec.ax.set_ylabel("km s$^{-1}$", rotation=270)
+    cbar_Upec.ax.get_yaxis().labelpad = 15
+    ax[0].set_aspect("equal")
+    ax[0].grid(False)
+    # Plot interpolated Vpec
+    norm_Vpec = mpl.colors.Normalize(vmin=np.min(Vpec), vmax=np.max(Vpec))
+    ax[1].imshow(Vpec.T, origin="lower", extent=extent, norm=norm_Vpec)
+    cbar_Vpec = fig.colorbar(
+        mpl.cm.ScalarMappable(norm=norm_Vpec, cmap=cmap), ax=ax[1], format="%.0f"
+    )
+    ax[1].axhline(y=0, linewidth=0.5, linestyle="--", color="k")  # horizontal line
+    ax[1].axvline(x=0, linewidth=0.5, linestyle="--", color="k")  # vertical line
+    ax[1].set_xlabel("$x$ (kpc)")
+    ax[1].set_ylabel("$y$ (kpc)")
+    ax[1].set_title("$\overline{V_s}$")
+    cbar_Vpec.ax.set_ylabel("km s$^{-1}$", rotation=270)
+    cbar_Vpec.ax.get_yaxis().labelpad = 15
+    ax[1].set_aspect("equal")
+    ax[1].grid(False)
+    ax[0].set_xlim(xlow, xhigh)
+    ax[0].set_ylim(ylow, yhigh)
+    ax[1].set_xlim(xlow, xhigh)
+    ax[1].set_ylim(ylow, yhigh)
+    plt.show()
+    #
+    # Plot standard deviation
+    #
+    fig, ax = plt.subplots(1, 2, figsize=plt.figaspect(0.5))
+    cmap = "viridis"
+    extent = (xlow, xhigh, ylow, yhigh)
+    # Plot interpolated Upec sd
+    norm_Upec_sd = mpl.colors.Normalize(vmin=np.min(Upec_sd), vmax=np.max(Upec_sd))
+    ax[0].imshow(Upec_sd.T, origin="lower", extent=extent, norm=norm_Upec_sd)
+    cbar_Upec = fig.colorbar(
+        mpl.cm.ScalarMappable(norm=norm_Upec_sd, cmap=cmap), ax=ax[0], format="%.0f"
+    )
+    ax[0].axhline(y=0, linewidth=0.5, linestyle="--", color="k")  # horizontal line
+    ax[0].axvline(x=0, linewidth=0.5, linestyle="--", color="k")  # vertical line
+    ax[0].set_xlabel("$x$ (kpc)")
+    ax[0].set_ylabel("$y$ (kpc)")
+    ax[0].set_title("$\overline{U_s}$")
+    cbar_Upec.ax.set_ylabel("km s$^{-1}$", rotation=270)
+    cbar_Upec.ax.get_yaxis().labelpad = 15
+    ax[0].set_aspect("equal")
+    ax[0].grid(False)
+    # Plot interpolated Vpec sd
+    norm_Vpec_sd = mpl.colors.Normalize(vmin=np.min(Vpec_sd), vmax=np.max(Vpec_sd))
+    ax[1].imshow(Vpec_sd.T, origin="lower", extent=extent, norm=norm_Vpec_sd)
+    cbar_Vpec = fig.colorbar(
+        mpl.cm.ScalarMappable(norm=norm_Vpec_sd, cmap=cmap), ax=ax[1], format="%.0f"
+    )
+    ax[1].axhline(y=0, linewidth=0.5, linestyle="--", color="k")  # horizontal line
+    ax[1].axvline(x=0, linewidth=0.5, linestyle="--", color="k")  # vertical line
+    ax[1].set_xlabel("$x$ (kpc)")
+    ax[1].set_ylabel("$y$ (kpc)")
+    ax[1].set_title("$\overline{V_s}$")
+    cbar_Vpec.ax.set_ylabel("km s$^{-1}$", rotation=270)
+    cbar_Vpec.ax.get_yaxis().labelpad = 15
+    ax[1].set_aspect("equal")
+    ax[1].grid(False)
+    ax[0].set_xlim(xlow, xhigh)
+    ax[0].set_ylim(ylow, yhigh)
+    ax[1].set_xlim(xlow, xhigh)
+    ax[1].set_ylim(ylow, yhigh)
+    plt.show()
 
 
 def main():
-    plot_kde()
+    # plot_kde()
+    plot_kriging()
 
 
 if __name__ == "__main__":
