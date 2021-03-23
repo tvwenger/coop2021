@@ -67,6 +67,9 @@ def get_coords(data):
 
 
 def main():
+    # * CONCLUSION:
+    # * range of the semivariance points is much larger than the variation from small lags
+    # * to large lags. Basically there isn't much structure in the semivariograms.
     mc_type = "HPDmode"
     datafile = Path(__file__).parent / Path(f"csvfiles/alldata_{mc_type}.csv")
     pearsonrfile = Path(__file__).parent / "pearsonr_cov.pkl"
@@ -108,14 +111,18 @@ def main():
     y = data["y_mode"].values
 
     # # Only choose good data for kriging
-    # condition = "halfhpd-tot35-R0.8"
+    # condition = "halfhpd-all-R1.4-binnumberTrue"
     # # condition = "all185-eobsdata"
     # # condition = "tot35-R1-binnumTrue"
     # # condition = "all202-tot35-R1-binnumTrue"
     # is_good = (
     #     # (R < 10000)
-    #     (tot_halfhpd < 35.0)
-    #     & (R_halfhpd < 0.8)
+    #     (R_halfhpd < 0.8)
+    #     & (Upec_halfhpd < 24.0)
+    #     & (Vpec_halfhpd < 24.0)
+    #     & (Wpec_halfhpd < 20.0)
+    #     & (tot_halfhpd < 35.0)
+    #     & (tot_xy_halfhpd < 32.0)
     # )
     #
     # condition = "90ptile"
@@ -130,7 +137,8 @@ def main():
     #     & (Wpec > np.percentile(Wpec, lower))
     #     & (Wpec < np.percentile(Wpec, upper))
     # )
-    condition = "no-mcmc-outlier-binnumberTrue"
+    #
+    condition = "no-mcmc-outlier"
     is_good = data["is_outlier"].values == 0
 
     print("--- MC GOOD DATA STATS ---")
@@ -174,8 +182,9 @@ def main():
     #
     variogram_model = "gaussian"
     nbins = 10
-    bin_number = True
-    lag_cutoff = 0.7
+    bin_number = False
+    if bin_number: condition += "-binnumberTrue"
+    lag_cutoff = 0.5
     print("Semivariogram Model:", variogram_model)
     Upec_semivar, Upec_corner = Upec_krig.fit(
         model=variogram_model,
