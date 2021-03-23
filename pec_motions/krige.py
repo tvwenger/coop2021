@@ -184,7 +184,7 @@ def main():
     nbins = 10
     bin_number = False
     if bin_number: condition += "-binnumberTrue"
-    lag_cutoff = 0.7
+    lag_cutoff = 0.55
     print("Semivariogram Model:", variogram_model)
     Upec_semivar, Upec_corner = Upec_krig.fit(
         model=variogram_model,
