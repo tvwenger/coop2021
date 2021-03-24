@@ -14,7 +14,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from kd import pdf_kd
+from kd import pdf_kd, rotcurve_kd
 
 
 # Want to add my own programs as package:
@@ -83,7 +83,7 @@ def plx_to_peak_dist (plx, e_plx):
            / (4 * sigma_sq * plx_dist)
 
 
-def main(rotcurve, load_csv=False, num_samples=100, use_peculiar=True):
+def main(load_csv=False, rotcurve="cw21_rotcurve", num_samples=100, use_peculiar=True):
     if load_csv:
         csvfile = Path(__file__).parent / f"kd_plx_results_{num_samples}x.csv"
         kd_results = pd.read_csv(csvfile)
@@ -94,16 +94,17 @@ def main(rotcurve, load_csv=False, num_samples=100, use_peculiar=True):
         vlsr = kd_results["vlsr"].values
         e_vlsr = kd_results["e_vlsr"].values
     else:
-        print("="*6)
+        print("=" * 6)
+        print("Rotation model:", rotcurve)
         print("Number of MC kd samples:", num_samples)
         print("Including peculiar motions in kd:", use_peculiar)
-        print("="*6)
+        print("=" * 6)
         # Get HII region data
         dbfile = Path("/home/chengi/Documents/coop2021/data/hii_v2_20201203.db")
         data = get_data(dbfile)
         # Select subset for testing
-        data = data[160:210]
-        glong = data["glong"].values
+        data = data[160:]
+        glong = data["glong"].values % 360.
         glat = data["glat"].values
         plx = data["plx"].values
         e_plx = data["e_plx"].values
@@ -124,11 +125,18 @@ def main(rotcurve, load_csv=False, num_samples=100, use_peculiar=True):
             peculiar=use_peculiar,
             use_kriging=use_kriging,
         )
+        # kd_results = rotcurve_kd.rotcurve_kd(
+        #     glong, glat, vlsr, velo_tol=0.1, rotcurve=rotcurve, peculiar=use_peculiar
+        # )
         print("Done kd")
 
         # Save results
-        kd_df = pd.DataFrame.from_dict(kd_results)
-        results = pd.concat([data, kd_df], axis=1)  # add kd results to data
+        kd_df = pd.DataFrame(kd_results)
+        print("Results shape:", np.shape(kd_df))
+        # Add kd results to data (.reset_index() ensures rows have
+        #                         same number & can concat properly)
+        results = pd.concat([data.reset_index(drop=True),
+                             kd_df.reset_index(drop=True)], axis=1)
         results.to_csv(
             path_or_buf=Path(__file__).parent / f"kd_plx_results_{num_samples}x.csv",
             sep=",",
@@ -136,6 +144,7 @@ def main(rotcurve, load_csv=False, num_samples=100, use_peculiar=True):
             header=True,
         )
         print("Saved to .csv")
+        kd_df = None  # free memory
 
     # Assign tangent kd to any source with vlsr w/in 20 km/s of tangent vlsr
     use_tangent = abs(kd_results["vlsr_tangent"] - vlsr) < 20
@@ -153,24 +162,33 @@ def main(rotcurve, load_csv=False, num_samples=100, use_peculiar=True):
     conditions = [is_near, is_far, is_tangent]
     choices = [kd_results["near"], kd_results["far"], kd_results["tangent"]]
     dists = np.select(conditions, choices, default=np.nan)
+    # Exclude any sources w/in 15 deg of GC or 20 deg of GAC
+    glong_red = np.copy(glong)
+    glong_red[glong > 180] -= 360  # force -180 < glong_red <= 180
+    is_unreliable = (abs(glong_red) < 15.) | (abs(glong_red) > 160.)
 
-    # # For now, use distance with smallest error
-    # near_err = 0.5 * (kd_results["near_err_pos"] + kd_results["near_err_neg"])
-    # far_err = 0.5 * (kd_results["far_err_pos"] + kd_results["far_err_neg"])
-    # tangent_err = 0.5 * (kd_results["tangent_err_pos"] + kd_results["tangent_err_neg"])
-    # # Ignore NaNs
-    # min_err = np.fmin.reduce([near_err, far_err, tangent_err])
-    # # Select distance corresponding to smallest error
-    # tol = 0.001  # tolerance for float equality
-    # is_near = abs(near_err - min_err) < tol
-    # is_far = abs(far_err- min_err) < tol
-    # is_tangent = abs(tangent_err - min_err) < tol
-    # conditions = [is_near, is_far, is_tangent]
-    # choices = [kd_results["near"], kd_results["far"], kd_results["tangent"]]
-    # dists = np.select(conditions, choices, default=np.nan)
-    print("Total number of sources:", sum(~np.isnan(dists)))
-    print(f"Num near: {sum(is_near)}\tNum far: {sum(is_far)}"
-          + f"\tNum tangent: {sum(is_tangent)}")
+    print("=" * 6)
+    is_nan = (~is_near) & (~is_far) & (~is_tangent)
+    # num_sources = np.sum(np.isfinite(dists)) + np.sum((is_unreliable) & (~is_nan)) - \
+    #               np.sum((np.isfinite(dists)) & ((is_unreliable) & (~is_nan)))
+    num_sources = np.sum(np.isfinite(dists))
+    print("Total number of (non NaN) sources:", num_sources)
+    print(f"Num near: {np.sum((is_near) & (~is_unreliable))}"
+          + f"\tNum far: {np.sum((is_far) & (~is_unreliable))}"
+          + f"\tNum tangent: {np.sum((is_tangent) & (~is_unreliable))}"
+          + f"\tNum unreliable: {np.sum((is_unreliable) & (~is_nan))}")
+    print("Number of NaN sources (i.e. all dists are NaNs):", np.sum(is_nan))
+    print("Num NaNs in near, far, tangent:",
+          np.sum(np.isnan(near_err)), np.sum(np.isnan(far_err)),
+          np.sum(np.isnan(tangent_err)))
+    # Print following if two distances are selected:
+    num_near_far = np.sum((is_near) & (is_far))
+    num_near_tan = np.sum((is_near) & (is_tangent))
+    num_far_tan = np.sum((is_far) & (is_tangent))
+    if any([num_near_far, num_near_tan, num_far_tan]):
+        print("Both near and far (should be 0):", num_near_far)
+        print("Both near and tan (should be 0):", num_near_tan)
+        print("Both far and tan (should be 0):", num_far_tan)
 
     # Convert to galactocentric frame
     Xb, Yb, Zb = trans.gal_to_bary(glong, glat, dists)
@@ -181,9 +199,14 @@ def main(rotcurve, load_csv=False, num_samples=100, use_peculiar=True):
     # Plot
     fig, ax = plt.subplots()
     size = 2
-    ax.scatter(Xg[is_near], Yg[is_near], c="tab:cyan", s=size, label="Near")
-    ax.scatter(Xg[is_far], Yg[is_far], c="tab:purple", s=size, label="Far")
-    ax.scatter(Xg[is_tangent], Yg[is_tangent], c="tab:red", s=size, label="Tangent")
+    ax.scatter(Xg[(is_near) & (~is_unreliable)], Yg[(is_near) & (~is_unreliable)],
+               c="tab:cyan", s=size, label="Near")
+    ax.scatter(Xg[(is_far) & (~is_unreliable)], Yg[(is_far) & (~is_unreliable)],
+               c="tab:purple", s=size, label="Far")
+    ax.scatter(Xg[(is_tangent) & (~is_unreliable)], Yg[(is_tangent) & (~is_unreliable)],
+               c="tab:green", s=size, label="Tangent")
+    ax.scatter(Xg[is_unreliable], Yg[is_unreliable],
+               c="tab:red", s=size, label="Unreliable")
     ax.legend(fontsize=9)
     ax.set_xlabel("$x$ (kpc)")
     ax.set_ylabel("$y$ (kpc)")
@@ -229,20 +252,20 @@ def main(rotcurve, load_csv=False, num_samples=100, use_peculiar=True):
 
 
 if __name__ == "__main__":
-    rotcurve_input = input("rotcurve file (default cw21_rotcurve): ")
-    rotcurve_input = "cw21_rotcurve" if rotcurve_input == "" else rotcurve_input
     load_csv_input = str2bool(input("(y/n) Plot results from csv? (default n): "),
                               empty_condition=False)
     if load_csv_input:
-        main(rotcurve_input, load_csv=load_csv_input)
+        main(load_csv=load_csv_input)
     else:
+        rotcurve_input = input("rotcurve file (default cw21_rotcurve): ")
+        rotcurve_input = "cw21_rotcurve" if rotcurve_input == "" else rotcurve_input
         num_samples_input = int(input("(int) Number of MC kd samples: "))
         use_pec_input = str2bool(
             input("(y/n) Include peculiar motions in kd (default y): "),
             empty_condition=True)
         main(
-            rotcurve_input,
             load_csv=load_csv_input,
+            rotcurve=rotcurve_input,
             num_samples=num_samples_input,
             use_peculiar=use_pec_input
         )
