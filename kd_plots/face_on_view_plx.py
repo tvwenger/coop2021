@@ -83,7 +83,7 @@ def plx_to_peak_dist (plx, e_plx):
            / (4 * sigma_sq * plx_dist)
 
 
-def main(load_csv=False, num_samples=100, use_peculiar=True):
+def main(rotcurve, load_csv=False, num_samples=100, use_peculiar=True):
     if load_csv:
         csvfile = Path(__file__).parent / f"kd_plx_results_{num_samples}x.csv"
         kd_results = pd.read_csv(csvfile)
@@ -101,6 +101,8 @@ def main(load_csv=False, num_samples=100, use_peculiar=True):
         # Get HII region data
         dbfile = Path("/home/chengi/Documents/coop2021/data/hii_v2_20201203.db")
         data = get_data(dbfile)
+        # Select subset for testing
+        data = data[160:210]
         glong = data["glong"].values
         glat = data["glat"].values
         plx = data["plx"].values
@@ -109,7 +111,6 @@ def main(load_csv=False, num_samples=100, use_peculiar=True):
         e_vlsr = data["e_vlsr"].values
 
         # MC kinematic distances
-        rotcurve = "cw21_rotcurve"  # the name of the script containing the rotation curve
         use_kriging = False  # use kriging to estimate peculiar motions
 
         print("kd in progress...")
@@ -193,7 +194,9 @@ def main(load_csv=False, num_samples=100, use_peculiar=True):
     ax.set_ylim(-5, 15)
     ax.set_yticks([-5, 0, 5, 10, 15])
     ax.grid(False)
-    fig.savefig(Path(__file__).parent / "HII_faceonplx.pdf", bbox_inches="tight")
+    ax.set_aspect("equal")
+    fig.savefig(Path(__file__).parent / f"HII_faceonplx_{num_samples}x.pdf",
+                bbox_inches="tight")
     plt.show()
 
     # dists = kd_results["distance"]
@@ -226,16 +229,19 @@ def main(load_csv=False, num_samples=100, use_peculiar=True):
 
 
 if __name__ == "__main__":
+    rotcurve_input = input("rotcurve file (default cw21_rotcurve): ")
+    rotcurve_input = "cw21_rotcurve" if rotcurve_input == "" else rotcurve_input
     load_csv_input = str2bool(input("(y/n) Plot results from csv? (default n): "),
                               empty_condition=False)
     if load_csv_input:
-        main(load_csv=load_csv_input)
+        main(rotcurve_input, load_csv=load_csv_input)
     else:
         num_samples_input = int(input("(int) Number of MC kd samples: "))
         use_pec_input = str2bool(
             input("(y/n) Include peculiar motions in kd (default y): "),
             empty_condition=True)
         main(
+            rotcurve_input,
             load_csv=load_csv_input,
             num_samples=num_samples_input,
             use_peculiar=use_pec_input
