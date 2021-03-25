@@ -102,8 +102,6 @@ def main(load_csv=False, rotcurve="cw21_rotcurve", num_samples=100, use_peculiar
         # Get HII region data
         dbfile = Path("/home/chengi/Documents/coop2021/data/hii_v2_20201203.db")
         data = get_data(dbfile)
-        # Select subset for testing
-        data = data[160:]
         glong = data["glong"].values % 360.
         glat = data["glat"].values
         plx = data["plx"].values
