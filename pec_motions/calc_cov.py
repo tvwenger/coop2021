@@ -187,7 +187,7 @@ def generate_dists(plx, e_plx, num_samples):
     return dists
 
 
-def calc_cc(data):
+def calc_cc():
     _NUM_SAMPLES = 10000  # number of MC samples
 
     kdefile = Path("kd_pkl/cw21_kde.pkl")
@@ -224,30 +224,52 @@ def calc_cc(data):
     vlsr = np.random.normal(loc=vlsr, scale=e_vlsr, size=(_NUM_SAMPLES, len(ra)))
 
     Theta0 = urc(R0, a2=a2, a3=a3, R0=R0)  # km/s, LSR circular rotation speed
-    radius, azimuth, height, v_radial, v_circ, v_vert = trans.eq_and_gal_to_gcen_cyl(
-        ra,
-        dec,
-        plx,
-        glon,
-        glat,
-        eqmux,
-        eqmuy,
-        vlsr,
-        mc_dists=dist,
-        R0=R0[np.newaxis].T,
-        Zsun=Zsun[np.newaxis].T,
-        roll=roll[np.newaxis].T,
-        Usun=Usun[np.newaxis].T,
-        Vsun=Vsun[np.newaxis].T,
-        Wsun=Wsun[np.newaxis].T,
-        Theta0=Theta0[np.newaxis].T,
-        use_theano=False,
-        return_only_r_and_theta=False,
-    )
+    # radius, azimuth, height, v_radial, v_circ, v_vert = trans.eq_and_gal_to_gcen_cyl(
+    #     ra,
+    #     dec,
+    #     plx,
+    #     glon,
+    #     glat,
+    #     eqmux,
+    #     eqmuy,
+    #     vlsr,
+    #     mc_dists=dist,
+    #     R0=R0[np.newaxis].T,
+    #     Zsun=Zsun[np.newaxis].T,
+    #     roll=roll[np.newaxis].T,
+    #     Usun=Usun[np.newaxis].T,
+    #     Vsun=Vsun[np.newaxis].T,
+    #     Wsun=Wsun[np.newaxis].T,
+    #     Theta0=Theta0[np.newaxis].T,
+    #     use_theano=False,
+    #     return_only_r_and_theta=False,
+    # )
+    # Transform from galactic to galactocentric Cartesian coordinates
+    bary_x, bary_y, bary_z = trans.gal_to_bary(glon, glat, dist)
+    gcen_x, gcen_y, gcen_z = trans.bary_to_gcen(
+      bary_x, bary_y, bary_z, R0=R0[np.newaxis].T,
+      Zsun=Zsun[np.newaxis].T, roll=roll[np.newaxis].T)
+    # LSR velocity to barycentric velocity
+    vbary = trans.vlsr_to_vbary(vlsr, glon, glat)
+    # Transform equatorial proper motions to galactic proper motions
+    gmul, gmub = trans.eq_to_gal(
+        ra, dec, eqmux, eqmuy, return_pos=False, use_theano=False)
+    # Transform galactic proper motions to barycentric Cartesian velocities
+    U, V, W = trans.gal_to_bary_vel(glon, glat, dist, gmul, gmub, vbary)
+    # Transform barycentric Cartesian velocities to galactocentric Cartesian velocities
+    gcen_vx, gcen_vy, gcen_vz = trans.bary_to_gcen_vel(
+      U, V, W,
+      R0=R0[np.newaxis].T, Zsun=Zsun[np.newaxis].T, roll=roll[np.newaxis].T,
+      Usun=Usun[np.newaxis].T, Vsun=Vsun[np.newaxis].T, Wsun=Wsun[np.newaxis].T,
+      Theta0=Theta0[np.newaxis].T)
+    radius, azimuth, height, v_radial, v_circ, v_vert = trans.gcen_cart_to_gcen_cyl(
+        gcen_x, gcen_y, gcen_z, gcen_vx, gcen_vy, gcen_vz, use_theano=False)
+    #
     v_circ_pred = (
         urc(radius, a2=a2[np.newaxis].T, a3=a3[np.newaxis].T, R0=R0[np.newaxis].T) + Vpec
     )  # km/s
     v_circ_res = v_circ - v_circ_pred
+    vx, vy = gcen_vy, -gcen_vx
     # v_radial and v_circ_res shapes: (_NUM_SAMPLES, num_sources)
     #
     # Correlation coefficient b/w Upecs
@@ -264,9 +286,15 @@ def calc_cc(data):
             Upec_diffj = Upec[:, j] - Upec_meanj
             r_num = np.sum(Upec_diffi * Upec_diffj)
             r_den = np.sqrt(np.sum(Upec_diffi ** 2)) * np.sqrt(np.sum(Upec_diffj ** 2))
-            r_Upec[i, j] = r_num / r_den
+            # Fringe cases
+            r = r_num / r_den
+            r = 1 if r > 1 else r
+            r = -1 if r < -1 else r
+            # Populate array
+            r_Upec[i, j] = r
             cov_Upec[i, j] = r_num / _NUM_SAMPLES
     print(np.max(r_Upec[r_Upec < 0.999999999999999]))
+    print(np.min(r_Upec[r_Upec > -0.999999999999999]))
     #
     # Correlation coefficient b/w Vpecs
     #
@@ -280,29 +308,83 @@ def calc_cc(data):
             Vpec_diffj = Vpec[:, j] - Vpec_meanj
             r_num = np.sum(Vpec_diffi * Vpec_diffj)
             r_den = np.sqrt(np.sum(Vpec_diffi ** 2)) * np.sqrt(np.sum(Vpec_diffj ** 2))
-            r_Vpec[i, j] = r_num / r_den
+            # Fringe cases
+            r = r_num / r_den
+            r = 1 if r > 1 else r
+            r = -1 if r < -1 else r
+            # Populate array
+            r_Vpec[i, j] = r
             cov_Vpec[i, j] = r_num / _NUM_SAMPLES
     print(np.max(r_Vpec[r_Vpec < 0.999999999999999]))
+    print(np.min(r_Vpec[r_Vpec > -0.999999999999999]))
+    #
+    # Correlation coefficient b/w vxs
+    #
+    r_vx = np.ones((num_sources, num_sources), float)
+    cov_vx = np.ones((num_sources, num_sources), float)
+    for i in range(num_sources):
+        for j in range(num_sources):
+            vx_meani = np.mean(vx[:, i])
+            vx_meanj = np.mean(vx[:, j])
+            vx_diffi = vx[:, i] - vx_meani
+            vx_diffj = vx[:, j] - vx_meanj
+            r_num = np.sum(vx_diffi * vx_diffj)
+            r_den = np.sqrt(np.sum(vx_diffi ** 2 )) * np.sqrt(np.sum(vx_diffj ** 2))
+            # Fringe cases
+            r = r_num / r_den
+            r = 1 if r > 1 else r
+            r = -1 if r < -1 else r
+            # Populate array
+            r_vx[i, j] = r
+            cov_vx[i, j] = r_num / _NUM_SAMPLES
+    print(np.max(r_vx[r_vx < 0.999999999999999]))
+    print(np.min(r_vx[r_vx > -0.999999999999999]))
+    #
+    # Correlation coefficient b/w vys
+    #
+    r_vy = np.ones((num_sources, num_sources), float)
+    cov_vy = np.ones((num_sources, num_sources), float)
+    for i in range(num_sources):
+        for j in range(num_sources):
+            vy_meani = np.mean(vy[:, i])
+            vy_meanj = np.mean(vy[:, j])
+            vy_diffi = vx[:, i] - vy_meani
+            vy_diffj = vx[:, j] - vy_meanj
+            r_num = np.sum(vy_diffi * vy_diffj)
+            r_den = np.sqrt(np.sum(vy_diffi ** 2 )) * np.sqrt(np.sum(vy_diffj ** 2))
+            # Fringe cases
+            r = r_num / r_den
+            r = 1 if r > 1 else r
+            r = -1 if r < -1 else r
+            # Populate array
+            r_vy[i, j] = r
+            cov_vy[i, j] = r_num / _NUM_SAMPLES
+    print(np.max(r_vy[r_vy < 0.999999999999999]))
+    print(np.min(r_vy[r_vy > -0.999999999999999]))
 
-    # outfile = Path(__file__).parent / Path("pearsonr_cov.pkl")
-    # with open(outfile, "wb") as f:
-    #     dill.dump(
-    #         {
-    #             "r_Upec": r_Upec,
-    #             "cov_Upec": cov_Upec,
-    #             "r_Vpec": r_Vpec,
-    #             "cov_Vpec": cov_Vpec,
-    #         },
-    #         f,
-    #     )
-    # print("Saved to .pkl file!")
+    outfile = Path(__file__).parent / Path("pearsonr_cov.pkl")
+    with open(outfile, "wb") as f:
+        dill.dump(
+            {
+                "r_Upec": r_Upec,
+                "cov_Upec": cov_Upec,
+                "r_Vpec": r_Vpec,
+                "cov_Vpec": cov_Vpec,
+                "r_vx": r_vx,
+                "cov_vx": cov_vx,
+                "r_vy": r_vy,
+                "cov_vy": cov_vy,
+            },
+            f,
+        )
+    print("Saved to .pkl file!")
 
 
 def main():
-    mc_type = "HPDmode"
-    datafile = Path(__file__).parent / Path(f"csvfiles/alldata_{mc_type}.csv")
-    data = pd.read_csv(datafile)
-    calc_cc(data)
+    # mc_type = "HPDmode"
+    # datafile = Path(__file__).parent / Path(f"csvfiles/alldata_{mc_type}.csv")
+    # data = pd.read_csv(datafile)
+    calc_cc()
 
 
 if __name__ == "__main__":
