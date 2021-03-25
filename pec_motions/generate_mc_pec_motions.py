@@ -217,26 +217,49 @@ def mc_plx_upecvpec(data):
     vlsr = np.random.normal(loc=vlsr, scale=e_vlsr, size=(_NUM_SAMPLES, len(ra)))
 
     Theta0 = urc(R0, a2=a2, a3=a3, R0=R0)  # km/s, LSR circular rotation speed
-    radius, azimuth, height, v_radial, v_circ, v_vert = trans.eq_and_gal_to_gcen_cyl(
-        ra,
-        dec,
-        plx,
-        glon,
-        glat,
-        eqmux,
-        eqmuy,
-        vlsr,
-        mc_dists=dist,
-        R0=R0[np.newaxis].T,
-        Zsun=Zsun[np.newaxis].T,
-        roll=roll[np.newaxis].T,
-        Usun=Usun[np.newaxis].T,
-        Vsun=Vsun[np.newaxis].T,
-        Wsun=Wsun[np.newaxis].T,
-        Theta0=Theta0[np.newaxis].T,
-        use_theano=False,
-        return_only_r_and_theta=False,
-    )
+    # radius, azimuth, height, v_radial, v_circ, v_vert = trans.eq_and_gal_to_gcen_cyl(
+    #     ra,
+    #     dec,
+    #     plx,
+    #     glon,
+    #     glat,
+    #     eqmux,
+    #     eqmuy,
+    #     vlsr,
+    #     mc_dists=dist,
+    #     R0=R0[np.newaxis].T,
+    #     Zsun=Zsun[np.newaxis].T,
+    #     roll=roll[np.newaxis].T,
+    #     Usun=Usun[np.newaxis].T,
+    #     Vsun=Vsun[np.newaxis].T,
+    #     Wsun=Wsun[np.newaxis].T,
+    #     Theta0=Theta0[np.newaxis].T,
+    #     use_theano=False,
+    #     return_only_r_and_theta=False,
+    # )
+    #
+    # Transform from galactic to galactocentric Cartesian coordinates
+    bary_x, bary_y, bary_z = trans.gal_to_bary(glon, glat, dist)
+    gcen_x, gcen_y, gcen_z = trans.bary_to_gcen(
+      bary_x, bary_y, bary_z, R0=R0[np.newaxis].T,
+      Zsun=Zsun[np.newaxis].T, roll=roll[np.newaxis].T)
+    # LSR velocity to barycentric velocity
+    vbary = trans.vlsr_to_vbary(vlsr, glon, glat)
+    # Transform equatorial proper motions to galactic proper motions
+    gmul, gmub = trans.eq_to_gal(
+        ra, dec, eqmux, eqmuy, return_pos=False, use_theano=False)
+    # Transform galactic proper motions to barycentric Cartesian velocities
+    U, V, W = trans.gal_to_bary_vel(glon, glat, dist, gmul, gmub, vbary)
+    # Transform barycentric Cartesian velocities to galactocentric Cartesian velocities
+    gcen_vx, gcen_vy, gcen_vz = trans.bary_to_gcen_vel(
+      U, V, W,
+      R0=R0[np.newaxis].T, Zsun=Zsun[np.newaxis].T, roll=roll[np.newaxis].T,
+      Usun=Usun[np.newaxis].T, Vsun=Vsun[np.newaxis].T, Wsun=Wsun[np.newaxis].T,
+      Theta0=Theta0[np.newaxis].T)
+    radius, azimuth, height, v_radial, v_circ, v_vert = trans.gcen_cart_to_gcen_cyl(
+        gcen_x, gcen_y, gcen_z, gcen_vx, gcen_vy, gcen_vz, use_theano=False)
+    #
+    #
     v_circ_pred = (
         urc(radius, a2=a2[np.newaxis].T, a3=a3[np.newaxis].T, R0=R0[np.newaxis].T) + Vpec
     )  # km/s
@@ -248,6 +271,7 @@ def mc_plx_upecvpec(data):
     #
     print("Now calculating HPD...")
     r_hpd = np.array([calc_hpd(radius[:, idx], "scipy") for idx in range(num_sources)])
+    az_hpd = np.array([calc_hpd(azimuth[:, idx], "scipy") for idx in range(num_sources)])
     Upec_hpd = np.array(
         [calc_hpd(-v_radial[:, idx], "scipy") for idx in range(num_sources)]
     )
@@ -261,6 +285,7 @@ def mc_plx_upecvpec(data):
     r_err_hpd_low = r_hpd_mode - r_hpd_low
     r_err_hpd_high = r_hpd_high - r_hpd_mode
     r_err_hpd = np.vstack((r_err_hpd_low, r_err_hpd_high))
+    az_hpd_mode, az_hpd_low, az_hpd_high = az_hpd[:, 1], az_hpd[:, 2], az_hpd[:, 3]
     Upec_hpd_mode, Upec_hpd_low, Upec_hpd_high = Upec_hpd[:, 1], Upec_hpd[:, 2], Upec_hpd[:, 3]
     Upec_err_hpd_low = Upec_hpd_mode - Upec_hpd_low
     Upec_err_hpd_high = Upec_hpd_high - Upec_hpd_mode
@@ -276,21 +301,30 @@ def mc_plx_upecvpec(data):
     #
     # Galactocentric Cartesian positions
     #
-    x, y, z, = trans.gcen_cyl_to_gcen_cart(radius, azimuth, height)
+    # x, y, z, = trans.gcen_cyl_to_gcen_cart(radius, azimuth, height)
     # Rotate 90 deg CW to Reid convention
-    x, y = y, -x
+    x, y = gcen_y, -gcen_x
+    vx, vy = gcen_vy, -gcen_vx
+    z = gcen_z
+    vz = gcen_vz
     # Calculate mode and errors
     x_hpd = np.array([calc_hpd(x[:, idx], "scipy") for idx in range(num_sources)])
     y_hpd = np.array([calc_hpd(y[:, idx], "scipy") for idx in range(num_sources)])
     z_hpd = np.array([calc_hpd(z[:, idx], "scipy") for idx in range(num_sources)])
+    vx_hpd = np.array([calc_hpd(vx[:, idx], "scipy") for idx in range(num_sources)])
+    vy_hpd = np.array([calc_hpd(vy[:, idx], "scipy") for idx in range(num_sources)])
+    vz_hpd = np.array([calc_hpd(vz[:, idx], "scipy") for idx in range(num_sources)])
     x_hpd_mode, x_hpd_low, x_hpd_high = x_hpd[:, 1], x_hpd[:, 2], x_hpd[:, 3]
     y_hpd_mode, y_hpd_low, y_hpd_high = y_hpd[:, 1], y_hpd[:, 2], y_hpd[:, 3]
     z_hpd_mode, z_hpd_low, z_hpd_high = z_hpd[:, 1], z_hpd[:, 2], z_hpd[:, 3]
+    vx_hpd_mode, vx_hpd_low, vx_hpd_high = vx_hpd[:, 1], vx_hpd[:, 2], vx_hpd[:, 3]
+    vy_hpd_mode, vy_hpd_low, vy_hpd_high = vy_hpd[:, 1], vy_hpd[:, 2], vy_hpd[:, 3]
+    vz_hpd_mode, vz_hpd_low, vz_hpd_high = vz_hpd[:, 1], vz_hpd[:, 2], vz_hpd[:, 3]
     #
     # Plot posterior distributions of one source
     #
-    var_lst = [dist, x, y, z, radius, -v_radial, v_circ_res, v_vert]
-    name_lst = ["dist", "x", "y", "z", "R", "Upec", "Vpec", "Wpec"]
+    var_lst = [dist, x, y, z, vx, vy, vz, radius, azimuth, -v_radial, v_circ_res, v_vert]
+    name_lst = ["dist", "x", "y", "z", "vx", "vy", "vz", "R", "azimuth", "Upec", "Vpec", "Wpec"]
     # var_lst = [dist, eqmux, eqmuy, vlsr, x, y, z, radius, -v_radial, v_circ_res, v_vert]
     # name_lst = ["dist", "mux", "muy", "vlsr", "x", "y", "z", "R", "Upec", "Vpec", "Wpec"]
     fig, axes = plt.subplots(len(var_lst), figsize=plt.figaspect(5 / 8 * len(var_lst)))
@@ -406,11 +440,17 @@ def mc_plx_upecvpec(data):
     y_halfhpd = 0.5 * (y_hpd_high - y_hpd_low)
     z_halfhpd = 0.5 * (z_hpd_high - z_hpd_low)
     r_halfhpd = 0.5 * (r_hpd_high - r_hpd_low)
+    az_halfhpd = 0.5 * (az_hpd_high - az_hpd_low)
     Upec_halfhpd = 0.5 * (Upec_hpd_high - Upec_hpd_low)
     Vpec_halfhpd = 0.5 * (Vpec_hpd_high - Vpec_hpd_low)
     Wpec_halfhpd = 0.5 * (Wpec_hpd_high - Wpec_hpd_low)
-    halfhpd_lst = [x_halfhpd, y_halfhpd, z_halfhpd, r_halfhpd, Upec_halfhpd, Vpec_halfhpd, Wpec_halfhpd]
-    halfhpd_names = ["x_halfhpd", "y_halfhpd", "z_halfhpd", "r_halfhpd", "Upec_halfhpd", "Vpec_halfhpd", "Wpec_halfhpd"]
+    vx_halfhpd = 0.5 * (vx_hpd_high - vx_hpd_low)
+    vy_halfhpd = 0.5 * (vy_hpd_high - vy_hpd_low)
+    vz_halfhpd = 0.5 * (vz_hpd_high - vz_hpd_low)
+    halfhpd_lst = [x_halfhpd, y_halfhpd, z_halfhpd, r_halfhpd, az_halfhpd, Upec_halfhpd,
+                   Vpec_halfhpd, Wpec_halfhpd, vx_halfhpd, vy_halfhpd, vz_halfhpd]
+    halfhpd_names = ["x_halfhpd", "y_halfhpd", "z_halfhpd", "r_halfhpd", "az_halfhpd", "Upec_halfhpd",
+                     "Vpec_halfhpd", "Wpec_halfhpd", "vx_halfhpd", "vy_halfhpd", "vz_halfhpd"]
     for name, halfhpd in zip(halfhpd_names, halfhpd_lst):
         print("Negative halfhpd found in", name) if np.any(halfhpd) < 0 else None
 
@@ -443,10 +483,26 @@ def mc_plx_upecvpec(data):
             "z_halfhpd": z_halfhpd,
             "z_hpdlow": z_hpd_low,
             "z_hpdhigh": z_hpd_high,
+            "vx_mode": vx_hpd_mode,
+            "vx_halfhpd": vx_halfhpd,
+            "vx_hpdlow": vx_hpd_low,
+            "vx_hpdhigh": vx_hpd_high,
+            "vy_mode": vy_hpd_mode,
+            "vy_halfhpd": vy_halfhpd,
+            "vy_hpdlow": vy_hpd_low,
+            "vy_hpdhigh": vy_hpd_high,
+            "vz_mode": vz_hpd_mode,
+            "vz_halfhpd": vz_halfhpd,
+            "vz_hpdlow": vz_hpd_low,
+            "vz_hpdhigh": vz_hpd_high,
             "R_mode": r_hpd_mode,
             "R_halfhpd": r_halfhpd,
             "R_hpdlow": r_hpd_low,
             "R_hpdhigh": r_hpd_high,
+            "az_mode": az_hpd_mode,
+            "az_halfhpd": az_halfhpd,
+            "az_hpdlow": az_hpd_low,
+            "az_hpdhigh": az_hpd_high,
             "Upec_mode": Upec_hpd_mode,
             "Upec_halfhpd": Upec_halfhpd,
             "Upec_hpdlow": Upec_hpd_low,
@@ -464,7 +520,7 @@ def mc_plx_upecvpec(data):
         }
     )
     df.to_csv(
-        path_or_buf=Path(__file__).parent / Path("alldata_HPDmode.csv"),
+        path_or_buf=Path(__file__).parent / Path("alldata_HPDmode_NEW.csv"),
         sep=",",
         index=False,
         header=True,
