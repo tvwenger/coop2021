@@ -346,7 +346,7 @@ def bary_to_gcen(
     """
 
     # Tilt of b=0 relative to galactic plane
-    tilt = np.arcsin(0.001 * Zsun / R0)
+    tilt = np.arctan(0.001 * Zsun / R0)
     cos_roll = np.cos(roll * _DEG_TO_RAD)
     sin_roll = np.sin(roll * _DEG_TO_RAD)
     cos_tilt = np.cos(tilt)
@@ -560,7 +560,7 @@ def bary_to_gcen_vel(
     """
 
     # Tilt of b=0 relative to galactic plane
-    tilt = np.arcsin(0.001 * Zsun / R0)
+    tilt = np.arctan(0.001 * Zsun / R0)
     cos_roll = np.cos(roll * _DEG_TO_RAD)
     sin_roll = np.sin(roll * _DEG_TO_RAD)
     cos_tilt = np.cos(tilt)
@@ -632,7 +632,7 @@ def gcen_to_bary(
     """
 
     # Tilt of b=0 relative to galactic plane
-    tilt = np.arcsin(0.001 * Zsun / R0)
+    tilt = np.arctan(0.001 * Zsun / R0)
     # Other useful constants
     cos_roll = np.cos(roll * _DEG_TO_RAD)
     sin_roll = np.sin(roll * _DEG_TO_RAD)

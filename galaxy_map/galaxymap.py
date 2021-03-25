@@ -86,7 +86,7 @@ def barycentric_to_galactocentric(Xb, Yb, Zb, R0=_RSUN, Zsun=_ZSUN, roll=_ROLL):
     """
 
     # Tilt of b=0 relative to Galactic plane
-    tilt = np.arcsin(0.001 * Zsun / R0)
+    tilt = np.arctan(0.001 * Zsun / R0)
     #
     # Roll CCW about the barycentric X-axis so that the Y-Z plane
     # is aligned with the Y-Z plane of the Galactocentric frame
