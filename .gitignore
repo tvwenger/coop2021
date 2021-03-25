@@ -141,7 +141,8 @@ data/schema_v2_20201203.txt
 *.pkl
 
 # VS Code files
-.vscode/*
+**/.vscode/
+# .vscode/*
 # !.vscode/settings.json
 # !.vscode/tasks.json
 # !.vscode/launch.json
