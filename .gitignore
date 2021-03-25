@@ -139,3 +139,13 @@ data/schema_v2_20201203.txt
 
 # Pickle files
 *.pkl
+
+# VS Code files
+.vscode/*
+# !.vscode/settings.json
+# !.vscode/tasks.json
+# !.vscode/launch.json
+# !.vscode/extensions.json
+# *.code-workspace
+# # Local History for VS Code
+# .history/
