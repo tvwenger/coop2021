@@ -37,7 +37,7 @@ def main(csvfile, tracefile):
     data = pd.read_csv(csvfile)
     is_tooclose = data["is_tooclose"].values
     data_tooclose = data[is_tooclose == 1]  # 19 sources
-    data = data[is_tooclose == 0]  # 183 sources
+    data = data[is_tooclose == 0]  # 185 sources
     plot_tooclose = False
 
     glon = data["glong"].values
