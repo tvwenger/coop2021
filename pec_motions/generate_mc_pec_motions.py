@@ -299,12 +299,17 @@ def mc_plx_upecvpec(data):
     if np.any(r_err_hpd) < 0 or np.any(Upec_err_hpd) < 0 or np.any(Vpec_err_hpd) < 0:
         raise ValueError("Negative HPD error found!")
     #
-    # Galactocentric Cartesian positions
+    # Galactocentric Cartesian positions and full & residual velocities
     #
     # x, y, z, = trans.gcen_cyl_to_gcen_cart(radius, azimuth, height)
+    cos_az = np.cos(np.deg2rad(azimuth))
+    sin_az = np.sin(np.deg2rad(azimuth))
+    vx_res = v_radial * -cos_az + v_circ_res * sin_az  # km/s
+    vy_res = v_radial * sin_az + v_circ_res * cos_az  # km/s
     # Rotate 90 deg CW to Reid convention
     x, y = gcen_y, -gcen_x
     vx, vy = gcen_vy, -gcen_vx
+    vx_res, vy_res = vy_res, -vx_res
     z = gcen_z
     vz = gcen_vz
     # Calculate mode and errors
@@ -314,17 +319,23 @@ def mc_plx_upecvpec(data):
     vx_hpd = np.array([calc_hpd(vx[:, idx], "scipy") for idx in range(num_sources)])
     vy_hpd = np.array([calc_hpd(vy[:, idx], "scipy") for idx in range(num_sources)])
     vz_hpd = np.array([calc_hpd(vz[:, idx], "scipy") for idx in range(num_sources)])
+    vx_res_hpd = np.array([calc_hpd(vx_res[:, idx], "scipy") for idx in range(num_sources)])
+    vy_res_hpd = np.array([calc_hpd(vy_res[:, idx], "scipy") for idx in range(num_sources)])
     x_hpd_mode, x_hpd_low, x_hpd_high = x_hpd[:, 1], x_hpd[:, 2], x_hpd[:, 3]
     y_hpd_mode, y_hpd_low, y_hpd_high = y_hpd[:, 1], y_hpd[:, 2], y_hpd[:, 3]
     z_hpd_mode, z_hpd_low, z_hpd_high = z_hpd[:, 1], z_hpd[:, 2], z_hpd[:, 3]
     vx_hpd_mode, vx_hpd_low, vx_hpd_high = vx_hpd[:, 1], vx_hpd[:, 2], vx_hpd[:, 3]
     vy_hpd_mode, vy_hpd_low, vy_hpd_high = vy_hpd[:, 1], vy_hpd[:, 2], vy_hpd[:, 3]
     vz_hpd_mode, vz_hpd_low, vz_hpd_high = vz_hpd[:, 1], vz_hpd[:, 2], vz_hpd[:, 3]
+    vx_res_hpd_mode, vx_res_hpd_low, vx_res_hpd_high = vx_res_hpd[:, 1], vx_res_hpd[:, 2], vx_res_hpd[:, 3]
+    vy_res_hpd_mode, vy_res_hpd_low, vy_res_hpd_high = vy_res_hpd[:, 1], vy_res_hpd[:, 2], vy_res_hpd[:, 3]
     #
     # Plot posterior distributions of one source
     #
-    var_lst = [dist, x, y, z, vx, vy, vz, radius, azimuth, -v_radial, v_circ_res, v_vert]
-    name_lst = ["dist", "x", "y", "z", "vx", "vy", "vz", "R", "azimuth", "Upec", "Vpec", "Wpec"]
+    var_lst = [dist, x, y, z, vx, vy, vz, vx_res, vy_res, vz,
+               radius, azimuth, -v_radial, v_circ_res, v_vert]
+    name_lst = ["dist", "x", "y", "z", "vx", "vy", "vz", "vx residual", "vy residual",
+                "vz residual", "R", "azimuth", "Upec", "Vpec", "Wpec"]
     # var_lst = [dist, eqmux, eqmuy, vlsr, x, y, z, radius, -v_radial, v_circ_res, v_vert]
     # name_lst = ["dist", "mux", "muy", "vlsr", "x", "y", "z", "R", "Upec", "Vpec", "Wpec"]
     fig, axes = plt.subplots(len(var_lst), figsize=plt.figaspect(5 / 8 * len(var_lst)))
@@ -446,11 +457,16 @@ def mc_plx_upecvpec(data):
     Wpec_halfhpd = 0.5 * (Wpec_hpd_high - Wpec_hpd_low)
     vx_halfhpd = 0.5 * (vx_hpd_high - vx_hpd_low)
     vy_halfhpd = 0.5 * (vy_hpd_high - vy_hpd_low)
+    vx_res_halfhpd = 0.5 * (vx_res_hpd_high - vx_res_hpd_low)
+    vy_res_halfhpd = 0.5 * (vy_res_hpd_high - vy_res_hpd_low)
     vz_halfhpd = 0.5 * (vz_hpd_high - vz_hpd_low)
-    halfhpd_lst = [x_halfhpd, y_halfhpd, z_halfhpd, r_halfhpd, az_halfhpd, Upec_halfhpd,
-                   Vpec_halfhpd, Wpec_halfhpd, vx_halfhpd, vy_halfhpd, vz_halfhpd]
-    halfhpd_names = ["x_halfhpd", "y_halfhpd", "z_halfhpd", "r_halfhpd", "az_halfhpd", "Upec_halfhpd",
-                     "Vpec_halfhpd", "Wpec_halfhpd", "vx_halfhpd", "vy_halfhpd", "vz_halfhpd"]
+    halfhpd_lst = [x_halfhpd, y_halfhpd, z_halfhpd, vx_res_halfhpd, vy_res_halfhpd,
+                   r_halfhpd, az_halfhpd, Upec_halfhpd, Vpec_halfhpd, Wpec_halfhpd,
+                   vx_halfhpd, vy_halfhpd, vz_halfhpd]
+    halfhpd_names = ["x_halfhpd", "y_halfhpd", "z_halfhpd", "vx_res_halfhpd",
+                     "vy_res_halfhpd", "r_halfhpd", "az_halfhpd", "Upec_halfhpd",
+                     "Vpec_halfhpd", "Wpec_halfhpd", "vx_halfhpd", "vy_halfhpd",
+                     "vz_halfhpd"]
     for name, halfhpd in zip(halfhpd_names, halfhpd_lst):
         print("Negative halfhpd found in", name) if np.any(halfhpd) < 0 else None
 
@@ -495,6 +511,18 @@ def mc_plx_upecvpec(data):
             "vz_halfhpd": vz_halfhpd,
             "vz_hpdlow": vz_hpd_low,
             "vz_hpdhigh": vz_hpd_high,
+            "vx_res_mode": vx_res_hpd_mode,
+            "vx_res_halfhpd": vx_res_halfhpd,
+            "vx_res_hpdlow": vx_res_hpd_low,
+            "vx_res_hpdhigh": vx_res_hpd_high,
+            "vy_res_mode": vy_res_hpd_mode,
+            "vy_res_halfhpd": vy_res_halfhpd,
+            "vy_res_hpdlow": vy_res_hpd_low,
+            "vy_res_hpdhigh": vy_res_hpd_high,
+            "vz_res_mode": vz_hpd_mode,
+            "vz_res_halfhpd": vz_halfhpd,
+            "vz_res_hpdlow": vz_hpd_low,
+            "vz_res_hpdhigh": vz_hpd_high,
             "R_mode": r_hpd_mode,
             "R_halfhpd": r_halfhpd,
             "R_hpdlow": r_hpd_low,

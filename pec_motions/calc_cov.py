@@ -269,7 +269,13 @@ def calc_cc():
         urc(radius, a2=a2[np.newaxis].T, a3=a3[np.newaxis].T, R0=R0[np.newaxis].T) + Vpec
     )  # km/s
     v_circ_res = v_circ - v_circ_pred
+    cos_az = np.cos(np.deg2rad(azimuth))
+    sin_az = np.sin(np.deg2rad(azimuth))
+    vx_res = v_radial * -cos_az + v_circ_res * sin_az  # km/s
+    vy_res = v_radial * sin_az + v_circ_res * cos_az  # km/s
+    # Rotate 90 deg CW
     vx, vy = gcen_vy, -gcen_vx
+    vx_res, vy_res = vy_res, -vx_res
     # v_radial and v_circ_res shapes: (_NUM_SAMPLES, num_sources)
     #
     # Correlation coefficient b/w Upecs
@@ -318,7 +324,7 @@ def calc_cc():
     print(np.max(r_Vpec[r_Vpec < 0.999999999999999]))
     print(np.min(r_Vpec[r_Vpec > -0.999999999999999]))
     #
-    # Correlation coefficient b/w vxs
+    # Correlation coefficient b/w vx
     #
     r_vx = np.ones((num_sources, num_sources), float)
     cov_vx = np.ones((num_sources, num_sources), float)
@@ -340,7 +346,7 @@ def calc_cc():
     print(np.max(r_vx[r_vx < 0.999999999999999]))
     print(np.min(r_vx[r_vx > -0.999999999999999]))
     #
-    # Correlation coefficient b/w vys
+    # Correlation coefficient b/w vy
     #
     r_vy = np.ones((num_sources, num_sources), float)
     cov_vy = np.ones((num_sources, num_sources), float)
@@ -348,8 +354,8 @@ def calc_cc():
         for j in range(num_sources):
             vy_meani = np.mean(vy[:, i])
             vy_meanj = np.mean(vy[:, j])
-            vy_diffi = vx[:, i] - vy_meani
-            vy_diffj = vx[:, j] - vy_meanj
+            vy_diffi = vy[:, i] - vy_meani
+            vy_diffj = vy[:, j] - vy_meanj
             r_num = np.sum(vy_diffi * vy_diffj)
             r_den = np.sqrt(np.sum(vy_diffi ** 2 )) * np.sqrt(np.sum(vy_diffj ** 2))
             # Fringe cases
@@ -359,8 +365,55 @@ def calc_cc():
             # Populate array
             r_vy[i, j] = r
             cov_vy[i, j] = r_num / _NUM_SAMPLES
-    print(np.max(r_vy[r_vy < 0.999999999999999]))
-    print(np.min(r_vy[r_vy > -0.999999999999999]))
+    # print(np.max(r_vy[r_vy < 0.999999999999999]))
+    # print(np.min(r_vy[r_vy > -0.999999999999999]))
+    print(np.max(r_vy[r_vy < 0.99]))
+    print(np.min(r_vy[r_vy > -0.99]))
+    #
+    # Correlation coefficient b/w vx_res
+    #
+    r_vx_res = np.ones((num_sources, num_sources), float)
+    cov_vx_res = np.ones((num_sources, num_sources), float)
+    for i in range(num_sources):
+        for j in range(num_sources):
+            vx_res_meani = np.mean(vx_res[:, i])
+            vx_res_meanj = np.mean(vx_res[:, j])
+            vx_res_diffi = vx_res[:, i] - vx_res_meani
+            vx_res_diffj = vx_res[:, j] - vx_res_meanj
+            r_num = np.sum(vx_res_diffi * vx_res_diffj)
+            r_den = np.sqrt(np.sum(vx_res_diffi ** 2 )) * np.sqrt(np.sum(vx_res_diffj ** 2))
+            # Fringe cases
+            r = r_num / r_den
+            r = 1 if r > 1 else r
+            r = -1 if r < -1 else r
+            # Populate array
+            r_vx_res[i, j] = r
+            cov_vx_res[i, j] = r_num / _NUM_SAMPLES
+    print(np.max(r_vx_res[r_vx_res < 0.999999999999999]))
+    print(np.min(r_vx_res[r_vx_res > -0.999999999999999]))
+    #
+    # Correlation coefficient b/w vy_res
+    #
+    r_vy_res = np.ones((num_sources, num_sources), float)
+    cov_vy_res = np.ones((num_sources, num_sources), float)
+    for i in range(num_sources):
+        for j in range(num_sources):
+            vy_res_meani = np.mean(vy_res[:, i])
+            vy_res_meanj = np.mean(vy_res[:, j])
+            vy_res_diffi = vy_res[:, i] - vy_res_meani
+            vy_res_diffj = vy_res[:, j] - vy_res_meanj
+            r_num = np.sum(vy_res_diffi * vy_res_diffj)
+            r_den = np.sqrt(np.sum(vy_res_diffi ** 2 )) * np.sqrt(np.sum(vy_res_diffj ** 2))
+            # Fringe cases
+            r = r_num / r_den
+            r = 1 if r > 1 else r
+            r = -1 if r < -1 else r
+            # Populate array
+            r_vy_res[i, j] = r
+            cov_vy_res[i, j] = r_num / _NUM_SAMPLES
+    print(np.max(r_vy_res[r_vy_res < 0.999999999999999]))
+    print(np.min(r_vy_res[r_vy_res > -0.999999999999999]))
+
 
     outfile = Path(__file__).parent / Path("pearsonr_cov.pkl")
     with open(outfile, "wb") as f:
@@ -374,6 +427,10 @@ def calc_cc():
                 "cov_vx": cov_vx,
                 "r_vy": r_vy,
                 "cov_vy": cov_vy,
+                "r_vx_res": r_vx_res,
+                "cov_vx_res": cov_vx_res,
+                "r_vy_res": r_vy_res,
+                "cov_vy_res": cov_vy_res,
             },
             f,
         )
