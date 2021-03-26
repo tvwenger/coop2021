@@ -14,6 +14,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from re import findall  # for regex
 from kd import pdf_kd, rotcurve_kd
 
 
@@ -83,10 +84,23 @@ def plx_to_peak_dist (plx, e_plx):
            / (4 * sigma_sq * plx_dist)
 
 
-def main(load_csv=False, rotcurve="cw21_rotcurve", num_samples=100,
-         use_peculiar=True, use_kriging=False):
+def main(load_csv=False, csv_filename=None, rotcurve="cw21_rotcurve", num_samples=100,
+         use_peculiar=True, use_kriging=False, vlsr_tol=20):
     if load_csv:
-        csvfile = Path(__file__).parent / f"kd_plx_results_{num_samples}x_krige{use_kriging}.csv"
+        # Find (all) numbers in csv_filename --> num_samples
+        num_samples = findall(r"\d+", csv_filename)
+        if len(num_samples) != 1:
+            print("regex num_samples:", num_samples)
+            raise ValueError("Invalid number of samples parsed")
+        num_samples = int(num_samples[0])
+        # Find if kd used kriging
+        use_kriging = findall("True", csv_filename)
+        if len(use_kriging) > 1:
+            print("regex use_kriging:", use_kriging)
+            raise ValueError("Invalid use_kriging parsed")
+        use_kriging = bool(use_kriging)
+        # Load csv results
+        csvfile = Path(__file__).parent / csv_filename
         kd_results = pd.read_csv(csvfile)
         glong = kd_results["glong"].values
         glat = kd_results["glat"].values
@@ -99,6 +113,8 @@ def main(load_csv=False, rotcurve="cw21_rotcurve", num_samples=100,
         print("Rotation model:", rotcurve)
         print("Number of MC kd samples:", num_samples)
         print("Including peculiar motions in kd:", use_peculiar)
+        print("Using kriging:", use_kriging)
+        print("vlsr tolerance (km/s):", vlsr_tol)
         print("=" * 6)
         # Get HII region data
         dbfile = Path("/home/chengi/Documents/coop2021/data/hii_v2_20201203.db")
@@ -134,8 +150,9 @@ def main(load_csv=False, rotcurve="cw21_rotcurve", num_samples=100,
         #                         same number & can concat properly)
         results = pd.concat([data.reset_index(drop=True),
                              kd_df.reset_index(drop=True)], axis=1)
+        csv_filename = f"kd_plx_results_{num_samples}x_krige{use_kriging}.csv"
         results.to_csv(
-            path_or_buf=Path(__file__).parent / f"kd_plx_results_{num_samples}x_krige{use_kriging}.csv",
+            path_or_buf=Path(__file__).parent / csv_filename,
             sep=",",
             index=False,
             header=True,
@@ -143,8 +160,8 @@ def main(load_csv=False, rotcurve="cw21_rotcurve", num_samples=100,
         print("Saved to .csv")
         kd_df = None  # free memory
 
-    # Assign tangent kd to any source with vlsr w/in 20 km/s of tangent vlsr
-    use_tangent = abs(kd_results["vlsr_tangent"] - vlsr) < 20
+    # Assign tangent kd to any source with vlsr w/in vlsr_tol of tangent vlsr
+    use_tangent = abs(kd_results["vlsr_tangent"] - vlsr) < vlsr_tol
     # Otherwise, select kd that is closest to distance from parallax
     peak_dist = plx_to_peak_dist(plx, e_plx)
     near_err = abs(kd_results["near"] - peak_dist)
@@ -152,7 +169,7 @@ def main(load_csv=False, rotcurve="cw21_rotcurve", num_samples=100,
     tangent_err = abs(kd_results["tangent"] - peak_dist)
     min_err = np.fmin.reduce([near_err, far_err, tangent_err])  # ignores NaNs
     # Select distance corresponding to smallest error
-    tol = 0.001  # tolerance for float equality
+    tol = 1e-9  # tolerance for float equality
     is_near = (abs(near_err - min_err) < tol) & (~use_tangent)
     is_far = (abs(far_err- min_err) < tol) & (~use_tangent)
     is_tangent = (abs(tangent_err - min_err) < tol) | (use_tangent)
@@ -195,15 +212,32 @@ def main(load_csv=False, rotcurve="cw21_rotcurve", num_samples=100,
 
     # Plot
     fig, ax = plt.subplots()
-    size = 2
+    size_scale = 4  # scaling factor for size
+    #
+    size_near = 0.5 * (kd_results["near_err_pos"] + kd_results["near_err_neg"])
     ax.scatter(Xg[(is_near) & (~is_unreliable)], Yg[(is_near) & (~is_unreliable)],
-               c="tab:cyan", s=size, label="Near")
+               c="tab:cyan", s=size_near[(is_near) & (~is_unreliable)] * size_scale,
+               label="Near")
+    #
+    size_far = 0.5 * (kd_results["far_err_pos"] + kd_results["far_err_neg"])
     ax.scatter(Xg[(is_far) & (~is_unreliable)], Yg[(is_far) & (~is_unreliable)],
-               c="tab:purple", s=size, label="Far")
+               c="tab:purple", s=size_far[(is_far) & (~is_unreliable)] * size_scale,
+               label="Far")
+    #
+    size_tan = 0.5 * (kd_results["distance_err_pos"] + kd_results["distance_err_neg"])
     ax.scatter(Xg[(is_tangent) & (~is_unreliable)], Yg[(is_tangent) & (~is_unreliable)],
-               c="tab:green", s=size, label="Tangent")
+               c="tab:green", s=size_tan[(is_tangent) & (~is_unreliable)] * size_scale,
+               label="Tangent")
+    #
+    conditions = [(is_near) & (is_unreliable), (is_far) & (is_unreliable), (is_tangent) & (is_unreliable)]
+    choices = [size_near, size_far, size_tan]
+    size_unreliable = np.select(conditions, choices, default=np.nan)
+    if np.sum(~np.isnan(size_unreliable)) != np.sum((is_unreliable) & (~is_nan)):
+        print("Number of NaNs in size_unreliable (should be equal to 'Num unreliable'):",
+              np.sum(np.isnan(size_unreliable)))
     ax.scatter(Xg[is_unreliable], Yg[is_unreliable],
-               c="tab:red", s=size, label="Unreliable")
+               c="tab:red", s=size_unreliable[is_unreliable] * size_scale,
+               label="Unreliable")
     ax.legend(fontsize=9)
     ax.set_xlabel("$x$ (kpc)")
     ax.set_ylabel("$y$ (kpc)")
@@ -215,44 +249,18 @@ def main(load_csv=False, rotcurve="cw21_rotcurve", num_samples=100,
     ax.set_yticks([-5, 0, 5, 10, 15])
     ax.grid(False)
     ax.set_aspect("equal")
-    fig.savefig(Path(__file__).parent / f"HII_faceonplx_{num_samples}x_krige{use_kriging}.pdf",
-                bbox_inches="tight")
+    fig_filename = f"HII_faceonplx_{num_samples}x_krige{use_kriging}_vlsrTolerance{vlsr_tol}.pdf"
+    fig.savefig(Path(__file__).parent / fig_filename, bbox_inches="tight")
     plt.show()
-
-    # dists = kd_results["distance"]
-    # print("Total number of sources:", sum(~np.isnan(dists)))
-    # # Sources with all nans
-    # # by index+1 (aka line number in csv file): 191, 193, 194, 196, 198
-
-    # # Convert to galactocentric frame
-    # Xb, Yb, Zb = trans.gal_to_bary(glong, glat, dists)
-    # Xg, Yg, Zg = trans.bary_to_gcen(Xb, Yb, Zb, R0=_R0, Zsun=_ZSUN, roll=_ROLL)
-    # # Rotate 90 deg CW (so Sun is on +y-axis)
-    # Xg, Yg = Yg, -Xg
-
-    # # Plot
-    # fig, ax = plt.subplots()
-    # size = 2
-    # ax.scatter(Xg, Yg, c="tab:cyan", s=size, label="Distance")
-    # ax.legend(fontsize=9)
-    # ax.set_xlabel("$x$ (kpc)")
-    # ax.set_ylabel("$y$ (kpc)")
-    # ax.axhline(y=0, linewidth=0.5, linestyle="--", color="k")  # horizontal line
-    # ax.axvline(x=0, linewidth=0.5, linestyle="--", color="k")  # vertical line
-    # ax.set_xlim(-8, 12)
-    # ax.set_xticks([-5, 0, 5, 10])
-    # ax.set_ylim(-5, 15)
-    # ax.set_yticks([-5, 0, 5, 10, 15])
-    # ax.grid(False)
-    # fig.savefig(Path(__file__).parent / "HII_faceonplx_distance.pdf", bbox_inches="tight")
-    # plt.show()
 
 
 if __name__ == "__main__":
     load_csv_input = str2bool(input("(y/n) Plot results from csv? (default n): "),
                               empty_condition=False)
     if load_csv_input:
-        main(load_csv=load_csv_input)
+        csv_filename_input = input(".csv filename in this folder: ")
+        rotcurve_input = num_samples_input = use_pec_input = use_kriging_input = None
+        # main(load_csv=load_csv_input, csv_filename=csv_filename_input)
     else:
         rotcurve_input = input("rotcurve file (default cw21_rotcurve): ")
         rotcurve_input = "cw21_rotcurve" if rotcurve_input == "" else rotcurve_input
@@ -263,10 +271,16 @@ if __name__ == "__main__":
         use_kriging_input = str2bool(
             input("(y/n) Use kriging in kd (default n): "),
             empty_condition=False)
-        main(
-            load_csv=load_csv_input,
-            rotcurve=rotcurve_input,
-            num_samples=num_samples_input,
-            use_peculiar=use_pec_input,
-            use_kriging=use_kriging_input,
-        )
+        csv_filename_input = None
+    vlsr_tol_input = input("(int) Assign tangent distance if vlsr is within ___ " +
+                            "km/s of tangent velocity? (default 20): ")
+    vlsr_tol_input = 20 if vlsr_tol_input == "" else int(vlsr_tol_input)
+    main(
+        load_csv=load_csv_input,
+        csv_filename=csv_filename_input,
+        rotcurve=rotcurve_input,
+        num_samples=num_samples_input,
+        use_peculiar=use_pec_input,
+        use_kriging=use_kriging_input,
+        vlsr_tol=vlsr_tol_input
+    )
