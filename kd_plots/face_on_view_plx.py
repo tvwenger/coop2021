@@ -83,9 +83,10 @@ def plx_to_peak_dist (plx, e_plx):
            / (4 * sigma_sq * plx_dist)
 
 
-def main(load_csv=False, rotcurve="cw21_rotcurve", num_samples=100, use_peculiar=True):
+def main(load_csv=False, rotcurve="cw21_rotcurve", num_samples=100,
+         use_peculiar=True, use_kriging=False):
     if load_csv:
-        csvfile = Path(__file__).parent / f"kd_plx_results_{num_samples}x.csv"
+        csvfile = Path(__file__).parent / f"kd_plx_results_{num_samples}x_krige{use_kriging}.csv"
         kd_results = pd.read_csv(csvfile)
         glong = kd_results["glong"].values
         glat = kd_results["glat"].values
@@ -110,8 +111,6 @@ def main(load_csv=False, rotcurve="cw21_rotcurve", num_samples=100, use_peculiar
         e_vlsr = data["e_vlsr"].values
 
         # MC kinematic distances
-        use_kriging = False  # use kriging to estimate peculiar motions
-
         print("kd in progress...")
         kd_results = pdf_kd.pdf_kd(
             glong,
@@ -136,7 +135,7 @@ def main(load_csv=False, rotcurve="cw21_rotcurve", num_samples=100, use_peculiar
         results = pd.concat([data.reset_index(drop=True),
                              kd_df.reset_index(drop=True)], axis=1)
         results.to_csv(
-            path_or_buf=Path(__file__).parent / f"kd_plx_results_{num_samples}x.csv",
+            path_or_buf=Path(__file__).parent / f"kd_plx_results_{num_samples}x_krige{use_kriging}.csv",
             sep=",",
             index=False,
             header=True,
@@ -216,7 +215,7 @@ def main(load_csv=False, rotcurve="cw21_rotcurve", num_samples=100, use_peculiar
     ax.set_yticks([-5, 0, 5, 10, 15])
     ax.grid(False)
     ax.set_aspect("equal")
-    fig.savefig(Path(__file__).parent / f"HII_faceonplx_{num_samples}x.pdf",
+    fig.savefig(Path(__file__).parent / f"HII_faceonplx_{num_samples}x_krige{use_kriging}.pdf",
                 bbox_inches="tight")
     plt.show()
 
@@ -261,9 +260,13 @@ if __name__ == "__main__":
         use_pec_input = str2bool(
             input("(y/n) Include peculiar motions in kd (default y): "),
             empty_condition=True)
+        use_kriging_input = str2bool(
+            input("(y/n) Use kriging in kd (default n): "),
+            empty_condition=False)
         main(
             load_csv=load_csv_input,
             rotcurve=rotcurve_input,
             num_samples=num_samples_input,
-            use_peculiar=use_pec_input
+            use_peculiar=use_pec_input,
+            use_kriging=use_kriging_input,
         )
