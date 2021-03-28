@@ -270,6 +270,8 @@ def mc_plx_upecvpec(data):
     # Calculate mode and errors
     #
     print("Now calculating HPD...")
+    dist_hpd = np.array([calc_hpd(dist[:, idx], "scipy") for idx in range(num_sources)])
+    dist_hpd_mode, dist_hpd_low, dist_hpd_high = dist_hpd[:, 1], dist_hpd[:, 2], dist_hpd[:, 3]
     r_hpd = np.array([calc_hpd(radius[:, idx], "scipy") for idx in range(num_sources)])
     az_hpd = np.array([calc_hpd(azimuth[:, idx], "scipy") for idx in range(num_sources)])
     Upec_hpd = np.array(
@@ -447,6 +449,7 @@ def mc_plx_upecvpec(data):
     )
     plt.show()
 
+    dist_halfhpd = 0.5 * (dist_hpd_high - dist_hpd_low)
     x_halfhpd = 0.5 * (x_hpd_high - x_hpd_low)
     y_halfhpd = 0.5 * (y_hpd_high - y_hpd_low)
     z_halfhpd = 0.5 * (z_hpd_high - z_hpd_low)
@@ -487,6 +490,10 @@ def mc_plx_upecvpec(data):
             "muy_std": np.std(eqmuy, axis=0),
             "vlsr_med": avg(vlsr, axis=0),
             "vlsr_std": np.std(vlsr, axis=0),
+            "dist_mode": dist_hpd_mode,
+            "dist_halfhpd": dist_halfhpd,
+            "dist_hpdlow": dist_hpd_low,
+            "dist_hpdhigh": dist_hpd_high,
             "x_mode": x_hpd_mode,
             "x_halfhpd": x_halfhpd,
             "x_hpdlow": x_hpd_low,
