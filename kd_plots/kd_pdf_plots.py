@@ -110,12 +110,12 @@ def run_kd(source_to_plot, rotcurve="cw21_rotcurve", num_samples=100,
     print("Using kriging:", use_kriging)
     print("=" * 6)
 
-    glong = data["glong"].values % 360.
-    glat = data["glat"].values
+    glong = data["glong"] % 360.
+    glat = data["glat"]
     # plx = data["plx"].values
     # e_plx = data["e_plx"].values
-    vlsr = data["vlsr"].values
-    e_vlsr = data["e_vlsr"].values
+    vlsr = data["vlsr"]
+    e_vlsr = data["e_vlsr"]
 
     # MC kinematic distances
     print("kd in progress...")
