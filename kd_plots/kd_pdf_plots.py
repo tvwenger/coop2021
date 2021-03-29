@@ -132,21 +132,21 @@ def run_kd(source_to_plot, rotcurve="cw21_rotcurve", num_samples=100,
     )
     print("Done kd")
 
-    # Save results
-    kd_df = pd.DataFrame(kd_results)
-    print("Results shape:", np.shape(kd_df))
-    # Add kd results to data (.reset_index() ensures rows have
-    #                         same number & can concat properly)
-    results = pd.concat([data.reset_index(drop=True),
-                            kd_df.reset_index(drop=True)], axis=1)
-    csv_filename = f"kd_source{source_to_plot}_{data['gname']}.csv"
-    results.to_csv(
-        path_or_buf=Path(__file__).parent / csv_filename,
-        sep=",",
-        index=False,
-        header=True,
-    )
-    print("Saved to .csv")
+    # # Save results
+    # kd_df = pd.DataFrame(kd_results)
+    # print("Results shape:", np.shape(kd_df))
+    # # Add kd results to data (.reset_index() ensures rows have
+    # #                         same number & can concat properly)
+    # results = pd.concat([data.reset_index(drop=True),
+    #                         kd_df.reset_index(drop=True)], axis=1)
+    # csv_filename = f"kd_source{source_to_plot}_{data['gname']}.csv"
+    # results.to_csv(
+    #     path_or_buf=Path(__file__).parent / csv_filename,
+    #     sep=",",
+    #     index=False,
+    #     header=True,
+    # )
+    # print("Saved to .csv")
 
 # %%
 source_to_plot_input = int(input(
