@@ -432,9 +432,9 @@ def mc_plx_upecvpec(data):
         ecolor="r",
     )
     # ax[0].set_xlabel("Galactocentric Radius (kpc)")
-    ax[0].set_ylabel("$\overline{U_s}$ (km s$^{-1}$)")
+    ax[0].set_ylabel("$U_s$ (km s$^{-1}$)")
     ax[1].set_xlabel("Galactocentric Radius (kpc)")
-    ax[1].set_ylabel("$\overline{V_s}$ (km s$^{-1}$)")
+    ax[1].set_ylabel("$V_s$ (km s$^{-1}$)")
     # Dashed errorbars
     # [-1] denotes the LineCollection objects of the errorbar lines
     ebUpec[-1][0].set_linestyle("--")  # x-errorbar linestyle
@@ -579,7 +579,114 @@ def main():
 
     # Only choose sources that have R > 4 kpc
     # data100plx = data100plx[data100plx["is_tooclose"].values == 0]
-    mc_plx_upecvpec(data100plx)
+    # mc_plx_upecvpec(data100plx)
+
+    #
+    # Calculating derived peculiar motion stats
+    #
+    datafile = Path(__file__).parent / Path("csvfiles/alldata_HPDmode_NEW.csv")
+    data = pd.read_csv(datafile)
+    print("==== ALL 202 SOURCES ===")
+    Upec = data["Upec_mode"].values
+    Vpec = data["Vpec_mode"].values
+    Wpec = data["Wpec_mode"].values
+    # percentile = 90
+    # lower = 0.5 * (100 - percentile)
+    # upper = 0.5 * (100 + percentile)
+    # good = (
+    #     (Upec > np.percentile(Upec, lower))
+    #     & (Upec < np.percentile(Upec, upper))
+    #     & (Vpec > np.percentile(Vpec, lower))
+    #     & (Vpec < np.percentile(Vpec, upper))
+    #     & (Wpec > np.percentile(Wpec, lower))
+    #     & (Wpec < np.percentile(Wpec, upper))
+    # )
+    # data = data[good]
+    print("Num sources:", len(data))
+    Upec = data["Upec_mode"].values
+    Vpec = data["Vpec_mode"].values
+    Wpec = data["Wpec_mode"].values
+    _, derived_Upec_mode, derived_Upec_low, derived_Upec_high = calc_hpd(Upec, "scipy")
+    _, derived_Vpec_mode, derived_Vpec_low, derived_Vpec_high = calc_hpd(Vpec, "scipy")
+    _, derived_Wpec_mode, derived_Wpec_low, derived_Wpec_high = calc_hpd(Wpec, "scipy")
+    print("Upec mode, high, low:", derived_Upec_mode, derived_Upec_high, derived_Upec_low)
+    print("Vpec mode, high, low:", derived_Vpec_mode, derived_Vpec_high, derived_Vpec_low)
+    print("Wpec mode, high, low:", derived_Wpec_mode, derived_Wpec_high, derived_Wpec_low)
+    print("Upec (high - mode), (mode - low):", derived_Upec_high - derived_Upec_mode,
+          derived_Upec_mode - derived_Upec_low)
+    print("Vpec (high - mode), (mode - low):", derived_Vpec_high - derived_Vpec_mode,
+          derived_Vpec_mode - derived_Vpec_low)
+    print("Wpec (high - mode), (mode - low):", derived_Wpec_high - derived_Wpec_mode,
+          derived_Wpec_mode - derived_Wpec_low)
+    print("Upec mean, median, std", np.mean(Upec), np.median(Upec), np.std(Upec))
+    print("Vpec mean, median, std", np.mean(Vpec), np.median(Vpec), np.std(Vpec))
+    print("Wpec mean, median, std", np.mean(Wpec), np.median(Wpec), np.std(Wpec))
+    # plt.hist(Upec)
+    # plt.show()
+    # plt.hist(Vpec)
+    # plt.show()
+    # plt.hist(Wpec)
+    # plt.show()
+    tot_mag = np.sqrt(Upec**2 + Vpec**2 + Wpec**2)
+    tot_xy_mag = np.sqrt(Upec**2 + Vpec**2 + Wpec**2)
+    max_tot_mag = np.max(abs(tot_mag))
+    print(max_tot_mag)
+    print(data["gname"][tot_mag == max_tot_mag].values, data["x_mode"][tot_mag == max_tot_mag].values,
+          data["y_mode"][tot_mag == max_tot_mag].values, data["is_tooclose"][tot_mag == max_tot_mag].values)
+    # print("=== ONLY R > 4 KPC ===")
+    # data = data[data["is_tooclose"].values == 0]
+    # print("Num sources:", len(data))
+    # Upec = data["Upec_mode"].values
+    # Vpec = data["Vpec_mode"].values
+    # Wpec = data["Wpec_mode"].values
+    # _, derived_Upec_mode, derived_Upec_low, derived_Upec_high = calc_hpd(Upec, "scipy")
+    # _, derived_Vpec_mode, derived_Vpec_low, derived_Vpec_high = calc_hpd(Vpec, "scipy")
+    # _, derived_Wpec_mode, derived_Wpec_low, derived_Wpec_high = calc_hpd(Wpec, "scipy")
+    # print("Upec mode, high, low:", derived_Upec_mode, derived_Upec_high, derived_Upec_low)
+    # print("Vpec mode, high, low:", derived_Vpec_mode, derived_Vpec_high, derived_Vpec_low)
+    # print("Wpec mode, high, low:", derived_Wpec_mode, derived_Wpec_high, derived_Wpec_low)
+    # print("Upec (high - mode), (mode - low):", derived_Upec_high - derived_Upec_mode,
+    #       derived_Upec_mode - derived_Upec_low)
+    # print("Vpec (high - mode), (mode - low):", derived_Vpec_high - derived_Vpec_mode,
+    #       derived_Vpec_mode - derived_Vpec_low)
+    # print("Wpec (high - mode), (mode - low):", derived_Wpec_high - derived_Wpec_mode,
+    #       derived_Wpec_mode - derived_Wpec_low)
+    # print("Upec mean, median, std", np.mean(Upec), np.median(Upec), np.std(Upec))
+    # print("Vpec mean, median, std", np.mean(Vpec), np.median(Vpec), np.std(Vpec))
+    # print("Wpec mean, median, std", np.mean(Wpec), np.median(Wpec), np.std(Wpec))
+    # # plt.hist(Upec)
+    # # plt.show()
+    # # plt.hist(Vpec)
+    # # plt.show()
+    # # plt.hist(Wpec)
+    # # plt.show()
+    # print("=== ONLY NON-OUTLIERS ===")
+    # data = data[data["is_outlier"].values == 0]
+    # print("Num sources:", len(data))
+    # Upec = data["Upec_mode"].values
+    # Vpec = data["Vpec_mode"].values
+    # Wpec = data["Wpec_mode"].values
+    # _, derived_Upec_mode, derived_Upec_low, derived_Upec_high = calc_hpd(Upec, "scipy")
+    # _, derived_Vpec_mode, derived_Vpec_low, derived_Vpec_high = calc_hpd(Vpec, "scipy")
+    # _, derived_Wpec_mode, derived_Wpec_low, derived_Wpec_high = calc_hpd(Wpec, "scipy")
+    # print("Upec mode, high, low:", derived_Upec_mode, derived_Upec_high, derived_Upec_low)
+    # print("Vpec mode, high, low:", derived_Vpec_mode, derived_Vpec_high, derived_Vpec_low)
+    # print("Wpec mode, high, low:", derived_Wpec_mode, derived_Wpec_high, derived_Wpec_low)
+    # print("Upec (high - mode), (mode - low):", derived_Upec_high - derived_Upec_mode,
+    #       derived_Upec_mode - derived_Upec_low)
+    # print("Vpec (high - mode), (mode - low):", derived_Vpec_high - derived_Vpec_mode,
+    #       derived_Vpec_mode - derived_Vpec_low)
+    # print("Wpec (high - mode), (mode - low):", derived_Wpec_high - derived_Wpec_mode,
+    #       derived_Wpec_mode - derived_Wpec_low)
+    # print("Upec mean, median, std", np.mean(Upec), np.median(Upec), np.std(Upec))
+    # print("Vpec mean, median, std", np.mean(Vpec), np.median(Vpec), np.std(Vpec))
+    # print("Wpec mean, median, std", np.mean(Wpec), np.median(Wpec), np.std(Wpec))
+    # # plt.hist(Upec)
+    # # plt.show()
+    # # plt.hist(Vpec)
+    # # plt.show()
+    # # plt.hist(Wpec)
+    # # plt.show()
 
 
 if __name__ == "__main__":
