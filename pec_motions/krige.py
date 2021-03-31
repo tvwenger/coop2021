@@ -158,6 +158,8 @@ def main():
         & (abs(Vpec_err_high - Vpec_err_low) < 0.33 * Vpec_halfhpd)
         & (data["is_outlier"].values == 0)
     )
+    # NOTE: 0.33 => 110 sources
+    #       0.35 => 114 sources (looks smoother, but hard to justify cutoff)
 
     print("--- MC GOOD DATA STATS ---")
     print(np.mean(Upec[is_good]), np.mean(Vpec[is_good]), np.mean(Wpec[is_good]))
@@ -203,7 +205,7 @@ def main():
     bin_number = False
     deg = 1
     if bin_number: condition += "-binnumberTrue"
-    lag_cutoff = 0.7
+    lag_cutoff = 0.5
     print("Semivariogram Model:", variogram_model)
     Upec_semivar = Upec_krig.fit(
         model=variogram_model,
