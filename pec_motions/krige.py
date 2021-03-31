@@ -71,7 +71,7 @@ def main():
     # * CONCLUSION:
     # * range of the semivariance points is much larger than the variation from small lags
     # * to large lags. Basically there isn't much structure in the semivariograms.
-    mc_type = "HPDmode"
+    mc_type = "HPDmode_NEW2"
     datafile = Path(__file__).parent / Path(f"csvfiles/alldata_{mc_type}.csv")
     pearsonrfile = Path(__file__).parent / "pearsonr_cov.pkl"
     data = pd.read_csv(datafile)
@@ -112,21 +112,21 @@ def main():
     y = data["y_mode"].values
 
     # # Only choose good data for kriging
-    # condition = "halfhpd-all-R1.4-binnumberTrue"
+    # condition = "halfhpd-all-R1.4"
     # # condition = "all185-eobsdata"
     # # condition = "tot35-R1-binnumTrue"
     # # condition = "all202-tot35-R1-binnumTrue"
     # is_good = (
     #     # (R < 10000)
-    #     (R_halfhpd < 0.8)
-    #     & (Upec_halfhpd < 24.0)
-    #     & (Vpec_halfhpd < 24.0)
-    #     & (Wpec_halfhpd < 20.0)
-    #     & (tot_halfhpd < 35.0)
-    #     & (tot_xy_halfhpd < 32.0)
+    #     # (R_halfhpd < 0.8)
+    #     # & (Upec_halfhpd < 24.0)
+    #     # & (Vpec_halfhpd < 24.0)
+    #     # & (Wpec_halfhpd < 20.0)
+    #     # (tot_halfhpd < 35.0)
+    #     (tot_xy_halfhpd < 30.0)
     # )
     #
-    # percentile = 95
+    # percentile = 90
     # condition = f"{percentile}ptile"
     # lower = 0.5 * (100 - percentile)
     # upper = 0.5 * (100 + percentile)
@@ -139,10 +139,25 @@ def main():
     #     & (Wpec < np.percentile(Wpec, upper))
     # )
     #
-    condition = "no-mcmc-outlier"
-    is_good = data["is_outlier"].values == 0
+    # condition = "no-mcmc-outlier"
+    # is_good = data["is_outlier"].values == 0
+    #
     # condition = "all185"
     # is_good = np.full_like(Upec, True, bool)
+    #
+    # condition = "modeLT50"
+    # is_good = (np.abs(data['Upec_mode']) < 50.0) & (np.abs(data['Vpec_mode']) < 50.0)
+    #
+    Upec_err_high = data["Upec_hpdhigh"].values -  data["Upec_mode"].values
+    Upec_err_low = data["Upec_mode"].values - data["Upec_hpdlow"].values
+    Vpec_err_high = data["Vpec_hpdhigh"].values -  data["Vpec_mode"].values
+    Vpec_err_low = data["Vpec_mode"].values - data["Vpec_hpdlow"].values
+    condition = "noOutliersGaussianErrs"
+    is_good = (
+        (abs(Upec_err_high - Upec_err_low) < 0.33 * Upec_halfhpd)
+        & (abs(Vpec_err_high - Vpec_err_low) < 0.33 * Vpec_halfhpd)
+        & (data["is_outlier"].values == 0)
+    )
 
     print("--- MC GOOD DATA STATS ---")
     print(np.mean(Upec[is_good]), np.mean(Vpec[is_good]), np.mean(Wpec[is_good]))
@@ -186,19 +201,20 @@ def main():
     variogram_model = "gaussian"
     nbins = 10
     bin_number = False
+    deg = 1
     if bin_number: condition += "-binnumberTrue"
-    lag_cutoff = 0.55
+    lag_cutoff = 0.7
     print("Semivariogram Model:", variogram_model)
     Upec_semivar = Upec_krig.fit(
         model=variogram_model,
-        deg=1,
+        deg=deg,
         nbins=nbins,
         bin_number=bin_number,
         lag_cutoff=lag_cutoff,
     )
     Vpec_semivar = Vpec_krig.fit(
         model=variogram_model,
-        deg=1,
+        deg=deg,
         nbins=nbins,
         bin_number=bin_number,
         lag_cutoff=lag_cutoff,
