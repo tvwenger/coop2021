@@ -22,6 +22,7 @@ _SCRIPT_DIR = str(Path.cwd() / Path(__file__).parent.parent)
 sys.path.append(_SCRIPT_DIR)
 
 import mytransforms as trans
+from universal_rotcurve import urc
 
 
 def get_coords(data):
@@ -125,8 +126,8 @@ def main():
     #     & (tot_xy_halfhpd < 32.0)
     # )
     #
-    # condition = "90ptile"
-    # percentile = 90
+    # percentile = 95
+    # condition = f"{percentile}ptile"
     # lower = 0.5 * (100 - percentile)
     # upper = 0.5 * (100 + percentile)
     # is_good = (
@@ -140,6 +141,8 @@ def main():
     #
     condition = "no-mcmc-outlier"
     is_good = data["is_outlier"].values == 0
+    # condition = "all185"
+    # is_good = np.full_like(Upec, True, bool)
 
     print("--- MC GOOD DATA STATS ---")
     print(np.mean(Upec[is_good]), np.mean(Vpec[is_good]), np.mean(Wpec[is_good]))
@@ -186,31 +189,30 @@ def main():
     if bin_number: condition += "-binnumberTrue"
     lag_cutoff = 0.55
     print("Semivariogram Model:", variogram_model)
-    Upec_semivar, Upec_corner = Upec_krig.fit(
+    Upec_semivar = Upec_krig.fit(
         model=variogram_model,
         deg=1,
         nbins=nbins,
         bin_number=bin_number,
         lag_cutoff=lag_cutoff,
-        nsims=1000,
     )
-    Vpec_semivar, Vpec_corner = Vpec_krig.fit(
+    Vpec_semivar = Vpec_krig.fit(
         model=variogram_model,
         deg=1,
         nbins=nbins,
         bin_number=bin_number,
         lag_cutoff=lag_cutoff,
-        nsims=1000,
     )
     #
     # Interpolate data
     #
+    resample = False  # resample data for kriging
     xlow, xhigh = -8, 12
     ylow, yhigh = -5, 15
     gridx, gridy = np.mgrid[xlow:xhigh:500j, ylow:yhigh:500j]
     coord_interp = np.vstack((gridx.flatten(), gridy.flatten())).T
-    Upec_interp, Upec_interp_var = Upec_krig.interp(coord_interp)
-    Vpec_interp, Vpec_interp_var = Vpec_krig.interp(coord_interp)
+    Upec_interp, Upec_interp_var = Upec_krig.interp(coord_interp, resample=resample)
+    Vpec_interp, Vpec_interp_var = Vpec_krig.interp(coord_interp, resample=resample)
     # Reshape
     Upec_interp = Upec_interp.reshape(gridx.shape)
     Upec_interp_sd = np.sqrt(Upec_interp_var).reshape(gridx.shape)
@@ -254,21 +256,6 @@ def main():
     )
     Upec_semivar.show()
     Vpec_semivar.show()
-    #
-    # Plot corner plots
-    #
-    Upec_corner.savefig(
-        Path(__file__).parent
-        / f"Upec_corner_{num_good}good_{condition}_{variogram_model}_{mc_type}.pdf",
-        bbox_inches="tight",
-    )
-    Vpec_corner.savefig(
-        Path(__file__).parent
-        / f"Vpec_corner_{num_good}good_{condition}_{variogram_model}_{mc_type}.pdf",
-        bbox_inches="tight",
-    )
-    Upec_corner.show()
-    Vpec_corner.show()
     plt.show()
     #
     # Plot interpolated kriging results
@@ -289,7 +276,7 @@ def main():
     ax[0].axvline(x=0, linewidth=0.5, linestyle="--", color="k")  # vertical line
     ax[0].set_xlabel("$x$ (kpc)")
     ax[0].set_ylabel("$y$ (kpc)")
-    ax[0].set_title("$\overline{U_s}$")
+    ax[0].set_title("$U_s$")
     cbar_Upec.ax.set_ylabel("km s$^{-1}$", rotation=270)
     cbar_Upec.ax.get_yaxis().labelpad = 15
     ax[0].set_aspect("equal")
@@ -306,7 +293,7 @@ def main():
     ax[1].axvline(x=0, linewidth=0.5, linestyle="--", color="k")  # vertical line
     ax[1].set_xlabel("$x$ (kpc)")
     ax[1].set_ylabel("$y$ (kpc)")
-    ax[1].set_title("$\overline{V_s}$")
+    ax[1].set_title("$V_s$")
     cbar_Vpec.ax.set_ylabel("km s$^{-1}$", rotation=270)
     cbar_Vpec.ax.get_yaxis().labelpad = 15
     ax[1].set_aspect("equal")
@@ -392,7 +379,7 @@ def main():
     ax[0].axvline(x=0, linewidth=0.5, linestyle="--", color="k")  # vertical line
     ax[0].set_xlabel("$x$ (kpc)")
     ax[0].set_ylabel("$y$ (kpc)")
-    ax[0].set_title("$\overline{U_s}$ Standard Deviation")
+    ax[0].set_title("$U_s$ Standard Deviation")
     cbar_Upec.ax.set_ylabel("km s$^{-1}$", rotation=270)
     cbar_Upec.ax.get_yaxis().labelpad = 15
     ax[0].set_aspect("equal")
@@ -410,7 +397,7 @@ def main():
     ax[1].axvline(x=0, linewidth=0.5, linestyle="--", color="k")  # vertical line
     ax[1].set_xlabel("$x$ (kpc)")
     ax[1].set_ylabel("$y$ (kpc)")
-    ax[1].set_title("$\overline{V_s}$ Standard Deviation")
+    ax[1].set_title("$V_s$ Standard Deviation")
     cbar_Vpec.ax.set_ylabel("km s$^{-1}$", rotation=270)
     cbar_Vpec.ax.get_yaxis().labelpad = 15
     ax[1].set_aspect("equal")
