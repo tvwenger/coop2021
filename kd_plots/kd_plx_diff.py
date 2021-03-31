@@ -68,7 +68,8 @@ def assign_kd_distances(database_data, kd_results, vlsr_tol=20):
     is_q4 = (glong >= 270) & (glong < 360)
     use_tan_q4 = (vlsr) < (kd_results["vlsr_tangent"].values + vlsr_tol)
     use_tangent = ((is_q1) & (use_tan_q1)) | ((is_q4) & (use_tan_q4))
-    # use_tangent = abs(kd_results["vlsr_tangent"] - vlsr) < vlsr_tol
+    print("Number of sources automatically assigned to tangent based on vlsr_tol:",
+          np.sum(use_tangent))
     #
     # Otherwise, select kd that is closest to distance from parallax
     #
@@ -133,9 +134,7 @@ def assign_kd_distances(database_data, kd_results, vlsr_tol=20):
     return dists, e_dists, is_near, is_far, is_tangent, is_unreliable
 
 
-def main(kdfile, vlsr_tol=20):
-    _PLOT_FIGS = True
-    _SAVE_FIGS = False
+def main(kdfile, vlsr_tol=20, plot_figs=True, save_figs=True):
     #
     # Load plx data
     #
@@ -169,7 +168,7 @@ def main(kdfile, vlsr_tol=20):
     kddata = pd.read_csv(Path(__file__).parent / kdfile)
     dist_kd, e_dist_kd, is_near, is_far, is_tangent, is_unreliable = assign_kd_distances(
         plxdata, kddata, vlsr_tol=vlsr_tol)
-    if _PLOT_FIGS:
+    if plot_figs:
         #
         # Check that the distances and errors are the same as those
         # in face_on_view_plx.py
@@ -213,7 +212,7 @@ def main(kdfile, vlsr_tol=20):
         ax.set_aspect("equal")
         figname = f"HII_faceonplx_{num_samples}x_pec{use_peculiar}_krige{use_kriging}_vlsrTolerance{vlsr_tol}.pdf"
         figname = "reid19_" + figname if "reid19" in kdfile else figname
-        fig.savefig(Path(__file__).parent / figname, bbox_inches="tight") if _SAVE_FIGS else None
+        fig.savefig(Path(__file__).parent / figname, bbox_inches="tight") if save_figs else None
         plt.show()
         #
         # Calculate difference between kd and plx distances
@@ -238,7 +237,7 @@ def main(kdfile, vlsr_tol=20):
         ax.set_xticks(xlabels)
         figname = f"kd_plx_diff_hist_{num_samples}x_pec{use_peculiar}_krige{use_kriging}_vlsrTolerance{vlsr_tol}.pdf"
         figname = "reid19_" + figname if "reid19" in kdfile else figname
-        fig.savefig(Path(__file__).parent / figname, bbox_inches="tight") if _SAVE_FIGS else None
+        fig.savefig(Path(__file__).parent / figname, bbox_inches="tight") if save_figs else None
         plt.show()
         # CDF of differences over total error
         fig, ax = plt.subplots()
@@ -252,7 +251,7 @@ def main(kdfile, vlsr_tol=20):
         ax.set_ylabel("CDF")
         figname = f"kd_plx_diff_CDF_{num_samples}x_pec{use_peculiar}_krige{use_kriging}_vlsrTolerance{vlsr_tol}.pdf"
         figname = "reid19_" + figname if "reid19" in kdfile else figname
-        fig.savefig(Path(__file__).parent / figname, bbox_inches="tight") if _SAVE_FIGS else None
+        fig.savefig(Path(__file__).parent / figname, bbox_inches="tight") if save_figs else None
         plt.show()
     #
     # Print stats
@@ -277,4 +276,4 @@ if __name__ == "__main__":
     # kdfile_input = input("Name of kd .csv file in this folder: ")
     kdfile_input = "cw21_kd_plx_results_10000x_pecTrue_krigeTrue.csv"
     # kdfile_input = "reid19_kd_plx_results_10000x_pecTrue_krigeFalse.csv"
-    main(kdfile_input, vlsr_tol=20)
+    main(kdfile_input, vlsr_tol=40, plot_figs=True, save_figs=False)
