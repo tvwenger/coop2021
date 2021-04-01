@@ -278,7 +278,7 @@ def main(csvfile, tracefile):
             x_tooclose,
             y_tooclose,
             marker="v",
-            c="k",
+            c="darkorange",
             # c=vrad_vcirc[is_tooclose == 1],
             # cmap=cmap,
             # norm=norm,
@@ -316,8 +316,8 @@ def main(csvfile, tracefile):
     # Other plot parameters
     ax.set_xlabel("$x$ (kpc)")
     ax.set_ylabel("$y$ (kpc)")
-    ax.axhline(y=0, linewidth=0.5, linestyle="--", color="k")  # horizontal line
-    ax.axvline(x=0, linewidth=0.5, linestyle="--", color="k")  # vertical line
+    ax.axhline(y=0, linewidth=0.5, linestyle="--", color="k", zorder=0)  # horizontal line
+    ax.axvline(x=0, linewidth=0.5, linestyle="--", color="k", zorder=0)  # vertical line
     ax.set_xlim(-8, 12)
     ax.set_xticks([-5, 0, 5, 10])
     ax.set_ylim(-5, 15)
@@ -379,11 +379,13 @@ def main(csvfile, tracefile):
         s=scattersize,
         label="Good",
     )
+    # Plot Sun
+    ax.scatter(0, 8.181, marker="*", c="gold", s=30, zorder=100)
     # Other plot parameters
     ax.set_xlabel("$x$ (kpc)")
     ax.set_ylabel("$y$ (kpc)")
-    ax.axhline(y=0, linewidth=0.5, linestyle="--", color="k")  # horizontal line
-    ax.axvline(x=0, linewidth=0.5, linestyle="--", color="k")  # vertical line
+    ax.axhline(y=0, linewidth=0.5, linestyle="--", color="k", zorder=0)  # horizontal line
+    ax.axvline(x=0, linewidth=0.5, linestyle="--", color="k", zorder=0)  # vertical line
     ax.set_xlim(-8, 12)
     ax.set_xticks([-5, 0, 5, 10])
     ax.set_ylim(-5, 15)
@@ -407,7 +409,7 @@ if __name__ == "__main__":
     # )
     csvfilepath = (
         Path(__file__).parent
-        / "csvfiles/alldata_HPDmode.csv"
+        / "csvfiles/alldata_HPDmode_NEW2.csv"
     )
     tracefilepath = (
         Path(__file__).parent.parent
