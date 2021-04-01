@@ -74,7 +74,7 @@ def main():
     # print(np.max(abs(dist_diff)), np.min(abs(dist_diff)))
     # print(np.mean(dist_diff), np.median(dist_diff))
 
-    csv_filepath = Path("pec_motions/csvfiles/alldata_HPDmode_NEW.csv")
+    csv_filepath = Path("pec_motions/csvfiles/alldata_HPDmode_NEW2.csv")
     data = pd.read_csv(Path(__file__).parent.parent / csv_filepath)
     x = data["x_mode"].values
     y = data["y_mode"].values
