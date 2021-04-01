@@ -1,6 +1,8 @@
 """
 face_on_view_plx.py
 
+! Use kd_plx_diff.py instead !
+
 Plots a face-on (galactocentric) view of the Milky Way
 with the Sun on +y-axis using kinematic distances.
 This file uses data from the Parallax table in the database.
