@@ -138,7 +138,7 @@ def main(kdfile, vlsr_tol=20, plot_figs=True, save_figs=True):
     #
     # Load plx data
     #
-    plxfile = Path("pec_motions/csvfiles/alldata_HPDmode_NEW.csv")
+    plxfile = Path("pec_motions/csvfiles/alldata_HPDmode_NEW2.csv")
     plxdata = pd.read_csv(Path(__file__).parent.parent / plxfile)
     dist_plx = plxdata["dist_mode"].values
     e_dist_plx = plxdata["dist_halfhpd"].values
