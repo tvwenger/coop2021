@@ -192,48 +192,56 @@ def main():
     num_mc = 1000  # number of Monte Carlo samples
     xlow, xhigh = -8, 12
     ylow, yhigh = -5, 15
-    gridx, gridy = np.mgrid[xlow:xhigh:500j, ylow:yhigh:500j]
-    coord_interp = np.vstack((gridx.flatten(), gridy.flatten())).T
-    Upec_arr = np.array([gridx,] * num_mc) * np.nan  # shape = (num_mc, 500, 500)
-    Vpec_arr = np.array([gridx,] * num_mc) * np.nan  # shape = (num_mc, 500, 500)
-    for i in range(num_mc):
-        Upec_interp, _ = Upec_krig.interp(coord_interp, resample=resample)
-        Vpec_interp, _ = Vpec_krig.interp(coord_interp, resample=resample)
-        # Reshape
-        Upec_interp = Upec_interp.reshape(gridx.shape)
-        Vpec_interp = Vpec_interp.reshape(gridx.shape)
-        # Populate arrays
-        Upec_arr[i] = Upec_interp
-        Vpec_arr[i] = Vpec_interp
-    Upec_interp_sd = Upec_arr.std(axis=0)
-    Vpec_interp_sd = Vpec_arr.std(axis=0)
+    # gridx, gridy = np.mgrid[xlow:xhigh:500j, ylow:yhigh:500j]
+    # coord_interp = np.vstack((gridx.flatten(), gridy.flatten())).T
+    # Upec_arr = np.array([gridx,] * num_mc) * np.nan  # shape = (num_mc, 500, 500)
+    # Vpec_arr = np.array([gridx,] * num_mc) * np.nan  # shape = (num_mc, 500, 500)
+    # for i in range(num_mc):
+    #     Upec_interp, _ = Upec_krig.interp(coord_interp, resample=resample)
+    #     Vpec_interp, _ = Vpec_krig.interp(coord_interp, resample=resample)
+    #     # Reshape
+    #     Upec_interp = Upec_interp.reshape(gridx.shape)
+    #     Vpec_interp = Vpec_interp.reshape(gridx.shape)
+    #     # Populate arrays
+    #     Upec_arr[i] = Upec_interp
+    #     Vpec_arr[i] = Vpec_interp
+    # Upec_interp_sd = Upec_arr.std(axis=0)
+    # Vpec_interp_sd = Vpec_arr.std(axis=0)
+    # #
+    # # Save to pickle file
+    # #
+    # pkl = Path(__file__).parent / f"krige_sd_{num_mc}samples.pkl"
+    # with open(pkl, "wb") as f:
+    #     dill.dump(
+    #         {
+    #             "Upec_mean_sd": Upec_interp_sd,
+    #             "Vpec_mean_sd": Vpec_interp_sd,
+    #         }, f
+    #     )
+    # #
+    # # Show semivariograms
+    # #
+    # Upec_semivar.savefig(
+    #     Path(__file__).parent
+    #     / f"Upec_semivar_{num_mc}samples.pdf",
+    #     bbox_inches="tight",
+    # )
+    # Vpec_semivar.savefig(
+    #     Path(__file__).parent
+    #     / f"Vpec_semivar_{num_mc}samples.pdf",
+    #     bbox_inches="tight",
+    # )
+    # Upec_semivar.show()
+    # Vpec_semivar.show()
+    # plt.show()
     #
-    # Save to pickle file
+    # Load data from pickle file
     #
     pkl = Path(__file__).parent / f"krige_sd_{num_mc}samples.pkl"
-    with open(pkl, "wb") as f:
-        dill.dump(
-            {
-                "Upec_mean_sd": Upec_interp_sd,
-                "Vpec_mean_sd": Vpec_interp_sd,
-            }, f
-        )
-    #
-    # Show semivariograms
-    #
-    Upec_semivar.savefig(
-        Path(__file__).parent
-        / f"Upec_semivar_{num_mc}samples.pdf",
-        bbox_inches="tight",
-    )
-    Vpec_semivar.savefig(
-        Path(__file__).parent
-        / f"Vpec_semivar_{num_mc}samples.pdf",
-        bbox_inches="tight",
-    )
-    Upec_semivar.show()
-    Vpec_semivar.show()
-    plt.show()
+    with open(pkl, "rb") as f:
+        file = dill.load(f)
+        Upec_interp_sd = file["Upec_mean_sd"]
+        Vpec_interp_sd = file["Vpec_mean_sd"]
     #
     # Plot interpolated kriging results
     #
