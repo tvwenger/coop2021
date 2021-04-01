@@ -21,7 +21,7 @@ from calc_hpd import calc_hpd
 
 
 def hist_mc_data():
-    mc_type = "HPDmode"
+    mc_type = "HPDmode_NEW2"
     datafile = Path(__file__).parent / Path(f"csvfiles/alldata_{mc_type}.csv")
     data = pd.read_csv(datafile)
 
@@ -37,18 +37,6 @@ def hist_mc_data():
     Vpec = data["Vpec_mode"].values
     Wpec = data["Wpec_mode"].values
     print("Calculating HPD...")
-    # Upec_hpd = np.array([calc_hpd(Upec, "scipy") for idx in range(num_sources)])
-    # Upec_hpd_mode, Upec_hpd_low, Upec_hpd_high = (
-    #     Upec_hpd[:, 1],
-    #     Upec_hpd[:, 2],
-    #     Upec_hpd[:, 3],
-    # )
-    # Vpec_hpd = np.array([calc_hpd(Vpec, "scipy") for idx in range(num_sources)])
-    # Vpec_hpd_mode, Vpec_hpd_low, Vpec_hpd_high = (
-    #     Vpec_hpd[:, 1],
-    #     Vpec_hpd[:, 2],
-    #     Vpec_hpd[:, 3],
-    # )
     _, Upec_hpd_mode, Upec_hpd_low, Upec_hpd_high = calc_hpd(Upec, "scipy")
     _, Vpec_hpd_mode, Vpec_hpd_low, Vpec_hpd_high = calc_hpd(Vpec, "scipy")
     _, Wpec_hpd_mode, Wpec_hpd_low, Wpec_hpd_high = calc_hpd(Wpec, "scipy")
@@ -98,7 +86,7 @@ def hist_mc_data():
     ax[5].set_title("Radius")
     fig.tight_layout()
     fig.savefig(
-        Path(__file__).parent / f"pec_motions_hist_{mc_type}_Rhpd1.4.pdf",
+        Path(__file__).parent / f"pec_motions_hist_{mc_type}.pdf",
         bbox_inches="tight",
     )
     plt.show()
@@ -119,7 +107,7 @@ def hist_mc_data():
     ax[5].set_title("Half HPD of Radius")
     fig.tight_layout()
     fig.savefig(
-        Path(__file__).parent / f"pec_motions_halfhpd_hist_{mc_type}_Rhpd1.4.pdf",
+        Path(__file__).parent / f"pec_motions_halfhpd_hist_{mc_type}.pdf",
         bbox_inches="tight",
     )
     plt.show()

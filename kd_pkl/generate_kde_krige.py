@@ -297,16 +297,31 @@ if __name__ == "__main__":
     kdes = get_kde(infile)
 
     # ---- Kriging
-    datafile = Path("/home/chengi/Documents/coop2021/pec_motions/csvfiles/alldata_HPDmode.csv")
-    pearsonrfile = Path("/home/chengi/Documents/coop2021/pec_motions/pearsonr_cov.pkl")
+    # datafile = Path("/home/chengi/Documents/coop2021/pec_motions/csvfiles/alldata_HPDmode_NEW2.csv")
+    # pearsonrfile = Path("/home/chengi/Documents/coop2021/pec_motions/pearsonr_cov.pkl")
+    datafile = Path("/mnt/c/Users/ichen/OneDrive/Documents/Jobs/WaterlooWorks/2A Job Search/ACCEPTED__NRC_EXT-10708-JuniorResearcher/Work Documents/coop2021/pec_motions/csvfiles/alldata_HPDmode_NEW2.csv")
+    pearsonrfile = Path("/mnt/c/Users/ichen/OneDrive/Documents/Jobs/WaterlooWorks/2A Job Search/ACCEPTED__NRC_EXT-10708-JuniorResearcher/Work Documents/coop2021/pec_motions/pearsonr_cov.pkl")
     data = pd.read_csv(datafile)
     with open(pearsonrfile, "rb") as f:
         file = dill.load(f)
         cov_Upec = file["cov_Upec"]
         cov_Vpec = file["cov_Vpec"]
-    # Only choose sources that have R > 4 kpc & are not outliers
-    is_good = (data["is_tooclose"].values == 0) & (data["is_outlier"].values == 0)
+    # Only choose sources that have R > 4 kpc
+    # & are not outliers & have ~ Gaussian uncertainties
+    Upec_halfhpd = data["Upec_halfhpd"].values
+    Vpec_halfhpd = data["Vpec_halfhpd"].values
+    Upec_err_high = data["Upec_hpdhigh"].values -  data["Upec_mode"].values
+    Upec_err_low = data["Upec_mode"].values - data["Upec_hpdlow"].values
+    Vpec_err_high = data["Vpec_hpdhigh"].values -  data["Vpec_mode"].values
+    Vpec_err_low = data["Vpec_mode"].values - data["Vpec_hpdlow"].values
+    is_good = (
+        (data["is_tooclose"].values == 0)
+        & (data["is_outlier"].values == 0)
+        & (abs(Upec_err_high - Upec_err_low) < 0.33 * Upec_halfhpd)
+        & (abs(Vpec_err_high - Vpec_err_low) < 0.33 * Vpec_halfhpd)
+    )
     data = data[is_good]
+    print("Num good:", len(data))
     cov_Upec = cov_Upec[:, is_good][is_good]
     cov_Vpec = cov_Vpec[:, is_good][is_good]
     # Get data
@@ -322,27 +337,26 @@ if __name__ == "__main__":
     variogram_model = "gaussian"
     nbins = 10
     bin_number = False
-    lag_cutoff = 0.55
-    Upec_semivar, Upec_corner = Upec_krige.fit(
+    lag_cutoff = 0.5
+    Upec_semivar = Upec_krige.fit(
         model=variogram_model,
         deg=1,
         nbins=nbins,
         bin_number=bin_number,
         lag_cutoff=lag_cutoff,
-        nsims=1000,
     )
-    Vpec_semivar, Vpec_corner = Vpec_krige.fit(
+    Vpec_semivar = Vpec_krige.fit(
         model=variogram_model,
         deg=1,
         nbins=nbins,
         bin_number=bin_number,
         lag_cutoff=lag_cutoff,
-        nsims=1000,
     )
     # Threshold values where Upec and Vpec are no longer reliable
     # (Based on standard deviation)
-    Upec_var_threshold = 225.0  # km^2/s^2, (15)^2
-    Vpec_var_threshold = 225.0  # km^2/s^2, (15)^2
+    # Upec_var_threshold = 225.0  # km^2/s^2, (15)^2
+    # Vpec_var_threshold = 225.0  # km^2/s^2, (15)^2
+    var_threshold = 221.0  # 10^2 + 11^2, (km/s)^2
 
     # Save KDE & kriging function to pickle file
     filename = "cw21_kde_krige.pkl"
@@ -363,8 +377,9 @@ if __name__ == "__main__":
                 "a3": kdes[10],
                 "Upec_krige": Upec_krige,
                 "Vpec_krige": Vpec_krige,
-                "Upec_var_threshold": Upec_var_threshold,
-                "Vpec_var_threshold": Vpec_var_threshold,
+                # "Upec_var_threshold": Upec_var_threshold,
+                # "Vpec_var_threshold": Vpec_var_threshold,
+                "var_threshold": var_threshold,
             },
             f,
         )

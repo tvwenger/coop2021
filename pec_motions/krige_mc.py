@@ -15,6 +15,7 @@ import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from kriging import kriging
+from numba import jit
 
 # Want to add my own programs as package:
 # Make a $PATH to coop2021 (twice parent folder of this file)
@@ -67,14 +68,16 @@ def get_coords(data):
 
     return gcen_x, gcen_y, gcen_z
 
-
 def main():
     # * CONCLUSION:
     # * range of the semivariance points is much larger than the variation from small lags
     # * to large lags. Basically there isn't much structure in the semivariograms.
     mc_type = "HPDmode_NEW2"
+    # datafile = Path(__file__).parent / Path("csvfiles/alldata_{}.csv".format(mc_type))
     datafile = Path(__file__).parent / Path(f"csvfiles/alldata_{mc_type}.csv")
     pearsonrfile = Path(__file__).parent / "pearsonr_cov.pkl"
+    # datafile = "csvfiles/alldata_HPDmode_NEW2.csv"
+    # pearsonrfile = "pearsonr_cov.pkl"
     data = pd.read_csv(datafile)
     with open(pearsonrfile, "rb") as f:
         file = dill.load(f)
@@ -166,7 +169,7 @@ def main():
     bin_number = False
     deg = 1
     if bin_number: condition += "-binnumberTrue"
-    lag_cutoff = 0.7
+    lag_cutoff = 0.5
     print("Semivariogram Model:", variogram_model)
     Upec_semivar = Upec_krig.fit(
         model=variogram_model,
@@ -186,7 +189,7 @@ def main():
     # Interpolate data
     #
     resample = True  # resample data for kriging
-    num_mc = 1000  # number of MCMC samples
+    num_mc = 10  # number of Monte Carlo samples
     xlow, xhigh = -8, 12
     ylow, yhigh = -5, 15
     gridx, gridy = np.mgrid[xlow:xhigh:500j, ylow:yhigh:500j]
@@ -198,9 +201,9 @@ def main():
         Vpec_interp, Vpec_interp_var = Vpec_krig.interp(coord_interp, resample=resample)
         # Reshape
         Upec_interp = Upec_interp.reshape(gridx.shape)
-        Upec_interp_sd = np.sqrt(Upec_interp_var).reshape(gridx.shape)
+        # Upec_interp_sd = np.sqrt(Upec_interp_var).reshape(gridx.shape)
         Vpec_interp = Vpec_interp.reshape(gridx.shape)
-        Vpec_interp_sd = np.sqrt(Vpec_interp_var).reshape(gridx.shape)
+        # Vpec_interp_sd = np.sqrt(Vpec_interp_var).reshape(gridx.shape)
         # Populate arrays
         Upec_arr[i] = Upec_interp
         Vpec_arr[i] = Vpec_interp
@@ -232,16 +235,16 @@ def main():
     #
     # Show semivariograms
     #
-    # Upec_semivar.savefig(
-    #     Path(__file__).parent
-    #     / f"Upec_semivar_{num_good}good_{condition}_{variogram_model}_{mc_type}.pdf",
-    #     bbox_inches="tight",
-    # )
-    # Vpec_semivar.savefig(
-    #     Path(__file__).parent
-    #     / f"Vpec_semivar_{num_good}good_{condition}_{variogram_model}_{mc_type}.pdf",
-    #     bbox_inches="tight",
-    # )
+    Upec_semivar.savefig(
+        Path(__file__).parent
+        / f"Upec_semivar_{num_mc}samples.pdf",
+        bbox_inches="tight",
+    )
+    Vpec_semivar.savefig(
+        Path(__file__).parent
+        / f"Vpec_semivar_{num_mc}samples.pdf",
+        bbox_inches="tight",
+    )
     Upec_semivar.show()
     Vpec_semivar.show()
     plt.show()
@@ -396,6 +399,7 @@ def main():
     #     fr"(Universal Kriging, \texttt{{variogram\_model={variogram_model}}})"
     # )
     fig.tight_layout()
+    # filename = "krige_sd_{}samples.pdf".format(num_mc)
     filename = f"krige_sd_{num_mc}samples.pdf"
     fig.savefig(
         Path(__file__).parent / filename, format="pdf", dpi=300, bbox_inches="tight",

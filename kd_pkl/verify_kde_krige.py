@@ -141,8 +141,8 @@ def plot_kriging():
     gridx, gridy = np.mgrid[xlow:xhigh:500j, ylow:yhigh:500j]
     coord_interp = np.vstack((gridx.flatten(), gridy.flatten())).T
 
-    Upec, Upec_var = Upec_krige.interp(coord_interp)
-    Vpec, Vpec_var = Vpec_krige.interp(coord_interp)
+    Upec, Upec_var = Upec_krige.interp(coord_interp, resample=False)
+    Vpec, Vpec_var = Vpec_krige.interp(coord_interp, resample=False)
     Upec_sd = np.sqrt(Upec_var)
     Vpec_sd = np.sqrt(Vpec_var)
     # Reshape
