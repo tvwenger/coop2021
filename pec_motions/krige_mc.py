@@ -27,46 +27,46 @@ import mytransforms as trans
 from universal_rotcurve import urc
 
 
-def get_coords(data):
-    # # Mean values from 100 distance, mean Upec/Vpec trace, peak everything file
-    # R0_mean, Zsun_mean, roll_mean = 8.17845, 5.0649223, 0.0014527875
-    # Usun_mean, Vsun_mean, Wsun_mean = 10.879447, 10.540543, 8.1168785
-    # Upec_mean, Vpec_mean = 4.912622, -4.588946
-    # a2_mean, a3_mean = 0.96717525, 1.624953
+# def get_coords(data):
+#     # # Mean values from 100 distance, mean Upec/Vpec trace, peak everything file
+#     # R0_mean, Zsun_mean, roll_mean = 8.17845, 5.0649223, 0.0014527875
+#     # Usun_mean, Vsun_mean, Wsun_mean = 10.879447, 10.540543, 8.1168785
+#     # Upec_mean, Vpec_mean = 4.912622, -4.588946
+#     # a2_mean, a3_mean = 0.96717525, 1.624953
 
-    # Mode of 100 distances, mean Upec/Vpec + peak everything
-    R0_mode = 8.174602364395952
-    Zsun_mode = 5.398550615892994
-    Usun_mode = 10.878914326160878
-    Vsun_mode = 10.696801784160257
-    Wsun_mode = 8.087892505141708
-    Upec_mode = 4.9071771802606285
-    Vpec_mode = -4.521832904300172
-    roll_mode = -0.010742182667190958
-    a2_mode = 0.9768982857793898
-    a3_mode = 1.626400628724733
+#     # Mode of 100 distances, mean Upec/Vpec + peak everything
+#     R0_mode = 8.174602364395952
+#     Zsun_mode = 5.398550615892994
+#     Usun_mode = 10.878914326160878
+#     Vsun_mode = 10.696801784160257
+#     Wsun_mode = 8.087892505141708
+#     Upec_mode = 4.9071771802606285
+#     Vpec_mode = -4.521832904300172
+#     roll_mode = -0.010742182667190958
+#     a2_mode = 0.9768982857793898
+#     a3_mode = 1.626400628724733
 
-    # === Get data ===
-    glon = data["glong"].values  # deg
-    glat = data["glat"].values  # deg
-    plx = data["plx"].values  # mas
-    e_plx = data["e_plx"].values
+#     # === Get data ===
+#     glon = data["glong"].values  # deg
+#     glat = data["glat"].values  # deg
+#     plx = data["plx"].values  # mas
+#     e_plx = data["e_plx"].values
 
-    # === Calculate predicted values from optimal parameters ===
-    # Parallax to distance
-    dist = trans.parallax_to_dist(plx, e_parallax=e_plx)
+#     # === Calculate predicted values from optimal parameters ===
+#     # Parallax to distance
+#     dist = trans.parallax_to_dist(plx, e_parallax=e_plx)
 
-    # Galactic to barycentric Cartesian coordinates
-    bary_x, bary_y, bary_z = trans.gal_to_bary(glon, glat, dist)
+#     # Galactic to barycentric Cartesian coordinates
+#     bary_x, bary_y, bary_z = trans.gal_to_bary(glon, glat, dist)
 
-    # Barycentric Cartesian to galactocentric Cartesian coodinates
-    gcen_x, gcen_y, gcen_z = trans.bary_to_gcen(
-        bary_x, bary_y, bary_z, R0=R0_mode, Zsun=Zsun_mode, roll=roll_mode
-    )
-    # Rotate 90deg CW to Reid convention
-    gcen_x, gcen_y = gcen_y, -gcen_x
+#     # Barycentric Cartesian to galactocentric Cartesian coodinates
+#     gcen_x, gcen_y, gcen_z = trans.bary_to_gcen(
+#         bary_x, bary_y, bary_z, R0=R0_mode, Zsun=Zsun_mode, roll=roll_mode
+#     )
+#     # Rotate 90deg CW to Reid convention
+#     gcen_x, gcen_y = gcen_y, -gcen_x
 
-    return gcen_x, gcen_y, gcen_z
+#     return gcen_x, gcen_y, gcen_z
 
 def main():
     # * CONCLUSION:
@@ -189,7 +189,7 @@ def main():
     # Interpolate data
     #
     resample = True  # resample data for kriging
-    num_mc = 10  # number of Monte Carlo samples
+    num_mc = 1000  # number of Monte Carlo samples
     xlow, xhigh = -8, 12
     ylow, yhigh = -5, 15
     gridx, gridy = np.mgrid[xlow:xhigh:500j, ylow:yhigh:500j]
@@ -197,41 +197,27 @@ def main():
     Upec_arr = np.array([gridx,] * num_mc) * np.nan  # shape = (num_mc, 500, 500)
     Vpec_arr = np.array([gridx,] * num_mc) * np.nan  # shape = (num_mc, 500, 500)
     for i in range(num_mc):
-        Upec_interp, Upec_interp_var = Upec_krig.interp(coord_interp, resample=resample)
-        Vpec_interp, Vpec_interp_var = Vpec_krig.interp(coord_interp, resample=resample)
+        Upec_interp, _ = Upec_krig.interp(coord_interp, resample=resample)
+        Vpec_interp, _ = Vpec_krig.interp(coord_interp, resample=resample)
         # Reshape
         Upec_interp = Upec_interp.reshape(gridx.shape)
-        # Upec_interp_sd = np.sqrt(Upec_interp_var).reshape(gridx.shape)
         Vpec_interp = Vpec_interp.reshape(gridx.shape)
-        # Vpec_interp_sd = np.sqrt(Vpec_interp_var).reshape(gridx.shape)
         # Populate arrays
         Upec_arr[i] = Upec_interp
         Vpec_arr[i] = Vpec_interp
     Upec_interp_sd = Upec_arr.std(axis=0)
     Vpec_interp_sd = Vpec_arr.std(axis=0)
-    # print("Min & Max of interpolated Upec:", np.min(Upec_interp), np.max(Upec_interp))
-    # print("Min & Max of interpolated Vpec:", np.min(Vpec_interp), np.max(Vpec_interp))
-    # print("Mean interpolated Upec & Vpec:", np.mean(Upec_interp), np.mean(Vpec_interp))
-    # print(
-    #     "Median interpolated Upec & Vpec:", np.median(Upec_interp), np.median(Vpec_interp)
-    # )
-    # print(
-    #     "Mean SD of interpolated Upec & Vpec:",
-    #     np.mean(Upec_interp_sd),
-    #     np.mean(Vpec_interp_sd),
-    # )
-    # print(
-    #     "Median SD of interpolated Upec & Vpec:",
-    #     np.median(Upec_interp_sd),
-    #     np.median(Vpec_interp_sd),
-    # )
-    # v_tot_interp = np.sqrt(Upec_interp ** 2 + Vpec_interp ** 2)
-    # print(
-    #     "Mean, median, and SD of interpolated magnitude",
-    #     np.mean(v_tot_interp),
-    #     np.median(v_tot_interp),
-    #     np.std(v_tot_interp),
-    # )
+    #
+    # Save to pickle file
+    #
+    pkl = Path(__file__).parent / f"krige_sd_{num_mc}samples.pkl"
+    with open(pkl, "wb") as f:
+        dill.dump(
+            {
+                "Upec_mean_sd": Upec_interp_sd,
+                "Vpec_mean_sd": Vpec_interp_sd,
+            }, f
+        )
     #
     # Show semivariograms
     #
@@ -370,7 +356,7 @@ def main():
     ax[0].axvline(x=0, linewidth=0.5, linestyle="--", color="k")  # vertical line
     ax[0].set_xlabel("$x$ (kpc)")
     ax[0].set_ylabel("$y$ (kpc)")
-    ax[0].set_title("$U_s$ Standard Deviation")
+    ax[0].set_title(r"$\overline{U_s}$ Standard Deviation")
     cbar_Upec.ax.set_ylabel("km s$^{-1}$", rotation=270)
     cbar_Upec.ax.get_yaxis().labelpad = 15
     ax[0].set_aspect("equal")
@@ -388,18 +374,13 @@ def main():
     ax[1].axvline(x=0, linewidth=0.5, linestyle="--", color="k")  # vertical line
     ax[1].set_xlabel("$x$ (kpc)")
     ax[1].set_ylabel("$y$ (kpc)")
-    ax[1].set_title("$V_s$ Standard Deviation")
+    ax[1].set_title(r"$\overline{V_s}$ Standard Deviation")
     cbar_Vpec.ax.set_ylabel("km s$^{-1}$", rotation=270)
     cbar_Vpec.ax.get_yaxis().labelpad = 15
     ax[1].set_aspect("equal")
     ax[1].grid(False)
 
-    # fig.suptitle(
-    #     f"Standard Deviations of Interpolated Peculiar Motions ({num_good} Good Masers)\n"
-    #     fr"(Universal Kriging, \texttt{{variogram\_model={variogram_model}}})"
-    # )
     fig.tight_layout()
-    # filename = "krige_sd_{}samples.pdf".format(num_mc)
     filename = f"krige_sd_{num_mc}samples.pdf"
     fig.savefig(
         Path(__file__).parent / filename, format="pdf", dpi=300, bbox_inches="tight",
