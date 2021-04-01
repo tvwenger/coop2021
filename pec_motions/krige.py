@@ -22,7 +22,7 @@ _SCRIPT_DIR = str(Path.cwd() / Path(__file__).parent.parent)
 sys.path.append(_SCRIPT_DIR)
 
 import mytransforms as trans
-from universal_rotcurve import urc
+from calc_hpd import calc_hpd
 
 
 def get_coords(data):
@@ -231,6 +231,24 @@ def main():
     coord_interp = np.vstack((gridx.flatten(), gridy.flatten())).T
     Upec_interp, Upec_interp_var = Upec_krig.interp(coord_interp, resample=resample)
     Vpec_interp, Vpec_interp_var = Vpec_krig.interp(coord_interp, resample=resample)
+    #
+    # Print stats
+    #
+    _, Upec_mode, Upec_low, Upec_high = calc_hpd(Upec_interp, "scipy")
+    _, Vpec_mode, Vpec_low, Vpec_high = calc_hpd(Vpec_interp, "scipy")
+    _, Upec_var_mode, Upec_var_low, Upec_var_high = calc_hpd(Upec_interp_var, "scipy")
+    _, Vpec_var_mode, Vpec_var_low, Vpec_var_high = calc_hpd(Vpec_interp_var, "scipy")
+    Upec_sd_mode, Upec_sd_low, Upec_sd_high = np.sqrt(Upec_var_mode), np.sqrt(Upec_var_low), np.sqrt(Upec_var_high)
+    Vpec_sd_mode, Vpec_sd_low, Vpec_sd_high = np.sqrt(Vpec_var_mode), np.sqrt(Vpec_var_low), np.sqrt(Vpec_var_high)
+    v_tot_interp = np.sqrt(Upec_interp ** 2 + Vpec_interp ** 2)
+    _, tot_mode, tot_low, tot_high = calc_hpd(v_tot_interp, "scipy")
+    print("Interpolated Upec mode, low, high:", Upec_mode, Upec_low, Upec_high)
+    print("Interpolated Vpec mode, low, high:", Vpec_mode, Vpec_low, Vpec_high)
+    print("Interpolated Upec_var mode, low, high:", Upec_var_mode, Upec_var_low, Upec_var_high)
+    print("Interpolated Vpec_var mode, low, high:", Vpec_var_mode, Vpec_var_low, Vpec_var_high)
+    print("Interpolated Upec_sd mode, low, high:", Upec_sd_mode, Upec_sd_low, Upec_sd_high)
+    print("Interpolated Vpec_sd mode, low, high:", Vpec_sd_mode, Vpec_sd_low, Vpec_sd_high)
+    print("Interpolated xy-magnitude mode, low, high:", tot_mode, tot_low, tot_high)
     # Reshape
     Upec_interp = Upec_interp.reshape(gridx.shape)
     Upec_interp_sd = np.sqrt(Upec_interp_var).reshape(gridx.shape)
