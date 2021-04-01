@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from scipy.special import erf
-from scipy.stats import gaussian_kde
+from scipy.stats import gaussian_kde, kstest
 from re import search  # for regex
 
 # Want to add my own programs as package:
@@ -253,23 +253,29 @@ def main(kdfile, vlsr_tol=20, plot_figs=True, save_figs=True):
         figname = "reid19_" + figname if "reid19" in kdfile else figname
         fig.savefig(Path(__file__).parent / figname, bbox_inches="tight") if save_figs else None
         plt.show()
-    #
-    # Print stats
-    #
-    kdtypes = [(is_near) & (~is_unreliable),
-               (is_far) & (~is_unreliable),
-               (is_tangent) & (~is_unreliable),
-               is_unreliable
-    ]
-    kdnames = ["Near", "Far", "Tangent", "Unreliable"]
-    for kdtype, kdname in zip(kdtypes, kdnames):
-        print("="*3, kdname + " sources", "="*3)
-        df_plx = plxdata[["gname", "glong", "glat", "vlsr_med", "dist_mode"]][kdtype]
-        df_kd = kddata[["near", "far", "tangent", "vlsr_tangent"]][kdtype]
-        df_tot = pd.concat([df_plx, df_kd], axis=1)
-        print(df_tot.to_string())
-        print(f"Number of {kdname} sources:", len(df_tot))
-        print()
+        #
+        # K-S test
+        #
+        print("======\n",
+              kstest(cdf_data, gaussian_cdf, N=cdf_data.size, mode="exact"),
+              "\n======")
+    # #
+    # # Print stats
+    # #
+    # kdtypes = [(is_near) & (~is_unreliable),
+    #            (is_far) & (~is_unreliable),
+    #            (is_tangent) & (~is_unreliable),
+    #            is_unreliable
+    # ]
+    # kdnames = ["Near", "Far", "Tangent", "Unreliable"]
+    # for kdtype, kdname in zip(kdtypes, kdnames):
+    #     print("="*3, kdname + " sources", "="*3)
+    #     df_plx = plxdata[["gname", "glong", "glat", "vlsr_med", "dist_mode"]][kdtype]
+    #     df_kd = kddata[["near", "far", "tangent", "vlsr_tangent"]][kdtype]
+    #     df_tot = pd.concat([df_plx, df_kd], axis=1)
+    #     print(df_tot.to_string())
+    #     print(f"Number of {kdname} sources:", len(df_tot))
+    #     print()
 
 
 if __name__ == "__main__":
