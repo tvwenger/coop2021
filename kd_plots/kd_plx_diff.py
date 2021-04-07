@@ -134,7 +134,7 @@ def assign_kd_distances(database_data, kd_results, vlsr_tol=20):
     return dists, e_dists, is_near, is_far, is_tangent, is_unreliable
 
 
-def main(kdfile, vlsr_tol=20, plot_figs=True, save_figs=True):
+def main(kdfile, vlsr_tol=20, plot_figs=True, save_figs=True, print_stats=False):
     #
     # Load plx data
     #
@@ -153,6 +153,8 @@ def main(kdfile, vlsr_tol=20, plot_figs=True, save_figs=True):
     # Find if kd used peculiar motions
     use_peculiar = search("pec(.+?)", kdfile).group(1)
     use_peculiar = use_peculiar.lower() == "t"
+    # Find rotcurve used
+    rotcurve = kdfile.split('_', 1)[0].replace('.', '') + "_"
     #
     # Print stats
     #
@@ -211,7 +213,7 @@ def main(kdfile, vlsr_tol=20, plot_figs=True, save_figs=True):
         ax.grid(False)
         ax.set_aspect("equal")
         figname = f"HII_faceonplx_{num_samples}x_pec{use_peculiar}_krige{use_kriging}_vlsrTolerance{vlsr_tol}.pdf"
-        figname = "reid19_" + figname if "reid19" in kdfile else figname
+        figname = rotcurve + figname
         fig.savefig(Path(__file__).parent / figname, bbox_inches="tight") if save_figs else None
         plt.show()
         #
@@ -225,18 +227,25 @@ def main(kdfile, vlsr_tol=20, plot_figs=True, save_figs=True):
         # Histogram of differences
         fig, ax = plt.subplots()
         ax.hist(dist_diff[~is_unreliable], bins=15, histtype="step", color="k", alpha=0.5)
-        ax.axvline(np.median(dist_diff[~is_unreliable]), color="k")
+        median_diff = np.median(dist_diff[~is_unreliable])
+        ax.axvline(median_diff, color="k")
+        print("=" * 6)
+        print("Median difference b/w kd and parallax-derived distances (kpc)", median_diff)
+        print("Min & Max differences (kpc):", np.min(dist_diff[~is_unreliable]),
+              np.max(dist_diff[~is_unreliable]))
+        print("Min & Max abs(differences) (kpc):", np.min(abs(dist_diff[~is_unreliable])),
+              np.max(abs(dist_diff[~is_unreliable])))
         # KDE
         kde = gaussian_kde(dist_diff[~is_unreliable])
         xlabels = [-5, 0, 5]
         diffs = np.linspace(xlabels[0], xlabels[-1], 200)
         kde = kde(diffs)
-        ax.plot(diffs, kde * np.sum(kde) * 2, color="k")
+        ax.plot(diffs, kde * np.sum(kde) * 3, color="k")
         ax.set_xlabel(r"$d_{\rm kd} - d_\pi$ (kpc)")
         ax.set_ylabel("Frequency")
         ax.set_xticks(xlabels)
         figname = f"kd_plx_diff_hist_{num_samples}x_pec{use_peculiar}_krige{use_kriging}_vlsrTolerance{vlsr_tol}.pdf"
-        figname = "reid19_" + figname if "reid19" in kdfile else figname
+        figname = rotcurve + figname
         fig.savefig(Path(__file__).parent / figname, bbox_inches="tight") if save_figs else None
         plt.show()
         # CDF of differences over total error
@@ -247,10 +256,10 @@ def main(kdfile, vlsr_tol=20, plot_figs=True, save_figs=True):
         cdf_data = np.sort(dist_diff[~is_unreliable]/e_dist_diff[~is_unreliable])
         ax.plot(cdf_data, np.arange(cdf_data.size)/cdf_data.size, "k-")
         # ax.set_xlim(*xlims)
-        ax.set_xlabel(r"$(d_{\rm kd} - d_\pi) / \sqrt(\sigma^2_{\rm kd} + \sigma^2_\pi)$")
+        ax.set_xlabel(r"$(d_{\rm kd} - d_\pi) / \sqrt{\sigma^2_{\rm kd} + \sigma^2_\pi}$")
         ax.set_ylabel("CDF")
         figname = f"kd_plx_diff_CDF_{num_samples}x_pec{use_peculiar}_krige{use_kriging}_vlsrTolerance{vlsr_tol}.pdf"
-        figname = "reid19_" + figname if "reid19" in kdfile else figname
+        figname = rotcurve + figname
         fig.savefig(Path(__file__).parent / figname, bbox_inches="tight") if save_figs else None
         plt.show()
         #
@@ -259,27 +268,28 @@ def main(kdfile, vlsr_tol=20, plot_figs=True, save_figs=True):
         print("======\n",
               kstest(cdf_data, gaussian_cdf, N=cdf_data.size, mode="exact"),
               "\n======")
-    # #
-    # # Print stats
-    # #
-    # kdtypes = [(is_near) & (~is_unreliable),
-    #            (is_far) & (~is_unreliable),
-    #            (is_tangent) & (~is_unreliable),
-    #            is_unreliable
-    # ]
-    # kdnames = ["Near", "Far", "Tangent", "Unreliable"]
-    # for kdtype, kdname in zip(kdtypes, kdnames):
-    #     print("="*3, kdname + " sources", "="*3)
-    #     df_plx = plxdata[["gname", "glong", "glat", "vlsr_med", "dist_mode"]][kdtype]
-    #     df_kd = kddata[["near", "far", "tangent", "vlsr_tangent"]][kdtype]
-    #     df_tot = pd.concat([df_plx, df_kd], axis=1)
-    #     print(df_tot.to_string())
-    #     print(f"Number of {kdname} sources:", len(df_tot))
-    #     print()
+    if print_stats:
+        #
+        # Print stats
+        #
+        kdtypes = [(is_near) & (~is_unreliable),
+                (is_far) & (~is_unreliable),
+                (is_tangent) & (~is_unreliable),
+                is_unreliable
+        ]
+        kdnames = ["Near", "Far", "Tangent", "Unreliable"]
+        for kdtype, kdname in zip(kdtypes, kdnames):
+            print("="*3, kdname + " sources", "="*3)
+            df_plx = plxdata[["gname", "glong", "glat", "vlsr_med", "dist_mode"]][kdtype]
+            df_kd = kddata[["near", "far", "tangent", "vlsr_tangent"]][kdtype]
+            df_tot = pd.concat([df_plx, df_kd], axis=1)
+            print(df_tot.to_string())
+            print(f"Number of {kdname} sources:", len(df_tot))
+            print()
 
 
 if __name__ == "__main__":
     # kdfile_input = input("Name of kd .csv file in this folder: ")
     kdfile_input = "cw21_kd_plx_results_10000x_pecTrue_krigeTrue.csv"
-    # kdfile_input = "reid19_kd_plx_results_10000x_pecTrue_krigeFalse.csv"
-    main(kdfile_input, vlsr_tol=40, plot_figs=True, save_figs=False)
+#     kdfile_input = "reid19_kd_plx_results_10000x_pecTrue_krigeFalse.csv"
+    main(kdfile_input, vlsr_tol=20, plot_figs=True, save_figs=False, print_stats=False)
