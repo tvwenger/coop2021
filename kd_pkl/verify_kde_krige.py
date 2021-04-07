@@ -130,7 +130,14 @@ def plot_kde():
     plt.show()
 
 
-def plot_kriging():
+def plot_kriging(use_bary=True):
+    """
+    use_bary :: boolean
+      If True, use barycentric Cartesian coordinates
+      If False, use galactocentric Cartesian coordinates
+
+    NOTE: the "cw21_kde_krige.pkl" file has the Sun on the -x-axis!
+    """
     krigefile = Path(__file__).parent / "cw21_kde_krige.pkl"
     with open(krigefile, "rb") as f:
         file = dill.load(f)
@@ -162,6 +169,8 @@ def plot_kriging():
     cbar_Upec = fig.colorbar(
         mpl.cm.ScalarMappable(norm=norm_Upec, cmap=cmap), ax=ax[0], format="%.0f"
     )
+    if use_bary:
+        ax[0].scatter(__R0, 0, marker="X", c='tab:red', s=15) # marker at galactic centre
     ax[0].axhline(y=0, linewidth=0.5, linestyle="--", color="k")  # horizontal line
     ax[0].axvline(x=0, linewidth=0.5, linestyle="--", color="k")  # vertical line
     ax[0].set_xlabel("$x$ (kpc)")
@@ -177,6 +186,8 @@ def plot_kriging():
     cbar_Vpec = fig.colorbar(
         mpl.cm.ScalarMappable(norm=norm_Vpec, cmap=cmap), ax=ax[1], format="%.0f"
     )
+    if use_bary:
+        ax[1].scatter(__R0, 0, marker="X", c='tab:red', s=15) # marker at galactic centre
     ax[1].axhline(y=0, linewidth=0.5, linestyle="--", color="k")  # horizontal line
     ax[1].axvline(x=0, linewidth=0.5, linestyle="--", color="k")  # vertical line
     ax[1].set_xlabel("$x$ (kpc)")
@@ -190,6 +201,7 @@ def plot_kriging():
     ax[0].set_ylim(ylow, yhigh)
     ax[1].set_xlim(xlow, xhigh)
     ax[1].set_ylim(ylow, yhigh)
+    fig.tight_layout()
     plt.show()
     #
     # Plot standard deviation
@@ -203,6 +215,8 @@ def plot_kriging():
     cbar_Upec = fig.colorbar(
         mpl.cm.ScalarMappable(norm=norm_Upec_sd, cmap=cmap), ax=ax[0], format="%.0f"
     )
+    if use_bary:
+        ax[0].scatter(__R0, 0, marker="X", c='tab:red', s=15) # marker at galactic centre
     ax[0].axhline(y=0, linewidth=0.5, linestyle="--", color="k")  # horizontal line
     ax[0].axvline(x=0, linewidth=0.5, linestyle="--", color="k")  # vertical line
     ax[0].set_xlabel("$x$ (kpc)")
@@ -218,6 +232,8 @@ def plot_kriging():
     cbar_Vpec = fig.colorbar(
         mpl.cm.ScalarMappable(norm=norm_Vpec_sd, cmap=cmap), ax=ax[1], format="%.0f"
     )
+    if use_bary:
+        ax[1].scatter(__R0, 0, marker="X", c='tab:red', s=15) # marker at galactic centre
     ax[1].axhline(y=0, linewidth=0.5, linestyle="--", color="k")  # horizontal line
     ax[1].axvline(x=0, linewidth=0.5, linestyle="--", color="k")  # vertical line
     ax[1].set_xlabel("$x$ (kpc)")
@@ -231,12 +247,13 @@ def plot_kriging():
     ax[0].set_ylim(ylow, yhigh)
     ax[1].set_xlim(xlow, xhigh)
     ax[1].set_ylim(ylow, yhigh)
+    fig.tight_layout()
     plt.show()
 
 
 def main():
     # plot_kde()
-    plot_kriging()
+    plot_kriging(use_bary=True)
 
 
 if __name__ == "__main__":
