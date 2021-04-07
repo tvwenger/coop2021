@@ -1118,7 +1118,8 @@ def gcen_cyl_to_eq(
     Go from galactocentric cylindrical coordinates and velocities
     to coordinates and velocities given in database
 
-    TODO: finish docstring
+    TODO: finish docstring & add Zsun, roll, Theta0
+    NOTE: This function was never used.
     """
 
     # Galactocentric cylindrical to galactocentric Cartesian
