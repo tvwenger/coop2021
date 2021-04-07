@@ -98,8 +98,8 @@ def run_kd(source_to_plot, rotcurve="cw21_rotcurve", num_samples=100,
     #     e_vlsr = kd_results["e_vlsr"].values
     # else:
     # Get HII region data
-    dbfile = Path("/home/chengi/Documents/coop2021/data/hii_v2_20201203.db")
-    # dbfile = Path(__file__).parent.parent / Path("data/hii_v2_20201203.db")
+    # dbfile = Path("/home/chengi/Documents/coop2021/data/hii_v2_20201203.db")
+    dbfile = Path(__file__).parent.parent / Path("data/hii_v2_20201203.db")
     data = get_data(dbfile)
     data = data.iloc[source_to_plot-2]  # only select data of source to plot
     print("=" * 6)
@@ -168,111 +168,3 @@ run_kd(
     use_peculiar=use_pec_input,
     use_kriging=use_kriging_input,
 )
-
-# # %%
-# def assign_kd_distances(database_data, kd_results, vlsr_tol=20):
-#     """
-#     Returns the closest kinematic distance to parallax distance.
-#     If vlsr (km/s) is within vlsr_tol (km/s) of tangent point vlsr,
-#     use the tangent point vlsr
-
-#     Inputs:
-#       database_data :: pandas DataFrame
-#       kd_results :: pandas DataFrame
-#       vlsr_tol :: scalar
-#     """
-#     glong = database_data["glong"].values
-#     vlsr = database_data["vlsr_med"].values
-#     peak_dist = database_data["dist_mode"].values
-#     # Assign tangent kd to any source with vlsr w/in vlsr_tol of tangent vlsr
-#     # TODO: fix use_tangent
-#     use_tangent = abs(kd_results["vlsr_tangent"] - vlsr) < vlsr_tol
-#     # Otherwise, select kd that is closest to distance from parallax
-#     # peak_dist = plx_to_peak_dist(plx, e_plx)
-#     near_err = abs(kd_results["near"] - peak_dist)
-#     far_err = abs(kd_results["far"] - peak_dist)
-#     tangent_err = abs(kd_results["tangent"] - peak_dist)
-#     min_err = np.fmin.reduce([near_err, far_err, tangent_err])  # ignores NaNs
-#     # Select distance corresponding to smallest error
-#     tol = 1e-9  # tolerance for float equality
-#     is_near = (abs(near_err - min_err) < tol) & (~use_tangent)
-#     is_far = (abs(far_err - min_err) < tol) & (~use_tangent)
-#     is_tangent = (abs(tangent_err - min_err) < tol) | (use_tangent)
-#     conditions = [is_near, is_far, is_tangent]
-#     choices = [kd_results["near"], kd_results["far"], kd_results["tangent"]]
-#     dists = np.select(conditions, choices, default=np.nan)
-#     # Exclude any sources w/in 15 deg of GC or 20 deg of GAC
-#     glong[glong > 180] -= 360  # force -180 < glong <= 180
-#     is_unreliable = (abs(glong) < 15.0) | (abs(glong) > 160.0)
-#     #
-#     print("=" * 6)
-#     is_nan = (~is_near) & (~is_far) & (~is_tangent)
-#     # num_sources = np.sum(np.isfinite(dists)) + np.sum((is_unreliable) & (~is_nan)) - \
-#     #               np.sum((np.isfinite(dists)) & ((is_unreliable) & (~is_nan)))
-#     num_sources = np.sum(np.isfinite(dists))
-#     print("Total number of (non NaN) sources:", num_sources)
-#     print(
-#         f"Num near: {np.sum((is_near) & (~is_unreliable))}"
-#         + f"\tNum far: {np.sum((is_far) & (~is_unreliable))}"
-#         + f"\tNum tangent: {np.sum((is_tangent) & (~is_unreliable))}"
-#         + f"\tNum unreliable: {np.sum((is_unreliable) & (~is_nan))}"
-#     )
-#     print("Number of NaN sources (i.e. all dists are NaNs):", np.sum(is_nan))
-#     print(
-#         "Num NaNs in near, far, tangent:",
-#         np.sum(np.isnan(near_err)),
-#         np.sum(np.isnan(far_err)),
-#         np.sum(np.isnan(tangent_err)),
-#     )
-#     # Print following if two distances are selected:
-#     num_near_far = np.sum((is_near) & (is_far))
-#     num_near_tan = np.sum((is_near) & (is_tangent))
-#     num_far_tan = np.sum((is_far) & (is_tangent))
-#     if any([num_near_far, num_near_tan, num_far_tan]):
-#         print("Both near and far (should be 0):", num_near_far)
-#         print("Both near and tan (should be 0):", num_near_tan)
-#         print("Both far and tan (should be 0):", num_far_tan)
-#     #
-#     e_near = 0.5 * (kd_results["near_err_pos"] + kd_results["near_err_neg"])
-#     e_far = 0.5 * (kd_results["far_err_pos"] + kd_results["far_err_neg"])
-#     e_tan = 0.5 * (kd_results["distance_err_pos"] + kd_results["distance_err_neg"])
-#     e_conditions = [is_near, is_far, is_tangent]
-#     e_choices = [e_near, e_far, e_tan]
-#     e_dists = np.select(e_conditions, e_choices, default=np.nan)
-#     print("Num of NaN errors (i.e. all errors are NaNs):", np.sum(np.isnan(e_dists)))
-
-#     return dists, e_dists, is_near, is_far, is_tangent, is_unreliable
-
-
-# # %%
-# vlsr_tol = 20
-# #
-# # Load plx data
-# #
-# plxfile = Path("pec_motions/csvfiles/alldata_HPDmode_NEW.csv")
-# plxdata = pd.read_csv(Path(__file__).parent.parent / plxfile)
-# dist_plx = plxdata["dist_mode"].values
-# e_dist_plx = plxdata["dist_halfhpd"].values
-# #
-# # RegEx stuff
-# #
-# # Find num_samples used in kd
-# # num_samples = findall(r"\d+", kdfile)
-# # if len(num_samples) != 1:
-# #     print("regex num_samples:", num_samples)
-# #     raise ValueError("Invalid number of samples parsed")
-# # num_samples = int(num_samples[0])
-# # # Find if kd used kriging
-# # use_kriging = findall("True", kdfile)
-# # if len(use_kriging) > 1:
-# #     print("regex use_kriging:", use_kriging)
-# #     raise ValueError("Invalid use_kriging parsed")
-# # use_kriging = bool(use_kriging)
-# #
-# # Load kd data
-# #
-# kdfile = "kd_plx_results_10000x_krigeTrue.csv"
-# kddata = pd.read_csv(Path(__file__).parent / kdfile)
-# dist_kd, e_dist_kd, is_near, is_far, is_tangent, is_unreliable = assign_kd_distances(
-#     plxdata, kddata, vlsr_tol=vlsr_tol
-# )
