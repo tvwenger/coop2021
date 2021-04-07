@@ -12,6 +12,7 @@ import dill
 import pandas as pd
 from kriging import kriging
 from scipy.stats import gaussian_kde
+from scipy.spatial import Delaunay
 
 # Want to add my own programs as package:
 # Make a $PATH to coop2021 (twice parent folder of this file)
@@ -398,7 +399,8 @@ if __name__ == "__main__":
     # Upec_var_threshold = 225.0  # km^2/s^2, (15)^2
     # Vpec_var_threshold = 225.0  # km^2/s^2, (15)^2
     var_threshold = 221.0  # 10^2 + 11^2, (km/s)^2
-
+    # Compute convex hull; x is first column, y is 2nd column, shape=(num_sources, 2)
+    hull = Delaunay(coord_obs)
     # Save KDE & kriging function to pickle file
     filename = "cw21_kde_krige.pkl"
     outfile = Path(__file__).parent / filename
@@ -420,7 +422,8 @@ if __name__ == "__main__":
                 "Vpec_krige": Vpec_krige,
                 # "Upec_var_threshold": Upec_var_threshold,
                 # "Vpec_var_threshold": Vpec_var_threshold,
-                "var_threshold": var_threshold,
+                # "var_threshold": var_threshold,
+                "hull": hull,
             },
             f,
         )
