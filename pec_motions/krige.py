@@ -162,7 +162,7 @@ def main():
     #       0.35 => 114 sources (looks smoother, but hard to justify cutoff)
 
     print("--- MC GOOD DATA STATS ---")
-    print(np.mean(Upec[is_good]), np.mean(Vpec[is_good]), np.mean(Wpec[is_good]))
+    print(np.mean(Upec[is_good]), np.mean(Upec[is_good]), np.mean(Wpec[is_good]))
     print(np.median(Upec[is_good]), np.median(Vpec[is_good]), np.median(Wpec[is_good]))
     print(np.mean(tot[is_good]), np.median(tot[is_good]))
     print(
