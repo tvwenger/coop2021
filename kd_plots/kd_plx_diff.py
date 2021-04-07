@@ -10,6 +10,7 @@ import sys
 from pathlib import Path
 import numpy as np
 import pandas as pd
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 from scipy.special import erf
 from scipy.stats import gaussian_kde, kstest
@@ -79,10 +80,13 @@ def assign_kd_distances(database_data, kd_results, vlsr_tol=20):
     tangent_err = abs(kd_results["tangent"] - peak_dist)
     min_err = np.fmin.reduce([near_err, far_err, tangent_err])  # ignores NaNs
     # Select distance corresponding to smallest error
-    tol = 1e-9  # tolerance for float equality
-    is_near = (abs(near_err - min_err) < tol) & (~use_tangent)
-    is_far = (abs(far_err- min_err) < tol) & (~use_tangent)
-    is_tangent = (abs(tangent_err - min_err) < tol) | (use_tangent)
+    # tol = 1e-9  # tolerance for float equality
+    # is_near = (abs(near_err - min_err) < tol) & (~use_tangent)
+    # is_far = (abs(far_err - min_err) < tol) & (~use_tangent)
+    # is_tangent = (abs(tangent_err - min_err) < tol) | (use_tangent)
+    is_near = (near_err == min_err) & (~use_tangent)
+    is_far = (far_err == min_err) & (~use_tangent)
+    is_tangent = (tangent_err == min_err) | (use_tangent)
     conditions = [is_near, is_far, is_tangent]
     choices = [kd_results["near"], kd_results["far"], kd_results["tangent"]]
     dists = np.select(conditions, choices, default=np.nan)
@@ -212,7 +216,7 @@ def main(kdfile, vlsr_tol=20, plot_figs=True, save_figs=True, print_stats=False)
         ax.set_yticks([-5, 0, 5, 10, 15])
         ax.grid(False)
         ax.set_aspect("equal")
-        figname = f"HII_faceonplx_{num_samples}x_pec{use_peculiar}_krige{use_kriging}_vlsrTolerance{vlsr_tol}.pdf"
+        figname = f"faceonplx_{num_samples}x_pec{use_peculiar}_krige{use_kriging}_vlsrTolerance{vlsr_tol}.pdf"
         figname = rotcurve + figname
         fig.savefig(Path(__file__).parent / figname, bbox_inches="tight") if save_figs else None
         plt.show()
@@ -224,6 +228,35 @@ def main(kdfile, vlsr_tol=20, plot_figs=True, save_figs=True, print_stats=False)
         #
         # Plot
         #
+        # Face on view of differences
+        fig, ax = plt.subplots()
+        #
+        cmap = "viridis"
+        norm = mpl.colors.Normalize(vmin=np.nanmin(dist_diff[~is_unreliable]),
+                                    vmax=np.nanmax(dist_diff[~is_unreliable]))
+        ax.scatter(Xg[~is_unreliable], Yg[~is_unreliable],
+                c=dist_diff[~is_unreliable], s=e_dist_diff[~is_unreliable] * size_scale,
+                cmap=cmap, norm=norm)
+        ax.scatter(Xg[is_unreliable], Yg[is_unreliable],
+                c="grey", s=e_dist_diff[is_unreliable] * size_scale, label="Unreliable")
+        cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax)
+        cbar.ax.set_ylabel(r"$d_{\rm kd} - d_\pi$ (kpc)", rotation=270)
+        cbar.ax.get_yaxis().labelpad = 15
+        ax.legend(fontsize=9)
+        ax.set_xlabel("$x$ (kpc)")
+        ax.set_ylabel("$y$ (kpc)")
+        ax.axhline(y=0, linewidth=0.5, linestyle="--", color="k")  # horizontal line
+        ax.axvline(x=0, linewidth=0.5, linestyle="--", color="k")  # vertical line
+        ax.set_xlim(-8, 12)
+        ax.set_xticks([-5, 0, 5, 10])
+        ax.set_ylim(-5, 15)
+        ax.set_yticks([-5, 0, 5, 10, 15])
+        ax.grid(False)
+        ax.set_aspect("equal")
+        figname = f"faceonplxDiffs_{num_samples}x_pec{use_peculiar}_krige{use_kriging}_vlsrTolerance{vlsr_tol}.pdf"
+        figname = rotcurve + figname
+        fig.savefig(Path(__file__).parent / figname, bbox_inches="tight") if save_figs else None
+        plt.show()
         # Histogram of differences
         fig, ax = plt.subplots()
         ax.hist(dist_diff[~is_unreliable], bins=15, histtype="step", color="k", alpha=0.5)
@@ -291,5 +324,5 @@ def main(kdfile, vlsr_tol=20, plot_figs=True, save_figs=True, print_stats=False)
 if __name__ == "__main__":
     # kdfile_input = input("Name of kd .csv file in this folder: ")
     kdfile_input = "cw21_kd_plx_results_10000x_pecTrue_krigeTrue.csv"
-#     kdfile_input = "reid19_kd_plx_results_10000x_pecTrue_krigeFalse.csv"
-    main(kdfile_input, vlsr_tol=20, plot_figs=True, save_figs=False, print_stats=False)
+    # kdfile_input = "reid19_kd_plx_results_10000x_pecTrue_krigeFalse.csv"
+    main(kdfile_input, vlsr_tol=20, plot_figs=True, save_figs=True, print_stats=False)
