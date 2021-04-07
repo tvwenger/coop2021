@@ -196,7 +196,7 @@ def main(kdfile, vlsr_tol=20, save_figs=True):
     cmap = "coolwarm"
     #
     fig, ax = plt.subplots()
-    size_scale = 1  # scaling factor for size
+    size_scale = 2  # scaling factor for size
     #
     ax.scatter(Xg[(vlsr_tan > 0) & (~is_unreliable)], Yg[(vlsr_tan > 0) & (~is_unreliable)],
             s=e_vlsr_tan[(vlsr_tan > 0) & (~is_unreliable)] * size_scale,
@@ -236,7 +236,6 @@ if __name__ == "__main__":
     vlsr_tol_input = 20 if vlsr_tol_input == "" else int(vlsr_tol_input)
     # save_figs_input = str2bool(input("(y/n) Save figures (default y): "),
     #                           empty_condition=True)
-    # kdfile_input = "cw21_kd_plx_results_10000x_pecTrue_krigeTrue.csv"
-    kdfile_input = "reid19_kd_plx_results_10000x_pecTrue_krigeFalse.csv"
+    kdfile_input = "cw21_kd_plx_results_10000x_pecTrue_krigeTrue.csv"
     save_figs_input = True
     main(kdfile_input, vlsr_tol=vlsr_tol_input, save_figs=save_figs_input)
