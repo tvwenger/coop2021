@@ -237,9 +237,11 @@ def main(use_bary=True):
     print("Interpolated xy-magnitude mode, low, high:", tot_mode, tot_low, tot_high)
     # Reshape
     Upec_interp = Upec_interp.reshape(gridx.shape)
-    Upec_interp_sd = np.sqrt(Upec_interp_var).reshape(gridx.shape)
+    Upec_interp_var = Upec_interp_var.reshape(gridx.shape)
+    Upec_interp_sd = np.sqrt(Upec_interp_var)
     Vpec_interp = Vpec_interp.reshape(gridx.shape)
-    Vpec_interp_sd = np.sqrt(Vpec_interp_var).reshape(gridx.shape)
+    Vpec_interp_var = Upec_interp_var.reshape(gridx.shape)
+    Vpec_interp_sd = np.sqrt(Vpec_interp_var)
     print("Min & Max of interpolated Upec:", np.min(Upec_interp), np.max(Upec_interp))
     print("Min & Max of interpolated Vpec:", np.min(Vpec_interp), np.max(Vpec_interp))
     print("Mean interpolated Upec & Vpec:", np.mean(Upec_interp), np.mean(Vpec_interp))
@@ -440,6 +442,35 @@ def main(use_bary=True):
         Path(__file__).parent / filename, format="pdf", dpi=300, bbox_inches="tight",
     )
     plt.show()
+    #
+    # Plot total variance (actually just sum of variances)
+    #
+    var = Upec_interp_var + Vpec_interp_var
+    fig, ax = plt.subplots()
+    norm = mpl.colors.Normalize(vmin=np.min(var), vmax=np.max(var))
+    ax.imshow(var.T, origin="lower", extent=extent, norm=norm)
+    cbar = fig.colorbar(
+        mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax, format="%.0f"
+    )
+    if use_bary:
+        ax.scatter(0, -_R0_MODE, marker="X", c='tab:red', s=15, zorder=10) # marker at galactic centre
+    ax.axhline(y=0, linewidth=0.5, linestyle="--", color="k")  # horizontal line
+    ax.axvline(x=0, linewidth=0.5, linestyle="--", color="k")  # vertical line
+    ax.set_xlabel("$x$ (kpc)")
+    ax.set_ylabel("$y$ (kpc)")
+    # ax.set_title(r"$\sigma^2_{U_s} + \sigma^2_{V_s}$")
+    cbar.ax.set_ylabel(r"$\sigma^2_{U_s} + \sigma^2_{V_s}$ (km$^2$ s$^{-2}$)",
+                       rotation=270)
+    cbar.ax.get_yaxis().labelpad = 15
+    ax.set_aspect("equal")
+    ax.grid(False)
+    fig.tight_layout()
+    filename = f"krigeDiff_totVar_{num_good}good_{condition}_{variogram_model}_{mc_type}.pdf"
+    fig.savefig(
+        Path(__file__).parent / filename, format="pdf", dpi=300, bbox_inches="tight",
+    )
+    plt.show()
+
 
 
 if __name__ == "__main__":
