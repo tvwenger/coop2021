@@ -13,6 +13,7 @@ import sys
 import sqlite3
 from contextlib import closing
 from pathlib import Path
+import dill
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -249,7 +250,19 @@ def main(load_csv=False, csv_filename=None, rotcurve="cw21_rotcurve", num_sample
         # )
         print("Done kd")
 
-        # Save results
+        # Save to pickle file
+        pkl_filename = f"kd_plx_results_{num_samples}x_krige{use_kriging}.pkl"
+        pkl_outfile = Path(__file__).parent / pkl_filename
+        with open(pkl_outfile, "wb") as f:
+            dill.dump(
+                {
+                    "data": data,
+                    "kd": kd_results,
+                },
+                f
+            )
+
+        # Save to csv file
         kd_df = pd.DataFrame(kd_results)
         print("Results shape:", np.shape(kd_df))
         # Add kd results to data (.reset_index() ensures rows have
