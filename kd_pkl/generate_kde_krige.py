@@ -224,55 +224,72 @@ _A3_MODE = 1.626400628724733
 #     return Upec_interp, Upec_interp_var, Vpec_interp, Vpec_interp_var
 
 def get_kde(pkl_file):
+    # with open(pkl_file, "rb") as f1:
+    #     file1 = dill.load(f1)
+    #     print("loaded file1")
+    #     trace = file1["trace"]
+    #     print("loaded trace")
+    #     free_Zsun = file1["free_Zsun"]
+    #     free_roll = file1["free_roll"]
+    #     free_Wpec = file1["free_Wpec"]
+    #     individual_Upec = file1["individual_Upec"]
+    #     individual_Vpec = file1["individual_Vpec"]
+
+    # # Varnames order: [R0, Zsun, Usun, Vsun, Wsun, Upec, Vpec, Wpec, roll, a2, a3]
+    # varnames = ["R0", "Usun", "Vsun", "Wsun", "a2", "a3"]
+    # samples = [trace[varname] for varname in varnames]
+
+    # if free_roll:
+    #     varnames.insert(4, "roll")
+    #     samples.insert(4, trace["roll"])
+    # if free_Wpec:
+    #     varnames.insert(4, "Wpec")
+    #     samples.insert(4, trace["Wpec"])
+    # varnames.insert(4, "Vpec")
+    # if individual_Vpec:
+    #     # Take median Vpec for all sources
+    #     samples.insert(4, np.median(trace["Vpec"], axis=1))
+    # else:
+    #     samples.insert(4, trace["Vpec"])
+    # varnames.insert(4, "Upec")
+    # if individual_Upec:
+    #     # Take median Upec for all sources
+    #     samples.insert(4, np.median(trace["Upec"], axis=1))
+    # else:
+    #     samples.insert(4, trace["Upec"])
+    # if free_Zsun:
+    #     varnames.insert(1, "Zsun")
+    #     samples.insert(1, trace["Zsun"])
+    # samples = np.array(samples)  # shape: (# params, # total iterations)
+    # print("variables in kde:", varnames)
+
+    # # Create KDEs
+    # kde_full = gaussian_kde(samples)
+    # kde_R0 = gaussian_kde(trace["R0"])
+    # kde_Zsun = gaussian_kde(trace["Zsun"])
+    # kde_Usun = gaussian_kde(trace["Usun"])
+    # kde_Vsun = gaussian_kde(trace["Vsun"])
+    # kde_Wsun = gaussian_kde(trace["Wsun"])
+    # kde_Upec = gaussian_kde(trace["Upec"])
+    # kde_Vpec = gaussian_kde(trace["Vpec"])
+    # kde_roll = gaussian_kde(trace["roll"])
+    # kde_a2 = gaussian_kde(trace["a2"])
+    # kde_a3 = gaussian_kde(trace["a3"])
+
     with open(pkl_file, "rb") as f1:
-        file1 = dill.load(f1)
-        trace = file1["trace"]
-        free_Zsun = file1["free_Zsun"]
-        free_roll = file1["free_roll"]
-        free_Wpec = file1["free_Wpec"]
-        individual_Upec = file1["individual_Upec"]
-        individual_Vpec = file1["individual_Vpec"]
+        file = dill.load(f1)
+        kde_full = file["full"]
+        kde_R0 = file["R0"]
+        kde_Zsun = file["Zsun"]
+        kde_Usun = file["Usun"]
+        kde_Vsun = file["Vsun"]
+        kde_Wsun = file["Wsun"]
+        kde_Upec = file["Upec"]
+        kde_Vpec = file["Vpec"]
+        kde_roll = file["roll"]
+        kde_a2 = file["a2"]
+        kde_a3 = file["a3"]
 
-    # Varnames order: [R0, Zsun, Usun, Vsun, Wsun, Upec, Vpec, Wpec, roll, a2, a3]
-    varnames = ["R0", "Usun", "Vsun", "Wsun", "a2", "a3"]
-    samples = [trace[varname] for varname in varnames]
-
-    if free_roll:
-        varnames.insert(4, "roll")
-        samples.insert(4, trace["roll"])
-    if free_Wpec:
-        varnames.insert(4, "Wpec")
-        samples.insert(4, trace["Wpec"])
-    varnames.insert(4, "Vpec")
-    if individual_Vpec:
-        # Take median Vpec for all sources
-        samples.insert(4, np.median(trace["Vpec"], axis=1))
-    else:
-        samples.insert(4, trace["Vpec"])
-    varnames.insert(4, "Upec")
-    if individual_Upec:
-        # Take median Upec for all sources
-        samples.insert(4, np.median(trace["Upec"], axis=1))
-    else:
-        samples.insert(4, trace["Upec"])
-    if free_Zsun:
-        varnames.insert(1, "Zsun")
-        samples.insert(1, trace["Zsun"])
-    samples = np.array(samples)  # shape: (# params, # total iterations)
-    print("variables in kde:", varnames)
-
-    # Create KDEs
-    kde_full = gaussian_kde(samples)
-    kde_R0 = gaussian_kde(trace["R0"])
-    kde_Zsun = gaussian_kde(trace["Zsun"])
-    kde_Usun = gaussian_kde(trace["Usun"])
-    kde_Vsun = gaussian_kde(trace["Vsun"])
-    kde_Wsun = gaussian_kde(trace["Wsun"])
-    kde_Upec = gaussian_kde(trace["Upec"])
-    kde_Vpec = gaussian_kde(trace["Vpec"])
-    kde_roll = gaussian_kde(trace["roll"])
-    kde_a2 = gaussian_kde(trace["a2"])
-    kde_a3 = gaussian_kde(trace["a3"])
 
     return (
         kde_full,
@@ -302,11 +319,14 @@ if __name__ == "__main__":
     #     / Path("bayesian_mcmc_rot_curve")
     #     / f"mcmc_outfile_{prior_set}_{num_samples}dist_{num_rounds}.pkl"
     # )
-    infile = (
-        Path(__file__).parent.parent
-        / Path("bayesian_mcmc_rot_curve")
-        / "mcmc_outfile_A5_102dist_6.pkl"
-    )
+    #
+    # infile = (
+    #     Path(__file__).parent.parent
+    #     / Path("bayesian_mcmc_rot_curve")
+    #     / "mcmc_outfile_A5_102dist_6.pkl"
+    # )
+    #
+    infile = Path("/mnt/c/Users/ichen/OneDrive/Documents/Jobs/WaterlooWorks/2A Job Search/ACCEPTED__NRC_EXT-10708-JuniorResearcher/Work Documents/kd/kd/cw21_kde_krige.pkl")
 
     kdes = get_kde(infile)
 
@@ -398,7 +418,7 @@ if __name__ == "__main__":
     # (Based on standard deviation)
     # Upec_var_threshold = 225.0  # km^2/s^2, (15)^2
     # Vpec_var_threshold = 225.0  # km^2/s^2, (15)^2
-    var_threshold = 221.0  # 10^2 + 11^2, (km/s)^2
+    var_threshold = 250.0  # (km/s)^2
     # Compute convex hull; x is first column, y is 2nd column, shape=(num_sources, 2)
     hull = Delaunay(coord_obs)
     # Save KDE & kriging function to pickle file
@@ -422,7 +442,7 @@ if __name__ == "__main__":
                 "Vpec_krige": Vpec_krige,
                 # "Upec_var_threshold": Upec_var_threshold,
                 # "Vpec_var_threshold": Vpec_var_threshold,
-                # "var_threshold": var_threshold,
+                "var_threshold": var_threshold,
                 "hull": hull,
             },
             f,

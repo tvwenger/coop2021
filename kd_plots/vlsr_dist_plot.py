@@ -77,7 +77,8 @@ def get_data(db_file):
 
 # %%
 def plot_vlsr_dist(source_to_plot, rotcurve="cw21_rotcurve", num_cores=None,
-                   use_peculiar=True, use_kriging=False, resample=False, size=1):
+                   use_peculiar=True, use_kriging=False, resample=False, size=1,
+                   norm=20):
     # Get HII region data
     # dbfile = Path("/home/chengi/Documents/coop2021/data/hii_v2_20201203.db")
     dbfile = Path(__file__).parent.parent / Path("data/hii_v2_20201203.db")
@@ -110,6 +111,7 @@ def plot_vlsr_dist(source_to_plot, rotcurve="cw21_rotcurve", num_cores=None,
         processes=num_cores,
         resample=resample,
         size=size,
+        norm=norm,
     )
     print("Done kd")
 
@@ -130,13 +132,14 @@ rotcurve_input = "cw21_rotcurve"
 source_to_plot_input = 32
 num_cores_input = 4
 use_pec_input = True
-use_kriging_input = False
+use_kriging_input = True
 plot_vlsr_dist(
     source_to_plot_input,
     rotcurve=rotcurve_input,
     num_cores=num_cores_input,
     use_peculiar=use_pec_input,
     use_kriging=use_kriging_input,
-    resample=True,
+    resample=False,
     size=100,
+    norm=20,
 )

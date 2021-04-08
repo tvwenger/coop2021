@@ -188,7 +188,7 @@ def correct_vlsr(glong, glat, vlsr, e_vlsr,
 
 
 def main(load_csv=False, csv_filename=None, rotcurve="cw21_rotcurve", num_samples=100,
-         use_peculiar=True, use_kriging=False, vlsr_tol=20):
+         use_peculiar=True, use_kriging=False, vlsr_tol=20, norm=20):
     if load_csv:
         # Find (all) numbers in csv_filename --> num_samples
         num_samples = findall(r"\d+", csv_filename)
@@ -218,6 +218,7 @@ def main(load_csv=False, csv_filename=None, rotcurve="cw21_rotcurve", num_sample
         print("Including peculiar motions in kd:", use_peculiar)
         print("Using kriging:", use_kriging)
         print("vlsr tolerance (km/s):", vlsr_tol)
+        print("Normalization factor:", norm)
         print("=" * 6)
         # Get HII region data
         dbfile = Path("/home/chengi/Documents/coop2021/data/hii_v2_20201203.db")
@@ -244,6 +245,7 @@ def main(load_csv=False, csv_filename=None, rotcurve="cw21_rotcurve", num_sample
             num_samples=num_samples,
             peculiar=use_peculiar,
             use_kriging=use_kriging,
+            norm=norm,
         )
         # kd_results = rotcurve_kd.rotcurve_kd(
         #     glong, glat, vlsr, velo_tol=0.1, rotcurve=rotcurve, peculiar=use_peculiar
@@ -251,8 +253,10 @@ def main(load_csv=False, csv_filename=None, rotcurve="cw21_rotcurve", num_sample
         print("Done kd")
 
         # Save to pickle file
-        pkl_filename = f"kd_plx_results_{num_samples}x_krige{use_kriging}.pkl"
-        pkl_outfile = Path(__file__).parent / pkl_filename
+        pkl_filename = f"kd_plx_results_{num_samples}x_krige{use_kriging}"
+        if use_kriging:
+            pkl_filename += f"_norm{norm}"
+        pkl_outfile = Path(__file__).parent / f"{pkl_filename}.pkl"
         with open(pkl_outfile, "wb") as f:
             dill.dump(
                 {
@@ -269,9 +273,11 @@ def main(load_csv=False, csv_filename=None, rotcurve="cw21_rotcurve", num_sample
         #                         same number & can concat properly)
         results = pd.concat([data.reset_index(drop=True),
                              kd_df.reset_index(drop=True)], axis=1)
-        csv_filename = f"kd_plx_results_{num_samples}x_krige{use_kriging}.csv"
+        csv_filename = f"kd_plx_results_{num_samples}x_krige{use_kriging}"
+        if use_kriging:
+            csv_filename += f"_norm{norm}"
         results.to_csv(
-            path_or_buf=Path(__file__).parent / csv_filename,
+            path_or_buf=Path(__file__).parent / f"{csv_filename}.csv",
             sep=",",
             index=False,
             header=True,
@@ -391,6 +397,10 @@ if __name__ == "__main__":
             input("(y/n) Use kriging in kd (default n): "),
             empty_condition=False)
         csv_filename_input = None
+        if use_kriging_input:
+            norm_input = float(input("(float) normalization factor for kriging: "))
+        else:
+            norm_input = None
     vlsr_tol_input = input("(int) Assign tangent distance if vlsr is within ___ " +
                             "km/s of tangent velocity? (default 20): ")
     vlsr_tol_input = 20 if vlsr_tol_input == "" else int(vlsr_tol_input)
@@ -401,5 +411,6 @@ if __name__ == "__main__":
         num_samples=num_samples_input,
         use_peculiar=use_pec_input,
         use_kriging=use_kriging_input,
-        vlsr_tol=vlsr_tol_input
+        vlsr_tol=vlsr_tol_input,
+        norm=norm_input,
     )

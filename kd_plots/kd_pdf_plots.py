@@ -73,7 +73,7 @@ def get_data(db_file):
 
 # %%
 def run_kd(source_to_plot, rotcurve="cw21_rotcurve", num_samples=100,
-           use_peculiar=True, use_kriging=False):
+           use_peculiar=True, use_kriging=False, norm=20):
     # if load_csv:
     #     # Find (all) numbers in csv_filename --> num_samples
     #     num_samples = findall(r"\d+", csv_filename)
@@ -128,7 +128,8 @@ def run_kd(source_to_plot, rotcurve="cw21_rotcurve", num_samples=100,
         num_samples=num_samples,
         peculiar=use_peculiar,
         use_kriging=use_kriging,
-        plot_pdf=True
+        plot_pdf=True,
+        norm=norm,
     )
     print("Done kd")
 
@@ -149,22 +150,30 @@ def run_kd(source_to_plot, rotcurve="cw21_rotcurve", num_samples=100,
     # print("Saved to .csv")
 
 # %%
-source_to_plot_input = int(input(
-    "(int) 'Index' of the source to plot (i.e. row num from .csv file): "))
+# source_to_plot_input = int(input(
+#     "(int) 'Index' of the source to plot (i.e. row num from .csv file): "))
 # rotcurve_input = input("rotcurve file (default cw21_rotcurve): ")
 # rotcurve_input = "cw21_rotcurve" if rotcurve_input == "" else rotcurve_input
-num_samples_input = int(input("(int) Number of MC kd samples: "))
-use_pec_input = str2bool(
-    input("(y/n) Include peculiar motions in kd (default y): "),
-    empty_condition=True)
-use_kriging_input = str2bool(
-    input("(y/n) Use kriging in kd (default n): "),
-    empty_condition=False)
+# num_samples_input = int(input("(int) Number of MC kd samples: "))
+# use_pec_input = str2bool(
+#     input("(y/n) Include peculiar motions in kd (default y): "),
+#     empty_condition=True)
+# use_kriging_input = str2bool(
+#     input("(y/n) Use kriging in kd (default n): "),
+#     empty_condition=False)
+# if use_kriging_input:
+#     norm_input = float(input("(float) normalization factor for kriging: "))
+source_to_plot_input = 32
 rotcurve_input = "cw21_rotcurve"
+num_samples_input = 10000
+use_pec_input = True
+use_kriging_input = True
+norm_input = 20
 run_kd(
     source_to_plot_input,
     rotcurve=rotcurve_input,
     num_samples=num_samples_input,
     use_peculiar=use_pec_input,
     use_kriging=use_kriging_input,
+    norm=norm_input,
 )
