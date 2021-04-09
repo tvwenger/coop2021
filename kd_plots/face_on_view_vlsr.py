@@ -241,7 +241,7 @@ def str2bool(string, empty_condition=None):
 #     save_figs_input = True
 #     main(kdfile_input, vlsr_tol=vlsr_tol_input, save_figs=save_figs_input)
 
-def main(use_kriging=False):
+def main(use_kriging=False, normalization=20):
     # Galactocentric Cartesian positions
     xlow, xhigh = -8, 12
     ylow, yhigh = -5, 15
@@ -261,7 +261,8 @@ def main(use_kriging=False):
     glong, glat, dist = trans.bary_to_gal(xb, yb, zb)
     # Calculate LSR velocity at positions
     nom_params = cw21_rotcurve.nominal_params(glong, glat, dist,
-                                              use_kriging=use_kriging, resample=False)
+                                              use_kriging=use_kriging, resample=False,
+                                              norm=normalization)
     vlsr = cw21_rotcurve.calc_vlsr(glong, glat, dist, peculiar=True, **nom_params)
     #
     # Plot
@@ -288,7 +289,7 @@ def main(use_kriging=False):
     plt.show()
 
 
-def plot_diff():
+def plot_diff(normalization=20):
     # Galactocentric Cartesian positions
     xlow, xhigh = -8, 12
     ylow, yhigh = -5, 15
@@ -301,11 +302,13 @@ def plot_diff():
     glong, glat, dist = trans.bary_to_gal(xb, yb, zb)
     # Calculate LSR velocity at positions
     nom_params_nokrige = cw21_rotcurve.nominal_params(glong, glat, dist,
-                                              use_kriging=False, resample=False)
+                                              use_kriging=False, resample=False,
+                                              norm=normalization)
     vlsr_nokrige = cw21_rotcurve.calc_vlsr(glong, glat, dist, peculiar=True,
                                            **nom_params_nokrige)
     nom_params_krige = cw21_rotcurve.nominal_params(glong, glat, dist,
-                                              use_kriging=True, resample=False)
+                                              use_kriging=True, resample=False,
+                                              norm=normalization)
     vlsr_krige = cw21_rotcurve.calc_vlsr(glong, glat, dist, peculiar=True,
                                            **nom_params_krige)
     vlsr_diff = vlsr_nokrige - vlsr_krige
@@ -332,5 +335,6 @@ def plot_diff():
 
 
 if __name__ == "__main__":
-    # main(use_kriging=True)
-    plot_diff()
+    normalization_factor = 20
+    # main(use_kriging=False, normalization=normalization_factor)
+    plot_diff(normalization=normalization_factor)

@@ -92,7 +92,7 @@ def assign_kd_distances(database_data, kd_results, vlsr_tol=20):
     dists = np.select(conditions, choices, default=np.nan)
     # Exclude any sources w/in 15 deg of GC or 20 deg of GAC
     glong[glong > 180] -= 360  # force -180 < glong <= 180
-    is_unreliable = (abs(glong) < 15.) | (abs(glong) > 160.)
+    is_unreliable = (abs(glong) < 20.) | (abs(glong) > 160.)
     #
     # Print some stats
     #
@@ -159,6 +159,11 @@ def main(kdfile, vlsr_tol=20, plot_figs=True, save_figs=True, print_stats=False)
     use_peculiar = use_peculiar.lower() == "t"
     # Find rotcurve used
     rotcurve = kdfile.split('_', 1)[0].replace('.', '') + "_"
+    # Find normalization factor
+    norm_factor = int(search('norm(\d+)', kdfile).group(1))
+    # Append info to figure names
+    figname_append = f"_{num_samples}x_pec{use_peculiar}_krige{use_kriging}" + \
+                     f"_norm{norm_factor}_vlsrTolerance{vlsr_tol}.pdf"
     #
     # Print stats
     #
@@ -167,6 +172,7 @@ def main(kdfile, vlsr_tol=20, plot_figs=True, save_figs=True, print_stats=False)
     print("Including peculiar motions in kd:", use_peculiar)
     print("Using kriging:", use_kriging)
     print("vlsr tolerance (km/s):", vlsr_tol)
+    print("Normalization factor:", norm_factor)
     print("=" * 6)
     #
     # Load kd data
@@ -216,8 +222,7 @@ def main(kdfile, vlsr_tol=20, plot_figs=True, save_figs=True, print_stats=False)
         ax.set_yticks([-5, 0, 5, 10, 15])
         ax.grid(False)
         ax.set_aspect("equal")
-        figname = f"faceonplx_{num_samples}x_pec{use_peculiar}_krige{use_kriging}_vlsrTolerance{vlsr_tol}.pdf"
-        figname = rotcurve + figname
+        figname = rotcurve + "faceonplx" + figname_append
         fig.savefig(Path(__file__).parent / figname, bbox_inches="tight") if save_figs else None
         plt.show()
         #
@@ -253,8 +258,7 @@ def main(kdfile, vlsr_tol=20, plot_figs=True, save_figs=True, print_stats=False)
         ax.set_yticks([-5, 0, 5, 10, 15])
         ax.grid(False)
         ax.set_aspect("equal")
-        figname = f"faceonplxDiffs_{num_samples}x_pec{use_peculiar}_krige{use_kriging}_vlsrTolerance{vlsr_tol}.pdf"
-        figname = rotcurve + figname
+        figname = rotcurve + "faceonplxDiffs" + figname_append
         fig.savefig(Path(__file__).parent / figname, bbox_inches="tight") if save_figs else None
         plt.show()
         # Histogram of differences
@@ -277,8 +281,7 @@ def main(kdfile, vlsr_tol=20, plot_figs=True, save_figs=True, print_stats=False)
         ax.set_xlabel(r"$d_{\rm kd} - d_\pi$ (kpc)")
         ax.set_ylabel("Frequency")
         ax.set_xticks(xlabels)
-        figname = f"kd_plx_diff_hist_{num_samples}x_pec{use_peculiar}_krige{use_kriging}_vlsrTolerance{vlsr_tol}.pdf"
-        figname = rotcurve + figname
+        figname = rotcurve + "kd_plx_diff_hist" + figname_append
         fig.savefig(Path(__file__).parent / figname, bbox_inches="tight") if save_figs else None
         plt.show()
         # CDF of differences over total error
@@ -291,8 +294,7 @@ def main(kdfile, vlsr_tol=20, plot_figs=True, save_figs=True, print_stats=False)
         # ax.set_xlim(*xlims)
         ax.set_xlabel(r"$(d_{\rm kd} - d_\pi) / \sqrt{\sigma^2_{\rm kd} + \sigma^2_\pi}$")
         ax.set_ylabel("CDF")
-        figname = f"kd_plx_diff_CDF_{num_samples}x_pec{use_peculiar}_krige{use_kriging}_vlsrTolerance{vlsr_tol}.pdf"
-        figname = rotcurve + figname
+        figname = rotcurve + "kd_plx_diff_CDF" + figname_append
         fig.savefig(Path(__file__).parent / figname, bbox_inches="tight") if save_figs else None
         plt.show()
         #
@@ -323,6 +325,6 @@ def main(kdfile, vlsr_tol=20, plot_figs=True, save_figs=True, print_stats=False)
 
 if __name__ == "__main__":
     # kdfile_input = input("Name of kd .csv file in this folder: ")
-    kdfile_input = "cw21_kd_plx_results_10000x_pecTrue_krigeTrue.csv"
-    # kdfile_input = "reid19_kd_plx_results_10000x_pecTrue_krigeFalse.csv"
-    main(kdfile_input, vlsr_tol=20, plot_figs=True, save_figs=True, print_stats=False)
+    kdfile_input = "cw21_kd_plx_results_1000x_pecTrue_krigeTrue_norm20.csv"
+#     kdfile_input = "reid14_kd_plx_results_10000x_pecFalse_krigeFalse.csv"
+    main(kdfile_input, vlsr_tol=15, plot_figs=True, save_figs=True, print_stats=False)
