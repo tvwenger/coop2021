@@ -2,9 +2,7 @@
 plt_pec_mot_csv.py
 
 Plots the peculiar (non-circular) motions of the sources
-from a csv file and colour-codes by ratio of v_radial to v_tangential.
-
-Outliers are those with R > 4 kpc & have any motion component in outer 10 percentile.
+from a csv file and colour-coded by ratio of v_radial to v_tangential.
 
 Isaac Cheng - February 2021
 """
@@ -33,31 +31,32 @@ _ROLL = 0.0  # deg (Anderson et al. 2019)
 _ZSUN = 5.5  # pc
 
 
-def main(csvfile, tracefile):
+def main(csvfile, tracefile, plot_tooclose=False, plot_large_uncer=True):
     data = pd.read_csv(csvfile)
+    figname_append = ""
+
+    if not plot_large_uncer:
+        # Only plot sources with vector uncertainties < 20 km/s
+        Upec_halfhpd = data["Upec_halfhpd"].values
+        Vpec_halfhpd = data["Vpec_halfhpd"].values
+        tot_halfhpd = np.sqrt(Upec_halfhpd**2 + Vpec_halfhpd**2)
+        data = data[tot_halfhpd < 20]
+        figname_append = "_smallErrs"
+
     is_tooclose = data["is_tooclose"].values
     data_tooclose = data[is_tooclose == 1]  # 19 sources
     data = data[is_tooclose == 0]  # 185 sources
-    plot_tooclose = False
 
-    glon = data["glong"].values
-    glat = data["glat"].values
-    plx = data["plx"].values
-    e_plx = data["e_plx"].values
     Upec = data["Upec_mode"].values
     Vpec = data["Vpec_mode"].values
     Wpec = data["Wpec_mode"].values
     x = data["x_mode"].values
     y = data["y_mode"].values
-
-    glon_tooclose = data_tooclose["glong"].values
-    glat_tooclose = data_tooclose["glat"].values
-    plx_tooclose = data_tooclose["plx"].values
-    e_plx_tooclose = data_tooclose["e_plx"].values
     Upec_tooclose = data_tooclose["Upec_mode"].values
     Vpec_tooclose = data_tooclose["Vpec_mode"].values
     x_tooclose = data_tooclose["x_mode"].values
     y_tooclose = data_tooclose["y_mode"].values
+
     # Rotate 90 deg CCW to galactocentric convention in mytransforms
     x, y = -y, x
     x_tooclose, y_tooclose = -y_tooclose, x_tooclose
@@ -156,7 +155,7 @@ def main(csvfile, tracefile):
     # x_tooclose, y_tooclose, z_tooclose = trans.bary_to_gcen(
     #     bary_x_tooclose, bary_y_tooclose, bary_z_tooclose, R0=R0, Zsun=Zsun, roll=roll
     # )
-    # # Galactocentric cylindrical coordinates to get predicted circular velocity
+    # # Galactocentric cylindrical coordinates to get _predicted_ circular velocity
     gcen_cyl_dist_tooclose = np.sqrt(
         x_tooclose * x_tooclose + y_tooclose * y_tooclose
     )  # kpc
@@ -323,13 +322,16 @@ def main(csvfile, tracefile):
     ax.set_ylim(-5, 15)
     ax.set_yticks([-5, 0, 5, 10, 15])
     ax.grid(False)
+    ax.set_aspect("equal")
     # Change legend properties
     ax.legend(loc="best")
     for element in ax.get_legend().legendHandles:
         # element.set_color("k")
         element._sizes = [20]
+    figname = "pec_motions_all" if plot_tooclose else "pec_motions"
+    figname += figname_append + ".pdf"
     fig.savefig(
-        Path(__file__).parent / "pec_motions.pdf",
+        Path(__file__).parent / figname,
         format="pdf",
         # dpi=300,
         bbox_inches="tight",
@@ -391,8 +393,10 @@ def main(csvfile, tracefile):
     ax.set_ylim(-5, 15)
     ax.set_yticks([-5, 0, 5, 10, 15])
     ax.grid(False)
+    ax.set_aspect("equal")
+    figname = "pec_motions_onlygood" + figname_append + ".pdf"
     fig.savefig(
-        Path(__file__).parent / "pec_motions_onlygood.pdf",
+        Path(__file__).parent / figname,
         format="pdf",
         # dpi=300,
         bbox_inches="tight",
@@ -416,4 +420,4 @@ if __name__ == "__main__":
         / "bayesian_mcmc_rot_curve/mcmc_outfile_A5_102dist_6.pkl"
     )
 
-    main(csvfilepath, tracefilepath)
+    main(csvfilepath, tracefilepath, plot_tooclose=True, plot_large_uncer=False)
