@@ -207,7 +207,7 @@ def plot_rotcurve_mcerrors(data):
     a2_mode = 0.9768982857793898
     a3_mode = 1.626400628724733
 
-    kdefile = Path("kd_pkl/cw21_kde.pkl")
+    kdefile = Path("kd_pkl/cw21_kde_krige.pkl")
     with open(kdefile, "rb") as f:
         kde = dill.load(f)["full"]
 
@@ -494,6 +494,59 @@ def plot_rotcurve_mcerrors(data):
         bbox_inches="tight",
     )
     plt.show()
+    #
+    # Plot for HAA end-of-term presentation
+    #
+    # white_params = {
+    #     "ytick.color" : "w",
+    #     "xtick.color" : "w",
+    #     "axes.labelcolor" : "w",
+    #     "axes.edgecolor" : "w",
+    # }
+    # plt.rcParams.update(white_params)
+    # fig, ax = plt.subplots()
+    # markersize = 4
+    # markeredgewidth = 0.5
+    # # Plot curve
+    # r_curve = np.linspace(2, 17, 101)
+    # v_curve = (
+    #     urc(r_curve, a2=a2[np.newaxis].T, a3=a3[np.newaxis].T, R0=R0[np.newaxis].T)
+    #     + Vpec_mode
+    # )
+    # v_curve = np.median(v_curve, axis=0)
+    # ax.plot(r_curve, v_curve, linestyle="dashed", color="#66c2a5")  # seaborn
+    # # Good sources
+    # eb_good = ax.errorbar(
+    #     x=r_hpd_mode[is_good],
+    #     y=v_circ_hpd_mode[is_good],
+    #     xerr=r_err_hpd[:, is_good],
+    #     yerr=v_circ_err_hpd[:, is_good],
+    #     marker=".",
+    #     color="#fc8d62",  # seaborn
+    #     linestyle="none",
+    #     markersize=markersize,
+    #     markeredgewidth=markeredgewidth,
+    #     elinewidth=0.5,
+    #     ecolor="#fc8d62",  # seaborn
+    #     zorder=100,
+    # )
+    # # Dashed errorbars
+    # for eb in [eb_good]:
+    #     eb[-1][0].set_linestyle("--")  # 1st errorbar (e.g. x-errorbar) linestyle
+    #     eb[-1][1].set_linestyle("--")  # 2nd errorbar (e.g. y-errorbar) linestyle
+    # ax.set_xlabel("Galactocentric Radius (kpc)")
+    # ax.set_ylabel("$\Theta$ (km s$^{-1}$)")
+    # ax.set_xlim(0, 16)
+    # ax.set_ylim(0, 300)
+    # ax.grid(False)
+    # fig.savefig(
+    #     Path(__file__).parent / "my_rotcurve_peakEverything_HPDmode_seaborn.png",
+    #     format="png",
+    #     dpi=300,
+    #     transparent=True,
+    #     bbox_inches="tight",
+    # )
+    # plt.show()
 
 
 if __name__ == "__main__":
