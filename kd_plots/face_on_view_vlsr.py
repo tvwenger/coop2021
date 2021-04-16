@@ -240,6 +240,11 @@ def str2bool(string, empty_condition=None):
 #     main(kdfile_input, vlsr_tol=vlsr_tol_input, save_figs=save_figs_input)
 
 def main(use_kriging=False, normalization=20):
+    """
+    Plots the LSR velocity with kriging and without kriging
+    (N.B. This does not plot their differences! See plot_diff() for that)
+    """
+
     # Galactocentric Cartesian positions
     xlow, xhigh = -8, 12
     ylow, yhigh = -5, 15
@@ -287,7 +292,7 @@ def main(use_kriging=False, normalization=20):
     plt.show()
 
 
-def plot_diff(normalization=20):
+def plot_diff(normalization=20, as_png=False):
     # Galactocentric Cartesian positions
     xlow, xhigh = -8, 12
     ylow, yhigh = -5, 15
@@ -313,27 +318,47 @@ def plot_diff(normalization=20):
     #
     # Plot
     #
+    linecolor = "k"  # colour of dashed line at x=0 and y=0
+    if as_png:
+        white_params = {
+            # "ytick.color" : "#17becf",
+            # "xtick.color" : "#17becf",
+            # "axes.labelcolor" : "#17becf",
+            # "axes.edgecolor" : "#17becf",
+            "ytick.color" : "w",
+            "xtick.color" : "w",
+            "axes.labelcolor" : "w",
+            "axes.edgecolor" : "w",
+        }
+        plt.rcParams.update(white_params)
+        linecolor = "w"
     fig, ax = plt.subplots()
     cmap = "viridis"
     extent = (xlow, xhigh, ylow, yhigh)
     norm = mpl.colors.Normalize(vmin=np.min(vlsr_diff), vmax=np.max(vlsr_diff))
-    ax.imshow(vlsr_diff.T, origin="lower", extent=extent, norm=norm)
+    ax.imshow(vlsr_diff.T, origin="lower", extent=extent, norm=norm, cmap=cmap)
     cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax)
-    ax.axhline(y=0, linewidth=0.5, linestyle="--", color="k")  # horizontal line
-    ax.axvline(x=0, linewidth=0.5, linestyle="--", color="k")  # vertical line
+    ax.axhline(y=0, linewidth=0.5, linestyle="--", color=linecolor)  # horizontal line
+    ax.axvline(x=0, linewidth=0.5, linestyle="--", color=linecolor)  # vertical line
     ax.set_xlabel("$x$ (kpc)")
     ax.set_ylabel("$y$ (kpc)")
-    cbar.ax.set_ylabel(r"$v_{\scriptscriptstyle LSR\text{, noKriging}} - v_{\scriptscriptstyle LSR\text{, Kriging}}$ (km s$^{-1}$)", rotation=270)
+    # cbar.ax.set_ylabel(r"$v_{\scriptscriptstyle LSR\text{, noKriging}} - v_{\scriptscriptstyle LSR\text{, Kriging}}$ (km s$^{-1}$)", rotation=270)
+    cbar.ax.set_ylabel("LSR Velocity Difference (km s$^{-1}$)", rotation=270)
     cbar.ax.get_yaxis().labelpad = 15
     ax.set_aspect("equal")
     ax.grid(False)
-    # figname = "cw21_faceonVlsr_differences.pdf"
-    figname = "cw21_faceonVlsr_differences_seaborn.pdf"
-    fig.savefig(Path(__file__).parent / figname, bbox_inches="tight")
+    figname = "cw21_faceonVlsr_differences"
+    if as_png:
+        figname += ".png"
+        fig.savefig(Path(__file__).parent / figname, bbox_inches="tight",
+                    dpi=300, transparent=True)
+    else:
+        figname += ".pdf"
+        fig.savefig(Path(__file__).parent / figname+".pdf", bbox_inches="tight")
     plt.show()
 
 
-# def plot_diff_sd_v1(normalization=20, samples=500):
+# def plot_diff_sd_old(normalization=20, samples=500):
 #     # Galactocentric Cartesian positions
 #     xlow, xhigh = -8, 12
 #     ylow, yhigh = -5, 15
@@ -449,180 +474,96 @@ def plot_diff(normalization=20):
 #     plt.show()
 
 
-# def plot_diff_sd_v2(normalization=20, samples=500):
-#     # Galactocentric Cartesian positions
-#     xlow, xhigh = -8, 12
-#     ylow, yhigh = -5, 15
-#     gridx, gridy = np.mgrid[xlow:xhigh:500j, ylow:yhigh:500j]
-#     # Rotate 90 deg CCW
-#     gridx, gridy = -gridy, gridx
-#     gridz = np.zeros_like(gridx)
-#     # Convert to galactic coordinates
-#     xb, yb, zb = trans.gcen_to_bary(gridx, gridy, gridz, R0=_R0, Zsun=_ZSUN, roll=_ROLL)
-#     glong, glat, dist = trans.bary_to_gal(xb, yb, zb)  # all shapes: (500, 500)
-#     #
-#     # Get non-kriging values
-#     #
-#     nom_params_nokrige = cw21_rotcurve.nominal_params(glong, glat, dist,
-#                                               use_kriging=False, resample=True,
-#                                               norm=normalization)
-#     #
-#     # Get kriging values
-#     #
-#     nom_params_krige = cw21_rotcurve.nominal_params(glong, glat, dist,
-#                                               use_kriging=True, resample=True,
-#                                               norm=normalization)
-#     nom_params_krige["Upec"] = np.dstack([nom_params_krige["Upec"]] * samples)  # (500, 500, samples)
-#     nom_params_krige["Vpec"] = np.dstack([nom_params_krige["Vpec"]] * samples)  # (500, 500, samples)
-#     vlsr_nokrige = np.zeros((500, 500, samples))  # (500, 500, samples)
-#     vlsr_krige = np.zeros((500, 500, samples))  # (500, 500, samples)
-#     #
-#     # MC resample
-#     #
-#     kde_file = Path("/mnt/c/Users/ichen/OneDrive/Documents/Jobs/WaterlooWorks/2A Job Search/ACCEPTED__NRC_EXT-10708-JuniorResearcher/Work Documents/kd/kd/cw21_kde_krige.pkl")
-#     with open(kde_file, "rb") as f:
-#         kde = dill.load(f)["full"]
-#     # mc_params = kde.resample(samples)
-#     # Upec, Vpec = mc_params[5], mc_params[6]
-#     for i in range(samples):
-#         nom_params_nokrige_mc = cw21_rotcurve.resample_params(
-#             kde, size=samples, nom_params=nom_params_nokrige, use_kriging=False)
-#         vlsr_nokrige[:,:,i] = cw21_rotcurve.calc_vlsr(glong, glat, dist, peculiar=True,
-#                                                     **nom_params_nokrige)
-#     # print(Upec)
-#     # print(Upec.shape)
-#     # return None
-#     # print(np.shape(nom_params_nokrige["Upec"]))
-#     # print(np.shape(nom_params_krige["Upec"]))
-#     # print(nom_params_krige["Upec"][:, 0])
-#     # return None
-#     nom_params_nokrige["Upec"] += Upec
-#     nom_params_nokrige["Vpec"] += Vpec
-#     nom_params_krige["Upec"] += Upec  # Add MC sample: one resample to entire sheet
-#     nom_params_krige["Vpec"] += Vpec  # Add MC sample: one resample to entire sheet
-#     print(nom_params_krige["Upec"].shape)
-#     #
-#     # Calculate LSR velocity at positions
-#     #
-#     # Arrays to store vlsr results
-#     print("In for loop")
-#     for i in range(samples):
-#         vlsr_nokrige[:,:,i] = cw21_rotcurve.calc_vlsr(glong, glat, dist, peculiar=True,
-#                                             R0=nom_params_nokrige["R0"],
-#                                             Usun=nom_params_nokrige["Usun"],
-#                                             Vsun=nom_params_nokrige["Vsun"],
-#                                             Wsun=nom_params_nokrige["Wsun"],
-#                                             Upec=nom_params_nokrige["Upec"][i],
-#                                             Vpec=nom_params_nokrige["Vpec"][i],
-#                                             a2=nom_params_nokrige["a2"],
-#                                             a3=nom_params_nokrige["a3"],
-#                                             Zsun=nom_params_nokrige["Zsun"],
-#                                             roll=nom_params_nokrige["roll"])
-#         vlsr_krige[:,:,i] = cw21_rotcurve.calc_vlsr(glong, glat, dist, peculiar=True,
-#                                             R0=nom_params_krige["R0"],
-#                                             Usun=nom_params_krige["Usun"],
-#                                             Vsun=nom_params_krige["Vsun"],
-#                                             Wsun=nom_params_krige["Wsun"],
-#                                             Upec=nom_params_krige["Upec"][:,:,i],
-#                                             Vpec=nom_params_krige["Vpec"][:,:,i],
-#                                             a2=nom_params_krige["a2"],
-#                                             a3=nom_params_krige["a3"],
-#                                             Zsun=nom_params_krige["Zsun"],
-#                                             roll=nom_params_krige["roll"])
-#     print(vlsr_nokrige.shape)
-#     print(vlsr_nokrige[0:10,0:10,0])
-#     print(vlsr_krige.shape)
-#     print(vlsr_krige[0:10,0:10,0])
-#     vlsr_diff = vlsr_nokrige - vlsr_krige
-#     vlsr_diff_sd = np.std(vlsr_diff, axis=2)
-#     print(vlsr_diff.shape)
-#     print(vlsr_diff_sd.shape)
-#     # Plot
-#     #
-#     fig, ax = plt.subplots()
-#     cmap = "viridis"
-#     extent = (xlow, xhigh, ylow, yhigh)
-#     norm = mpl.colors.Normalize(vmin=np.min(vlsr_diff_sd), vmax=np.max(vlsr_diff_sd))
-#     ax.imshow(vlsr_diff_sd.T, origin="lower", extent=extent, norm=norm)
-#     cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax)
-#     ax.axhline(y=0, linewidth=0.5, linestyle="--", color="k")  # horizontal line
-#     ax.axvline(x=0, linewidth=0.5, linestyle="--", color="k")  # vertical line
-#     ax.set_xlabel("$x$ (kpc)")
-#     ax.set_ylabel("$y$ (kpc)")
-#     cbar.ax.set_ylabel("Standard Deviation (km s$^{-1}$)", rotation=270)
-#     cbar.ax.get_yaxis().labelpad = 15
-#     ax.set_aspect("equal")
-#     ax.grid(False)
-#     figname = "cw21_faceonVlsr_differences_sd.pdf"
-#     fig.savefig(Path(__file__).parent / figname, bbox_inches="tight")
-#     plt.show()
-
-def plot_diff_sd(normalization=20, samples=10):
+def plot_diff_sd(normalization=20, samples=10, load_pkl=False, as_png=False):
     # Galactocentric Cartesian positions
     xlow, xhigh = -8, 12
     ylow, yhigh = -5, 15
-    gridx, gridy = np.mgrid[xlow:xhigh:500j, ylow:yhigh:500j]
-    # Rotate 90 deg CCW
-    gridx, gridy = -gridy, gridx
-    gridz = np.zeros_like(gridx)
-    # Convert to galactic coordinates
-    xb, yb, zb = trans.gcen_to_bary(gridx, gridy, gridz, R0=_R0, Zsun=_ZSUN, roll=_ROLL)
-    glong, glat, dist = trans.bary_to_gal(xb, yb, zb)
-    # Arrays to store results
-    vlsr_nokrige = np.zeros((500, 500, samples))  # (500, 500, samples)
-    vlsr_krige = np.zeros((500, 500, samples))  # (500, 500, samples)
-    # Calculate LSR velocity at positions
-    for i in range(samples):
-        print("Computing sample", i, end="\r")
-        nom_params_nokrige = cw21_rotcurve_w_mc.nominal_params(glong, glat, dist,
-                                                use_kriging=False, resample=False,
-                                                norm=normalization, krige_resample=True)
-        vlsr_nokrige[:,:,i] = cw21_rotcurve_w_mc.calc_vlsr(glong, glat, dist, peculiar=True,
-                                            **nom_params_nokrige)
-        nom_params_krige = cw21_rotcurve_w_mc.nominal_params(glong, glat, dist,
-                                                use_kriging=True, resample=False,
-                                                norm=normalization, krige_resample=True)
-        vlsr_krige[:,:,i] = cw21_rotcurve_w_mc.calc_vlsr(
-            glong, glat, dist, peculiar=True, **nom_params_krige)
-        # * N.B. No need to resample_params() since will just add then subtract same constant after
-    vlsr_diff = vlsr_nokrige - vlsr_krige
-    vlsr_diff_sd = np.std(vlsr_diff, axis=2)
-    # Save to pickle file
-    pkl = Path(__file__).parent / f"vlsr_sd_{samples}samples.pkl"
-    with open(pkl, "wb") as f:
-        dill.dump(
-            {
-                "vlsr_nokrige": vlsr_nokrige,
-                "vlsr_krige": vlsr_krige,
-                "vlsr_diff": vlsr_diff,
-                "vlsr_diff_sd": vlsr_diff_sd,
-            }, f
-        )
-    print("Saved pickle file!")
+    if not load_pkl:
+        gridx, gridy = np.mgrid[xlow:xhigh:500j, ylow:yhigh:500j]
+        # Rotate 90 deg CCW
+        gridx, gridy = -gridy, gridx
+        gridz = np.zeros_like(gridx)
+        # Convert to galactic coordinates
+        xb, yb, zb = trans.gcen_to_bary(gridx, gridy, gridz, R0=_R0, Zsun=_ZSUN, roll=_ROLL)
+        glong, glat, dist = trans.bary_to_gal(xb, yb, zb)
+        # Arrays to store results
+        vlsr_nokrige = np.zeros((500, 500, samples))  # (500, 500, samples)
+        vlsr_krige = np.zeros((500, 500, samples))  # (500, 500, samples)
+        # Calculate LSR velocity at positions
+        for i in range(samples):
+            print("Computing sample", i, end="\r")
+            nom_params_nokrige = cw21_rotcurve_w_mc.nominal_params(glong, glat, dist,
+                                                    use_kriging=False, resample=False,
+                                                    norm=normalization, krige_resample=True)
+            vlsr_nokrige[:,:,i] = cw21_rotcurve_w_mc.calc_vlsr(glong, glat, dist, peculiar=True,
+                                                **nom_params_nokrige)
+            nom_params_krige = cw21_rotcurve_w_mc.nominal_params(glong, glat, dist,
+                                                    use_kriging=True, resample=False,
+                                                    norm=normalization, krige_resample=True)
+            vlsr_krige[:,:,i] = cw21_rotcurve_w_mc.calc_vlsr(
+                glong, glat, dist, peculiar=True, **nom_params_krige)
+            # * N.B. No need to resample_params() since will just add then subtract same constant after
+        vlsr_diff = vlsr_nokrige - vlsr_krige
+        vlsr_diff_sd = np.std(vlsr_diff, axis=2)
+        # Save to pickle file
+        pkl = Path(__file__).parent / f"vlsr_sd_{samples}samples.pkl"
+        with open(pkl, "wb") as f:
+            dill.dump(
+                {
+                    "vlsr_nokrige": vlsr_nokrige,
+                    "vlsr_krige": vlsr_krige,
+                    "vlsr_diff": vlsr_diff,
+                    "vlsr_diff_sd": vlsr_diff_sd,
+                }, f
+            )
+        print("Saved pickle file!")
     #
     # Plot
     #
+    else:
+        # Load pickle file
+        pkl = Path(__file__).parent / f"vlsr_sd_{samples}samples.pkl"
+        with open(pkl, "rb") as f:
+            vlsr_diff_sd = dill.load(f)["vlsr_diff_sd"]
+    linecolor = "k"  # colour of dashed line at x=0 and y=0
+    if as_png:
+        white_params = {
+            "ytick.color" : "w",
+            "xtick.color" : "w",
+            "axes.labelcolor" : "w",
+            "axes.edgecolor" : "w",
+        }
+        plt.rcParams.update(white_params)
+        linecolor = "white"
     fig, ax = plt.subplots()
     cmap = "viridis"
     extent = (xlow, xhigh, ylow, yhigh)
     norm = mpl.colors.Normalize(vmin=0, vmax=np.max(vlsr_diff_sd))
-    ax.imshow(vlsr_diff_sd.T, origin="lower", extent=extent, norm=norm)
+    ax.imshow(vlsr_diff_sd.T, origin="lower", extent=extent, norm=norm, cmap=cmap)
     cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax)
-    ax.axhline(y=0, linewidth=0.5, linestyle="--", color="k")  # horizontal line
-    ax.axvline(x=0, linewidth=0.5, linestyle="--", color="k")  # vertical line
+    ax.axhline(y=0, linewidth=0.5, linestyle="--", color=linecolor)  # horizontal line
+    ax.axvline(x=0, linewidth=0.5, linestyle="--", color=linecolor)  # vertical line
     ax.set_xlabel("$x$ (kpc)")
     ax.set_ylabel("$y$ (kpc)")
     cbar.ax.set_ylabel(r"Standard Deviation of Differences (km s$^{-1}$)", rotation=270)
     cbar.ax.get_yaxis().labelpad = 15
     ax.set_aspect("equal")
     ax.grid(False)
-    # figname = "cw21_faceonVlsr_differences.pdf"
-    figname = "cw21_faceonVlsr_differences_sd.pdf"
-    fig.savefig(Path(__file__).parent / figname, bbox_inches="tight")
+    figname = "cw21_faceonVlsr_differences_sd"
+    if as_png:
+        figname += ".png"
+        fig.savefig(Path(__file__).parent / figname, bbox_inches="tight",
+                    format="png", dpi=300, transparent=True)
+    else:
+        figname += ".pdf"
+        fig.savefig(Path(__file__).parent / figname+".pdf", bbox_inches="tight",
+                    format="pdf")
     plt.show()
 
 
 if __name__ == "__main__":
     normalization_factor = 20
     # main(use_kriging=False, normalization=normalization_factor)
-    plot_diff_sd(normalization=normalization_factor, samples=1000)
+    # plot_diff(normalization=normalization_factor, as_png=True)
+    plot_diff_sd(normalization=normalization_factor, samples=1000, load_pkl=True,
+                 as_png=True)
