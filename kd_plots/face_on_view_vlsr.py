@@ -354,7 +354,7 @@ def plot_diff(normalization=20, as_png=False):
                     dpi=300, transparent=True)
     else:
         figname += ".pdf"
-        fig.savefig(Path(__file__).parent / figname+".pdf", bbox_inches="tight")
+        fig.savefig(Path(__file__).parent / figname, bbox_inches="tight")
     plt.show()
 
 
@@ -474,10 +474,11 @@ def plot_diff(normalization=20, as_png=False):
 #     plt.show()
 
 
-def plot_diff_sd(normalization=20, samples=10, load_pkl=False, as_png=False):
+def plot_diff_sd_mean(normalization=20, samples=10, load_pkl=False, as_png=False):
     # Galactocentric Cartesian positions
     xlow, xhigh = -8, 12
     ylow, yhigh = -5, 15
+    pkl = Path(__file__).parent / f"vlsr_sd_mean_{samples}samples.pkl"
     if not load_pkl:
         gridx, gridy = np.mgrid[xlow:xhigh:500j, ylow:yhigh:500j]
         # Rotate 90 deg CCW
@@ -506,7 +507,6 @@ def plot_diff_sd(normalization=20, samples=10, load_pkl=False, as_png=False):
         vlsr_diff = vlsr_nokrige - vlsr_krige
         vlsr_diff_sd = np.std(vlsr_diff, axis=2)
         # Save to pickle file
-        pkl = Path(__file__).parent / f"vlsr_sd_{samples}samples.pkl"
         with open(pkl, "wb") as f:
             dill.dump(
                 {
@@ -522,7 +522,6 @@ def plot_diff_sd(normalization=20, samples=10, load_pkl=False, as_png=False):
     #
     else:
         # Load pickle file
-        pkl = Path(__file__).parent / f"vlsr_sd_{samples}samples.pkl"
         with open(pkl, "rb") as f:
             vlsr_diff_sd = dill.load(f)["vlsr_diff_sd"]
     linecolor = "k"  # colour of dashed line at x=0 and y=0
@@ -549,14 +548,147 @@ def plot_diff_sd(normalization=20, samples=10, load_pkl=False, as_png=False):
     cbar.ax.get_yaxis().labelpad = 15
     ax.set_aspect("equal")
     ax.grid(False)
-    figname = "cw21_faceonVlsr_differences_sd"
+    figname = "cw21_faceonVlsr_differences_sd_mean"
     if as_png:
         figname += ".png"
         fig.savefig(Path(__file__).parent / figname, bbox_inches="tight",
                     format="png", dpi=300, transparent=True)
     else:
         figname += ".pdf"
-        fig.savefig(Path(__file__).parent / figname+".pdf", bbox_inches="tight",
+        fig.savefig(Path(__file__).parent / figname, bbox_inches="tight",
+                    format="pdf")
+    plt.show()
+
+
+def plot_diff_sd_tot(normalization=20, samples=10, load_pkl=False, as_png=False):
+    # Galactocentric Cartesian positions
+    xlow, xhigh = -8, 12
+    ylow, yhigh = -5, 15
+    pkl = Path(__file__).parent / f"vlsr_sd_tot_{samples}samples.pkl"
+    if not load_pkl:
+        gridx, gridy = np.mgrid[xlow:xhigh:500j, ylow:yhigh:500j]
+        # Rotate 90 deg CCW
+        gridx, gridy = -gridy, gridx
+        gridz = np.zeros_like(gridx)
+        # Convert to barycentric Cartesian coordinates
+        xb, yb, zb = trans.gcen_to_bary(gridx, gridy, gridz, R0=_R0, Zsun=_ZSUN, roll=_ROLL)
+        glong, glat, dist = trans.bary_to_gal(xb, yb, zb)
+        # Arrays to store results
+        # vlsr_nokrige = np.zeros((500, 500, samples))  # (500, 500, samples)
+        # vlsr_krige = np.zeros((500, 500, samples))  # (500, 500, samples)
+        vlsr_mc = np.zeros((500, 500, samples))  # (500, 500, samples)
+        kde_file = Path("/mnt/c/Users/ichen/OneDrive/Documents/Jobs/WaterlooWorks/2A Job Search/ACCEPTED__NRC_EXT-10708-JuniorResearcher/Work Documents/kd/kd/cw21_kde_krige.pkl")
+        with open(kde_file, "rb") as f:
+            file = dill.load(f)
+            kde = file["full"]
+            Upec_krige = file["Upec_krige"]
+            Vpec_krige = file["Vpec_krige"]
+            var_threshold = file["var_threshold"]  # sum of Upec/Vpec variances
+        # mc_params = kde.resample(samples)
+        # Upec, Vpec = mc_params[5], mc_params[6]
+        # Get average Upec and average Vpec --> scalars
+        nom_params_nokrige = cw21_rotcurve.nominal_params(
+            glong, glat, dist, use_kriging=False, resample=False, norm=normalization)
+        Upec_avg_var = 1.1 ** 2
+        Vpec_avg_var = 6.1 ** 2
+        #
+        # Calculate expected Upec and Vpec differences at source location(s)
+        interp_pos = np.vstack((xb.flatten(), yb.flatten())).T
+        Upec_diff, Upec_diff_var = Upec_krige.interp(interp_pos, resample=False)
+        Vpec_diff, Vpec_diff_var = Vpec_krige.interp(interp_pos, resample=False)
+        # Gaussian-like weighting function
+        var_tot = Upec_diff_var + Vpec_diff_var  # total variance (not in quadrature)
+        pec_weights = np.exp(normalization * (var_threshold / var_tot - 1))
+        zero_weights = np.ones_like(pec_weights)
+        weights = np.vstack((pec_weights, zero_weights))
+        zero_diff = np.zeros_like(Upec_diff)
+        Upec_diff = np.average([Upec_diff, zero_diff], weights=weights, axis=0)
+        Vpec_diff = np.average([Vpec_diff, zero_diff], weights=weights, axis=0)
+        Upec_diff_var = np.average([Upec_diff_var, np.full_like(zero_diff, Upec_avg_var)],
+                                   weights=weights, axis=0)
+        Vpec_diff_var = np.average([Vpec_diff_var, np.full_like(zero_diff, Vpec_avg_var)],
+                                   weights=weights, axis=0)
+        # Reshape
+        Upec = Upec_diff.reshape(np.shape(xb)) + nom_params_nokrige["Upec"]
+        Vpec = Vpec_diff.reshape(np.shape(xb)) + nom_params_nokrige["Vpec"]
+        Upec_sd = np.sqrt(Upec_diff_var).reshape(np.shape(xb))
+        Vpec_sd = np.sqrt(Vpec_diff_var).reshape(np.shape(xb))
+        # MC sample Upec & Vpec at each point
+        # Method 1 (?): (This method uses too much memory)
+        # Upec = np.dstack([Upec] * samples)
+        # Vpec = np.dstack([Vpec] * samples)
+        # Upec_sd = np.dstack([Upec_sd] * samples)
+        # Vpec_sd = np.dstack([Vpec_sd] * samples)
+        # print("Upec.shape", Upec.shape)
+        # Upec_mc = np.random.normal(loc=Upec, scale=Upec_sd)
+        # Vpec_mc = np.random.normal(loc=Vpec, scale=Vpec_sd)
+        # vlsr_mc = cw21_rotcurve.calc_vlsr(
+        #     glong, glat, dist, peculiar=True,
+        #     Upec=Upec_mc[np.newaxis].T, Vpec=Vpec_mc[np.newaxis].T)
+        # Method 2:
+        for i in range(samples):
+            # print("Computing sample", i, end="\r")
+            Upec_mc = np.random.normal(loc=Upec, scale=Upec_sd)
+            Vpec_mc = np.random.normal(loc=Vpec, scale=Vpec_sd)
+            # # Use nominal params for all other values in calc_vlsr()
+            # vlsr_mc[:, :, i] = cw21_rotcurve.calc_vlsr(
+            #     glong, glat, dist, Upec=Upec_mc, Vpec=Vpec_mc, peculiar=True)
+            mc_params = cw21_rotcurve.resample_params(kde)
+            mc_params["Upec"] = Upec_mc
+            mc_params["Vpec"] = Vpec_mc
+            vlsr_mc[:, :, i] = cw21_rotcurve.calc_vlsr(
+                glong, glat, dist, peculiar=True, **mc_params)
+        vlsr_mc_sd = np.std(vlsr_mc, axis=2)
+        # Save to pickle file
+        with open(pkl, "wb") as f:
+            dill.dump(
+                {
+                    "vlsr_mc": vlsr_mc,
+                    "vlsr_mc_sd": vlsr_mc_sd,
+                }, f
+            )
+        print("Saved pickle file!")
+    else:
+        # Load pickle file
+        with open(pkl, "rb") as f:
+            vlsr_mc_sd = dill.load(f)["vlsr_mc_sd"]
+    # print("Shape of vlsr_mc_sd:", np.shape(vlsr_mc_sd))
+    #
+    # Plot
+    #
+    linecolor = "k"  # colour of dashed line at x=0 and y=0
+    if as_png:
+        white_params = {
+            "ytick.color" : "w",
+            "xtick.color" : "w",
+            "axes.labelcolor" : "w",
+            "axes.edgecolor" : "w",
+        }
+        plt.rcParams.update(white_params)
+        linecolor = "white"
+    fig, ax = plt.subplots()
+    cmap = "viridis"
+    extent = (xlow, xhigh, ylow, yhigh)
+    norm = mpl.colors.Normalize(vmin=np.min(vlsr_mc_sd), vmax=np.max(vlsr_mc_sd))
+    # norm = mpl.colors.Normalize(vmin=0, vmax=np.max(vlsr_mc_sd))
+    ax.imshow(vlsr_mc_sd.T, origin="lower", extent=extent, norm=norm, cmap=cmap)
+    cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax)
+    ax.axhline(y=0, linewidth=0.5, linestyle="--", color=linecolor)  # horizontal line
+    ax.axvline(x=0, linewidth=0.5, linestyle="--", color=linecolor)  # vertical line
+    ax.set_xlabel("$x$ (kpc)")
+    ax.set_ylabel("$y$ (kpc)")
+    cbar.ax.set_ylabel(r"Full Standard Deviation of Differences (km s$^{-1}$)", rotation=270)
+    cbar.ax.get_yaxis().labelpad = 15
+    ax.set_aspect("equal")
+    ax.grid(False)
+    figname = "cw21_faceonVlsr_differences_sd_tot"
+    if as_png:
+        figname += ".png"
+        fig.savefig(Path(__file__).parent / figname, bbox_inches="tight",
+                    format="png", dpi=300, transparent=True)
+    else:
+        figname += ".pdf"
+        fig.savefig(Path(__file__).parent / figname, bbox_inches="tight",
                     format="pdf")
     plt.show()
 
@@ -565,5 +697,7 @@ if __name__ == "__main__":
     normalization_factor = 20
     # main(use_kriging=False, normalization=normalization_factor)
     # plot_diff(normalization=normalization_factor, as_png=True)
-    plot_diff_sd(normalization=normalization_factor, samples=1000, load_pkl=True,
-                 as_png=True)
+    # plot_diff_sd_mean(normalization=normalization_factor, samples=10, load_pkl=True,
+    #              as_png=True)
+    plot_diff_sd_tot(normalization=normalization_factor, samples=1000,
+                     load_pkl=False, as_png=False)
