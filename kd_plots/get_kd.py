@@ -29,6 +29,9 @@ _R0 = 8.1746
 _USUN = 10.879
 _VSUN = 10.697
 _WSUN = 8.088
+_E_USUN = 1.1
+_E_VSUN = 6.1
+_E_WSUN = 0.6
 _ROLL = -0.011
 _ZSUN = 5.399
 
@@ -182,8 +185,8 @@ def correct_vlsr(glong, glat, vlsr, e_vlsr,
         return new_vlsr,e_new_vlsr
 
 
-def main(rotcurve="cw21_rotcurve", num_samples=100,
-         use_peculiar=True, use_kriging=False, norm=20):
+def main(rotcurve="wc21_rotcurve", num_samples=100,
+         use_peculiar=True, use_kriging=False, norm=20, use_revised_lsr=False):
     print("=" * 6)
     print("Rotation model:", rotcurve)
     print("Number of MC kd samples:", num_samples)
@@ -201,8 +204,16 @@ def main(rotcurve="cw21_rotcurve", num_samples=100,
     vlsr = data["vlsr"].values
     e_vlsr = data["e_vlsr"].values
     if rotcurve == "reid14_rotcurve":
-        print("Correcting vlsr")
+        use_revised_lsr = True
+        print("Correcting vlsr for Reid 2014")
         vlsr_corr, e_vlsr_corr = correct_vlsr(glong, glat, vlsr, e_vlsr)
+        vlsr, e_vlsr = vlsr_corr, e_vlsr_corr
+    elif use_revised_lsr:
+        print("Correcting vlsr for non-reid2014_rotcurve")
+        vlsr_corr, e_vlsr_corr = correct_vlsr(
+            glong, glat, vlsr, e_vlsr,
+            Usun=_USUN, Vsun=_VSUN, Wsun=_WSUN,
+            e_Usun=_E_USUN, e_Vsun=_E_VSUN, e_Wsun=_E_WSUN)
         vlsr, e_vlsr = vlsr_corr, e_vlsr_corr
 
     # MC kinematic distances
@@ -225,10 +236,12 @@ def main(rotcurve="cw21_rotcurve", num_samples=100,
 
     # Save to pickle file
     rotcurve_truncated = rotcurve[:-9]
-    pkl_filename = f"{rotcurve_truncated}_kd_{num_samples}x_krige{use_kriging}"
+    filename = f"{rotcurve_truncated}_kd_{num_samples}x_krige{use_kriging}"
     if use_kriging:
-        pkl_filename += f"_norm{norm}"
-    pkl_outfile = Path(__file__).parent / f"{pkl_filename}.pkl"
+        filename += f"_norm{norm}"
+    filename += f"_revLsr{use_revised_lsr}"
+    #
+    pkl_outfile = Path(__file__).parent / f"{filename}.pkl"
     with open(pkl_outfile, "wb") as f:
         dill.dump(
             {
@@ -243,13 +256,10 @@ def main(rotcurve="cw21_rotcurve", num_samples=100,
     print("Results shape:", np.shape(kd_df))
     # Add kd results to data (.reset_index() ensures rows have
     #                         same number & can concat properly)
-    results = pd.concat([data.reset_index(drop=True),
-                            kd_df.reset_index(drop=True)], axis=1)
-    csv_filename = f"{rotcurve_truncated}_kd_{num_samples}x_krige{use_kriging}"
-    if use_kriging:
-        csv_filename += f"_norm{norm}"
+    results = pd.concat(
+        [data.reset_index(drop=True), kd_df.reset_index(drop=True)], axis=1)
     results.to_csv(
-        path_or_buf=Path(__file__).parent / f"{csv_filename}.csv",
+        path_or_buf=Path(__file__).parent / f"{filename}.csv",
         sep=",",
         index=False,
         header=True,
@@ -268,15 +278,17 @@ if __name__ == "__main__":
     use_kriging_input = str2bool(
         input("(y/n) Use kriging in kd (default n): "),
         empty_condition=False)
-    csv_filename_input = None
     if use_kriging_input:
         norm_input = float(input("(float) normalization factor for kriging: "))
     else:
         norm_input = None
+    use_revised_lsr_input = str2bool(
+        input("Use revised LSR velocity (default n): "), empty_condition=False)
     main(
         rotcurve=rotcurve_input,
         num_samples=num_samples_input,
         use_peculiar=use_pec_input,
         use_kriging=use_kriging_input,
         norm=norm_input,
+        use_revised_lsr=use_revised_lsr_input,
     )
