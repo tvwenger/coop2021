@@ -196,8 +196,7 @@ def main(rotcurve="wc21_rotcurve", num_samples=100,
     print("Normalization factor:", norm)
     print("=" * 6)
     # Get HII region data
-    # dbfile = Path("/home/chengi/Documents/coop2021/data/hii_v2_20201203.db")
-    dbfile = Path("/mnt/c/Users/ichen/OneDrive/Documents/Jobs/WaterlooWorks/2A Job Search/ACCEPTED__NRC_EXT-10708-JuniorResearcher/Work Documents/coop2021/data/hii_v2_20201203.db")
+    dbfile = Path("/home/chengi/Documents/coop2021/data/hii_v2_20201203.db")
     data = get_data(dbfile)
     glong = data["glong"].values % 360.
     glat = data["glat"].values
