@@ -186,7 +186,8 @@ def correct_vlsr(glong, glat, vlsr, e_vlsr,
 
 
 def main(rotcurve="wc21_rotcurve", num_samples=100,
-         use_peculiar=True, use_kriging=False, norm=20, use_revised_lsr=False):
+         use_peculiar=True, use_kriging=False, norm=20,
+         use_revised_lsr=False, streaming_motion_uncer=10):
     print("=" * 6)
     print("Rotation model:", rotcurve)
     print("Number of MC kd samples:", num_samples)
@@ -195,26 +196,27 @@ def main(rotcurve="wc21_rotcurve", num_samples=100,
     print("Normalization factor:", norm)
     print("=" * 6)
     # Get HII region data
-    dbfile = Path("/home/chengi/Documents/coop2021/data/hii_v2_20201203.db")
+    # dbfile = Path("/home/chengi/Documents/coop2021/data/hii_v2_20201203.db")
+    dbfile = Path("/mnt/c/Users/ichen/OneDrive/Documents/Jobs/WaterlooWorks/2A Job Search/ACCEPTED__NRC_EXT-10708-JuniorResearcher/Work Documents/coop2021/data/hii_v2_20201203.db")
     data = get_data(dbfile)
     glong = data["glong"].values % 360.
     glat = data["glat"].values
-    plx = data["plx"].values
-    e_plx = data["e_plx"].values
     vlsr = data["vlsr"].values
     e_vlsr = data["e_vlsr"].values
     if rotcurve == "reid14_rotcurve":
-        use_revised_lsr = True
+        streaming_motion_uncer = None
         print("Correcting vlsr for Reid 2014")
         vlsr_corr, e_vlsr_corr = correct_vlsr(glong, glat, vlsr, e_vlsr)
         vlsr, e_vlsr = vlsr_corr, e_vlsr_corr
     elif use_revised_lsr:
-        print("Correcting vlsr for non-reid2014_rotcurve")
-        vlsr_corr, e_vlsr_corr = correct_vlsr(
-            glong, glat, vlsr, e_vlsr,
-            Usun=_USUN, Vsun=_VSUN, Wsun=_WSUN,
-            e_Usun=_E_USUN, e_Vsun=_E_VSUN, e_Wsun=_E_WSUN)
-        vlsr, e_vlsr = vlsr_corr, e_vlsr_corr
+        # print("Correcting vlsr for non-reid14_rotcurve")
+        # vlsr_corr, e_vlsr_corr = correct_vlsr(
+        #     glong, glat, vlsr, e_vlsr,
+        #     Usun=_USUN, Vsun=_VSUN, Wsun=_WSUN,
+        #     e_Usun=_E_USUN, e_Vsun=_E_VSUN, e_Wsun=_E_WSUN)
+        # vlsr, e_vlsr = vlsr_corr, e_vlsr_corr
+        print(f"Adding {streaming_motion_uncer} km/s streaming motion uncertainty to e_vlsr in quadrature")
+        e_vlsr = np.sqrt(e_vlsr**2 + streaming_motion_uncer**2)
 
     # MC kinematic distances
     print("kd in progress...")
@@ -229,9 +231,6 @@ def main(rotcurve="wc21_rotcurve", num_samples=100,
         use_kriging=use_kriging,
         norm=norm,
     )
-    # kd_results = rotcurve_kd.rotcurve_kd(
-    #     glong, glat, vlsr, velo_tol=0.1, rotcurve=rotcurve, peculiar=use_peculiar
-    # )
     print("Done kd")
 
     # Save to pickle file
@@ -239,7 +238,7 @@ def main(rotcurve="wc21_rotcurve", num_samples=100,
     filename = f"{rotcurve_truncated}_kd_{num_samples}x_krige{use_kriging}"
     if use_kriging:
         filename += f"_norm{norm}"
-    filename += f"_revLsr{use_revised_lsr}"
+    filename += f"_revLsr{streaming_motion_uncer}"
     #
     pkl_outfile = Path(__file__).parent / f"{filename}.pkl"
     with open(pkl_outfile, "wb") as f:
@@ -247,6 +246,7 @@ def main(rotcurve="wc21_rotcurve", num_samples=100,
             {
                 "data": data,
                 "kd": kd_results,
+                "streaming_motion_uncer": streaming_motion_uncer,
             },
             f
         )
@@ -279,16 +279,18 @@ if __name__ == "__main__":
         input("(y/n) Use kriging in kd (default n): "),
         empty_condition=False)
     if use_kriging_input:
-        norm_input = float(input("(float) normalization factor for kriging: "))
+        norm_input = float(input("(float) Normalization factor for kriging: "))
     else:
         norm_input = None
-    use_revised_lsr_input = str2bool(
-        input("Use revised LSR velocity (default n): "), empty_condition=False)
+    # use_revised_lsr_input = str2bool(
+    #     input("Use revised LSR velocity (default n): "), empty_condition=False)
+    streaming_motion_uncer_input = float(input("(float) Value for streaming motion uncertainty: "))
     main(
         rotcurve=rotcurve_input,
         num_samples=num_samples_input,
         use_peculiar=use_pec_input,
         use_kriging=use_kriging_input,
         norm=norm_input,
-        use_revised_lsr=use_revised_lsr_input,
+        use_revised_lsr=True,
+        streaming_motion_uncer=streaming_motion_uncer_input
     )
