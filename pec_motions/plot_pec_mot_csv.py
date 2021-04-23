@@ -31,7 +31,14 @@ _ROLL = 0.0  # deg (Anderson et al. 2019)
 _ZSUN = 5.5  # pc
 
 
-def main(csvfile, tracefile, plot_tooclose=False, plot_large_uncer=True):
+def main(csvfile, plot_tooclose=False, plot_large_uncer=True):
+    """
+    plot_tooclose :: boolean
+      If True, plot sources with R < 4 kpc
+    plot_large_uncer :: boolean
+      If True, plot sources with xy-vector uncertainties >=  20 km/s
+    """
+
     data = pd.read_csv(csvfile)
     figname_append = ""
 
@@ -245,7 +252,10 @@ def main(csvfile, tracefile, plot_tooclose=False, plot_large_uncer=True):
     # cmap_max = np.ceil(100 * np.max(vrad_vcirc)) / 100
     # print(cmap_min, cmap_max)
     norm = mpl.colors.Normalize(vmin=cmap_min, vmax=cmap_max)
-    cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax, format="%.1f")
+    fmt = "%.1f"  # number of decimal places for colorbar
+    if not plot_tooclose and not plot_large_uncer:
+        fmt = "%.2f"
+    cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax, format=fmt)
     cbar.ax.set_ylabel(r"$v_{\rm radial}/v_{\rm circular}$", rotation=270)
     cbar.ax.get_yaxis().labelpad = 20
     # Plot sources
@@ -326,7 +336,6 @@ def main(csvfile, tracefile, plot_tooclose=False, plot_large_uncer=True):
     # Change legend properties
     ax.legend(loc="best")
     for element in ax.get_legend().legendHandles:
-        # element.set_color("k")
         element._sizes = [20]
     figname = "pec_motions_all" if plot_tooclose else "pec_motions"
     figname += figname_append + ".pdf"
@@ -405,19 +414,5 @@ def main(csvfile, tracefile, plot_tooclose=False, plot_large_uncer=True):
 
 
 if __name__ == "__main__":
-    # csvfilepath = input("Enter filepath of csv file: ")
-    # tracefilepath = input("Enter filepath of pickle file (trace): ")
-    # csvfilepath = (
-    #     Path(__file__).parent
-    #     / "csvfiles/100dist_meanUpecVpec_cauchyOutlierRejection_peakEverything.csv"
-    # )
-    csvfilepath = (
-        Path(__file__).parent
-        / "csvfiles/alldata_HPDmode_NEW2.csv"
-    )
-    tracefilepath = (
-        Path(__file__).parent.parent
-        / "bayesian_mcmc_rot_curve/mcmc_outfile_A5_102dist_6.pkl"
-    )
-
-    main(csvfilepath, tracefilepath, plot_tooclose=True, plot_large_uncer=False)
+    csvfilepath = (Path(__file__).parent / "csvfiles/alldata_HPDmode_NEW2.csv")
+    main(csvfilepath, plot_tooclose=False, plot_large_uncer=False)

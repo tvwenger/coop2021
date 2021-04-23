@@ -3,6 +3,8 @@ fit_pec_motions.py
 
 Fits the vector peculiar motions of sources using a radial basis function.
 
+!! Don't use!
+
 Isaac Cheng - February 2021
 """
 

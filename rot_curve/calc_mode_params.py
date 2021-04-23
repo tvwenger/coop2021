@@ -22,8 +22,12 @@ from calc_hpd import calc_hpd
 
 
 def main():
+    #
+    # Input which mcmc_outfile you want to find the HPD values
+    #
     prior_set = "D"
     num_rounds = 4
+    #
     tracefile = Path(__file__).parent.parent / Path(
         f"bayesian_mcmc_rot_curve/mcmc_outfile_{prior_set}_102dist_{num_rounds}.pkl"
     )

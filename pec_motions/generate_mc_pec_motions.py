@@ -563,25 +563,19 @@ def mc_plx_upecvpec(data):
     print("Saved .csv file!")
 
 
-def main():
-    # tracefile = Path(
-    #     "/home/chengi/Documents/coop2021/bayesian_mcmc_rot_curve/"
-    #     "mcmc_outfile_A5_100dist_5.pkl"
-    # )
-    # datafile = Path(
-    #     "/home/chengi/Documents/coop2021/pec_motions/100dist_meanUpecVpec.csv"
-    # )
-    # datafile = Path(__file__).parent / Path("100dist_meanUpecVpec_cauchyOutlierRejection.csv")
-    datafile = Path(__file__).parent / Path(
-        "csvfiles/100dist_meanUpecVpec_cauchyOutlierRejection_peakEverything.csv"
-    )
-    data100plx = pd.read_csv(datafile)
-    # mc_plx_upecvpec(data100plx)
+def print_csv_stats(datafile):
+    """
+    Prints various stats from the .csv file generated from
+    the mc_plx_upecvpec() function
 
+    Inputs:
+      datafile :: path to .csv file generated from
+                  mc_plx_upecvpec() function
+    """
     #
     # Calculating derived peculiar motion stats
     #
-    datafile = Path(__file__).parent / Path("csvfiles/alldata_HPDmode_NEW2.csv")
+    # datafile = Path(__file__).parent / Path("csvfiles/alldata_HPDmode_NEW2.csv")
     data = pd.read_csv(datafile)
     print("==== ALL 202 SOURCES ===")
     Upec = data["Upec_mode"].values
@@ -625,11 +619,30 @@ def main():
     # plt.hist(Wpec)
     # plt.show()
     tot_mag = np.sqrt(Upec**2 + Vpec**2 + Wpec**2)
-    tot_xy_mag = np.sqrt(Upec**2 + Vpec**2 + Wpec**2)
+    tot_xy_mag = np.sqrt(Upec**2 + Vpec**2)
+    _, derived_mag_mode, derived_mag_low, derived_mag_high = calc_hpd(tot_mag, "scipy")
+    _, derived_xy_mag_mode, derived_xy_mag_low, derived_xy_mag_high = calc_hpd(tot_xy_mag, "scipy")
+    print("Pec motion total magnitude mode, high, low:",
+          derived_mag_mode, derived_mag_high, derived_mag_low)
+    print("Pec motion xy-magnitude mode, high, low:",
+          derived_xy_mag_mode, derived_xy_mag_high, derived_xy_mag_low)
+    print("Pec motion total magnitude (high - mode), (mode - low):",
+          derived_mag_high - derived_mag_mode, derived_mag_mode - derived_mag_low)
+    print("Pec motion xy-magnitude (high - mode), (mode - low):",
+          derived_xy_mag_high - derived_xy_mag_mode, derived_xy_mag_mode - derived_xy_mag_low)
+    print("Pec motion total magnitude mean, median, std:",
+          np.mean(tot_mag), np.median(tot_mag), np.std(tot_mag))
+    print("Pec motion xy-magnitude mean, median, std:",
+          np.mean(tot_xy_mag), np.median(tot_xy_mag), np.std(tot_xy_mag))
+    # Finding the source with a crazy high peculiar motion
     max_tot_mag = np.max(abs(tot_mag))
-    print(max_tot_mag)
-    print(data["gname"][tot_mag == max_tot_mag].values, data["x_mode"][tot_mag == max_tot_mag].values,
+    print("Maximum peculiar motion total magnitude:", max_tot_mag)
+    print("Name, x-coord, y-coord, and is_tooclose for source with largest peculiar motion",
+          data["gname"][tot_mag == max_tot_mag].values, data["x_mode"][tot_mag == max_tot_mag].values,
           data["y_mode"][tot_mag == max_tot_mag].values, data["is_tooclose"][tot_mag == max_tot_mag].values)
+    #
+    #
+    #
     print("=== ONLY R > 4 KPC ===")
     data = data[data["is_tooclose"].values == 0]
     print("Num sources:", len(data))
@@ -657,6 +670,25 @@ def main():
     # plt.show()
     # plt.hist(Wpec)
     # plt.show()
+    tot_mag = np.sqrt(Upec**2 + Vpec**2 + Wpec**2)
+    tot_xy_mag = np.sqrt(Upec**2 + Vpec**2)
+    _, derived_mag_mode, derived_mag_low, derived_mag_high = calc_hpd(tot_mag, "scipy")
+    _, derived_xy_mag_mode, derived_xy_mag_low, derived_xy_mag_high = calc_hpd(tot_xy_mag, "scipy")
+    print("Pec motion total magnitude mode, high, low:",
+          derived_mag_mode, derived_mag_high, derived_mag_low)
+    print("Pec motion xy-magnitude mode, high, low:",
+          derived_xy_mag_mode, derived_xy_mag_high, derived_xy_mag_low)
+    print("Pec motion total magnitude (high - mode), (mode - low):",
+          derived_mag_high - derived_mag_mode, derived_mag_mode - derived_mag_low)
+    print("Pec motion xy-magnitude (high - mode), (mode - low):",
+          derived_xy_mag_high - derived_xy_mag_mode, derived_xy_mag_mode - derived_xy_mag_low)
+    print("Pec motion total magnitude mean, median, std:",
+          np.mean(tot_mag), np.median(tot_mag), np.std(tot_mag))
+    print("Pec motion xy-magnitude mean, median, std:",
+          np.mean(tot_xy_mag), np.median(tot_xy_mag), np.std(tot_xy_mag))
+    #
+    #
+    #
     print("=== ONLY NON-OUTLIERS ===")
     data = data[data["is_outlier"].values == 0]
     print("Num sources:", len(data))
@@ -684,6 +716,25 @@ def main():
     # plt.show()
     # plt.hist(Wpec)
     # plt.show()
+    tot_mag = np.sqrt(Upec**2 + Vpec**2 + Wpec**2)
+    tot_xy_mag = np.sqrt(Upec**2 + Vpec**2)
+    _, derived_mag_mode, derived_mag_low, derived_mag_high = calc_hpd(tot_mag, "scipy")
+    _, derived_xy_mag_mode, derived_xy_mag_low, derived_xy_mag_high = calc_hpd(tot_xy_mag, "scipy")
+    print("Pec motion total magnitude mode, high, low:",
+          derived_mag_mode, derived_mag_high, derived_mag_low)
+    print("Pec motion xy-magnitude mode, high, low:",
+          derived_xy_mag_mode, derived_xy_mag_high, derived_xy_mag_low)
+    print("Pec motion total magnitude (high - mode), (mode - low):",
+          derived_mag_high - derived_mag_mode, derived_mag_mode - derived_mag_low)
+    print("Pec motion xy-magnitude (high - mode), (mode - low):",
+          derived_xy_mag_high - derived_xy_mag_mode, derived_xy_mag_mode - derived_xy_mag_low)
+    print("Pec motion total magnitude mean, median, std:",
+          np.mean(tot_mag), np.median(tot_mag), np.std(tot_mag))
+    print("Pec motion xy-magnitude mean, median, std:",
+          np.mean(tot_xy_mag), np.median(tot_xy_mag), np.std(tot_xy_mag))
+    #
+    #
+    #
     print("=== ONLY NON-OUTLIERS W/ GAUSSIAN ERRORS ===")
     Upec_err_high = data["Upec_hpdhigh"].values -  data["Upec_mode"].values
     Upec_err_low = data["Upec_mode"].values - data["Upec_hpdlow"].values
@@ -721,6 +772,35 @@ def main():
     # plt.show()
     # plt.hist(Wpec)
     # plt.show()
+    tot_mag = np.sqrt(Upec**2 + Vpec**2 + Wpec**2)
+    tot_xy_mag = np.sqrt(Upec**2 + Vpec**2)
+    _, derived_mag_mode, derived_mag_low, derived_mag_high = calc_hpd(tot_mag, "scipy")
+    _, derived_xy_mag_mode, derived_xy_mag_low, derived_xy_mag_high = calc_hpd(tot_xy_mag, "scipy")
+    print("Pec motion total magnitude mode, high, low:",
+          derived_mag_mode, derived_mag_high, derived_mag_low)
+    print("Pec motion xy-magnitude mode, high, low:",
+          derived_xy_mag_mode, derived_xy_mag_high, derived_xy_mag_low)
+    print("Pec motion total magnitude (high - mode), (mode - low):",
+          derived_mag_high - derived_mag_mode, derived_mag_mode - derived_mag_low)
+    print("Pec motion xy-magnitude (high - mode), (mode - low):",
+          derived_xy_mag_high - derived_xy_mag_mode, derived_xy_mag_mode - derived_xy_mag_low)
+    print("Pec motion total magnitude mean, median, std:",
+          np.mean(tot_mag), np.median(tot_mag), np.std(tot_mag))
+    print("Pec motion xy-magnitude mean, median, std:",
+          np.mean(tot_xy_mag), np.median(tot_xy_mag), np.std(tot_xy_mag))
+
+
+def main():
+    datafile = Path(__file__).parent / Path(
+        "csvfiles/100dist_meanUpecVpec_cauchyOutlierRejection_peakEverything.csv"
+    )
+    data100plx = pd.read_csv(datafile)
+    # mc_plx_upecvpec(data100plx)
+    #
+    # Print stats from .csv file generated above
+    #
+    mc_plx_upecvpec_csv_file = Path(__file__).parent / Path("csvfiles/alldata_HPDmode_NEW2.csv")
+    print_csv_stats(mc_plx_upecvpec_csv_file)
 
 
 if __name__ == "__main__":

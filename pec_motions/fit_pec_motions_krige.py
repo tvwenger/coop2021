@@ -3,7 +3,8 @@ fit_pec_motions_krige.py
 
 Fits the vector peculiar motions of sources using kriging.
 
-! The code is a mess
+! The code is a mess.
+!! DON'T USE (see TVW's kriging function instead)
 
 Isaac Cheng - February 2021
 """

@@ -128,8 +128,8 @@ def plot_vlsr_dist(source_to_plot, rotcurve="cw21_rotcurve", num_cores=None,
 # use_kriging_input = str2bool(
 #     input("(y/n) Use kriging in kd (default n): "),
 #     empty_condition=False)
-rotcurve_input = "cw21_rotcurve"
-source_to_plot_input = 32
+rotcurve_input = "wc21_rotcurve"
+source_to_plot_input = 147
 num_cores_input = 4
 use_pec_input = True
 use_kriging_input = True
@@ -139,7 +139,7 @@ plot_vlsr_dist(
     num_cores=num_cores_input,
     use_peculiar=use_pec_input,
     use_kriging=use_kriging_input,
-    resample=False,
+    resample=True,
     size=100,
     norm=20,
 )

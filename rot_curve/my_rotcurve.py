@@ -196,16 +196,16 @@ def plot_rotcurve_mcerrors(data):
     # a2_mean, a3_mean = 0.96717525, 1.624953
     # Wpec_mean = 0.0  # km/s
     # Mode of 100 distances, mean Upec/Vpec + peak everything
-    R0_mode = 8.174602364395952
-    Zsun_mode = 5.398550615892994
-    Usun_mode = 10.878914326160878
-    Vsun_mode = 10.696801784160257
-    Wsun_mode = 8.087892505141708
-    Upec_mode = 4.9071771802606285
-    Vpec_mode = -4.521832904300172
-    roll_mode = -0.010742182667190958
-    a2_mode = 0.9768982857793898
-    a3_mode = 1.626400628724733
+    # R0_mode = 8.174602364395952
+    # Zsun_mode = 5.398550615892994
+    # Usun_mode = 10.878914326160878
+    # Vsun_mode = 10.696801784160257
+    # Wsun_mode = 8.087892505141708
+    # Upec_mode = 4.9071771802606285
+    Vpec_mode = -4.521832904300172  # allow rotation curve to have this average lag like in Reid+2019
+    # roll_mode = -0.010742182667190958
+    # a2_mode = 0.9768982857793898
+    # a3_mode = 1.626400628724733
 
     kdefile = Path("kd_pkl/cw21_kde_krige.pkl")
     with open(kdefile, "rb") as f:
@@ -352,78 +352,78 @@ def plot_rotcurve_mcerrors(data):
             v_circ_hpd_mode[v_circ_hpd_mode < 0],
         )
 
-    #
-    # ------
-    # Plot at peak distance, Vpec @ peak dist, and errors using HDI
-    # ------
-    #
-    fig, ax = plt.subplots()
-    markersize = 4
-    markeredgewidth = 0.5
-    # Plot curve
-    r_curve = np.linspace(0, 17, 101)
-    v_curve = (
-        urc(r_curve, a2=a2[np.newaxis].T, a3=a3[np.newaxis].T, R0=R0[np.newaxis].T)
-        + Vpec_mode
-    )
-    v_curve = np.median(v_curve, axis=0)
-    ax.plot(r_curve, v_curve, "g--")
-    # Sources within 4 kpc of GC
-    eb_tooclose = ax.errorbar(
-        x=radius_peak[is_tooclose],
-        y=v_circ_peak[is_tooclose],
-        xerr=radius_err[is_tooclose].T,
-        yerr=v_circ_err[is_tooclose].T,
-        fmt="r.",
-        mfc="none",
-        markersize=markersize,
-        markeredgewidth=markeredgewidth,
-        elinewidth=0.5,
-        ecolor="r",
-    )
-    # MCMC outliers
-    eb_outlier = ax.errorbar(
-        x=radius_peak[is_outlier],
-        y=v_circ_peak[is_outlier],
-        xerr=radius_err[is_outlier].T,
-        yerr=v_circ_err[is_outlier].T,
-        fmt="b.",
-        mfc="none",
-        markersize=markersize,
-        markeredgewidth=markeredgewidth,
-        elinewidth=0.5,
-        ecolor="b",
-    )
-    # Good sources
-    eb_good = ax.errorbar(
-        x=radius_peak[is_good],
-        y=v_circ_peak[is_good],
-        xerr=radius_err[is_good].T,
-        yerr=v_circ_err[is_good].T,
-        fmt="k.",
-        # mfc="none",
-        markersize=markersize,
-        markeredgewidth=markeredgewidth,
-        elinewidth=0.5,
-        ecolor="k",
-        zorder=100,
-    )
-    # Dashed errorbars
-    for eb in [eb_tooclose, eb_outlier, eb_good]:
-        eb[-1][0].set_linestyle("--")  # 1st errorbar (e.g. x-errorbar) linestyle
-        eb[-1][1].set_linestyle("--")  # 2nd errorbar (e.g. y-errorbar) linestyle
-    ax.set_xlabel("Galactocentric Radius (kpc)")
-    ax.set_ylabel("$\Theta$ (km s$^{-1}$)")
-    ax.set_xlim(0, 16)
-    ax.set_ylim(-25, 300)
-    ax.grid(False)
-    fig.savefig(
-        Path(__file__).parent / "my_rotcurve_peakEverything_HDIpeak.pdf",
-        format="pdf",
-        bbox_inches="tight",
-    )
-    plt.show()
-    #
+    # #
+    # # ------
+    # # Plot at peak distance, Vpec @ peak dist, and errors using HDI
+    # # ------
+    # #
+    # fig, ax = plt.subplots()
+    # markersize = 4
+    # markeredgewidth = 0.5
+    # # Plot curve
+    # r_curve = np.linspace(0, 17, 101)
+    # v_curve = (
+    #     urc(r_curve, a2=a2[np.newaxis].T, a3=a3[np.newaxis].T, R0=R0[np.newaxis].T)
+    #     + Vpec_mode
+    # )
+    # v_curve = np.median(v_curve, axis=0)
+    # ax.plot(r_curve, v_curve, "g--")
+    # # Sources within 4 kpc of GC
+    # eb_tooclose = ax.errorbar(
+    #     x=radius_peak[is_tooclose],
+    #     y=v_circ_peak[is_tooclose],
+    #     xerr=radius_err[is_tooclose].T,
+    #     yerr=v_circ_err[is_tooclose].T,
+    #     fmt="r.",
+    #     mfc="none",
+    #     markersize=markersize,
+    #     markeredgewidth=markeredgewidth,
+    #     elinewidth=0.5,
+    #     ecolor="r",
+    # )
+    # # MCMC outliers
+    # eb_outlier = ax.errorbar(
+    #     x=radius_peak[is_outlier],
+    #     y=v_circ_peak[is_outlier],
+    #     xerr=radius_err[is_outlier].T,
+    #     yerr=v_circ_err[is_outlier].T,
+    #     fmt="b.",
+    #     mfc="none",
+    #     markersize=markersize,
+    #     markeredgewidth=markeredgewidth,
+    #     elinewidth=0.5,
+    #     ecolor="b",
+    # )
+    # # Good sources
+    # eb_good = ax.errorbar(
+    #     x=radius_peak[is_good],
+    #     y=v_circ_peak[is_good],
+    #     xerr=radius_err[is_good].T,
+    #     yerr=v_circ_err[is_good].T,
+    #     fmt="k.",
+    #     # mfc="none",
+    #     markersize=markersize,
+    #     markeredgewidth=markeredgewidth,
+    #     elinewidth=0.5,
+    #     ecolor="k",
+    #     zorder=100,
+    # )
+    # # Dashed errorbars
+    # for eb in [eb_tooclose, eb_outlier, eb_good]:
+    #     eb[-1][0].set_linestyle("--")  # 1st errorbar (e.g. x-errorbar) linestyle
+    #     eb[-1][1].set_linestyle("--")  # 2nd errorbar (e.g. y-errorbar) linestyle
+    # ax.set_xlabel("Galactocentric Radius (kpc)")
+    # ax.set_ylabel("$\Theta$ (km s$^{-1}$)")
+    # ax.set_xlim(0, 16)
+    # ax.set_ylim(-25, 300)
+    # ax.grid(False)
+    # fig.savefig(
+    #     Path(__file__).parent / "my_rotcurve_peakEverything_HDIpeak.pdf",
+    #     format="pdf",
+    #     bbox_inches="tight",
+    # )
+    # plt.show()
+    # #
     # ------
     # Plot at distance mode, Vpec @ dist mode, and errors using HPD
     # ------
@@ -494,9 +494,9 @@ def plot_rotcurve_mcerrors(data):
         bbox_inches="tight",
     )
     plt.show()
-    #
-    # Plot for HAA end-of-term presentation
-    #
+    # #
+    # # Plot for HAA end-of-term presentation
+    # #
     # white_params = {
     #     "ytick.color" : "w",
     #     "xtick.color" : "w",
@@ -508,13 +508,13 @@ def plot_rotcurve_mcerrors(data):
     # markersize = 4
     # markeredgewidth = 0.5
     # # Plot curve
-    # r_curve = np.linspace(2, 17, 101)
+    # r_curve = np.linspace(0, 17, 101)
     # v_curve = (
     #     urc(r_curve, a2=a2[np.newaxis].T, a3=a3[np.newaxis].T, R0=R0[np.newaxis].T)
     #     + Vpec_mode
     # )
     # v_curve = np.median(v_curve, axis=0)
-    # ax.plot(r_curve, v_curve, linestyle="dashed", color="#66c2a5")  # seaborn
+    # ax.plot(r_curve, v_curve, linestyle="dashed", color="#fc8d62")  # seaborn orange
     # # Good sources
     # eb_good = ax.errorbar(
     #     x=r_hpd_mode[is_good],
@@ -522,12 +522,12 @@ def plot_rotcurve_mcerrors(data):
     #     xerr=r_err_hpd[:, is_good],
     #     yerr=v_circ_err_hpd[:, is_good],
     #     marker=".",
-    #     color="#fc8d62",  # seaborn
+    #     color="#66c2a5",  # seaborn green
     #     linestyle="none",
     #     markersize=markersize,
     #     markeredgewidth=markeredgewidth,
     #     elinewidth=0.5,
-    #     ecolor="#fc8d62",  # seaborn
+    #     ecolor="#66c2a5",  # seaborn
     #     zorder=100,
     # )
     # # Dashed errorbars
@@ -537,7 +537,7 @@ def plot_rotcurve_mcerrors(data):
     # ax.set_xlabel("Galactocentric Radius (kpc)")
     # ax.set_ylabel("$\Theta$ (km s$^{-1}$)")
     # ax.set_xlim(0, 16)
-    # ax.set_ylim(0, 300)
+    # ax.set_ylim(50, 300)
     # ax.grid(False)
     # fig.savefig(
     #     Path(__file__).parent / "my_rotcurve_peakEverything_HPDmode_seaborn.png",

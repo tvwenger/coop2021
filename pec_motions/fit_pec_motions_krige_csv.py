@@ -1,6 +1,8 @@
 """
 fit_pec_motions_krige_csv.py
 
+! DON'T USE !
+
 Fits the vector peculiar motions of sources using kriging. Data from a csv file.
 
 Isaac Cheng - February 2021

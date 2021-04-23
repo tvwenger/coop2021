@@ -1,7 +1,7 @@
 """
-compare_cw_reid.py
+compare_wc_reid.py
 
-Compare the KDE from Chen & Wenger (2021) to Reid (2019)
+Compare the KDE from Wenger & Cheng (2021) to Reid (2019)
 
 Isaac Cheng - March 2021
 """
@@ -13,18 +13,18 @@ import matplotlib.pyplot as plt
 from kriging import kriging
 
 #
-# CW21 A5 rotation model parameters
+# Values from WC21 A6
 #
-__R0 = 8.181
-__Usun = 10.407
-__Vsun = 10.213
-__Wsun = 8.078
-__Upec = 4.430
-__Vpec = -4.823
-__a2 = 0.971
-__a3 = 1.625
-__Zsun = 5.583
-__roll = 0.010
+__R0 = 8.174602364395952
+__Zsun = 5.398550615892994
+__Usun = 10.878914326160878
+__Vsun = 10.696801784160257
+__Wsun = 8.087892505141708
+__Upec = 4.9071771802606285
+__Vpec = -4.521832904300172
+__roll = -0.010742182667190958
+__a2 = 0.9768982857793898
+__a3 = 1.626400628724733
 
 #
 # IAU defined LSR

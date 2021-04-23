@@ -1,6 +1,8 @@
 """
 kd_plx_diff.py
 
+! DON'T USE ! --> Use kd_plots.ipynb instead.
+
 Computes + saves + plots the differences between
 kinematic distances and peak of parallax distances
 

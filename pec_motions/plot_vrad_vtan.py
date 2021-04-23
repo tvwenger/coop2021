@@ -197,58 +197,58 @@ def data_to_vcirc_pred(data, trace, free_Zsun=False, free_roll=False):
     return v_circ_pred
 
 
-def get_pos_and_residuals_and_vrad_vtan(data, trace, free_Zsun=False, free_roll=False):
-    """
-    Returns galactocentric Cartesian positions & residual motions
-    as well as the ratio of radial velocity to circular velocity
+# def get_pos_and_residuals_and_vrad_vtan(data, trace, free_Zsun=False, free_roll=False):
+#     """
+#     Returns galactocentric Cartesian positions & residual motions
+#     as well as the ratio of radial velocity to circular velocity
 
-    TODO: finish docstring
-    """
+#     TODO: finish docstring
+#     """
 
-    # Convert pickled data to galactocentric cylindrical positions & velocities
-    (radius, azimuth, height, v_rad, v_circ, v_vert,) = data_to_gcen_cyl(
-        data, trace, free_Zsun=free_Zsun, free_roll=free_roll
-    )
+#     # Convert pickled data to galactocentric cylindrical positions & velocities
+#     (radius, azimuth, height, v_rad, v_circ, v_vert,) = data_to_gcen_cyl(
+#         data, trace, free_Zsun=free_Zsun, free_roll=free_roll
+#     )
 
-    # Find residual motions
-    v_circ_pred = data_to_vcirc_pred(
-        data, trace, free_Zsun=free_Zsun, free_roll=free_roll
-    )
-    v_circ_res = v_circ - v_circ_pred
+#     # Find residual motions
+#     v_circ_pred = data_to_vcirc_pred(
+#         data, trace, free_Zsun=free_Zsun, free_roll=free_roll
+#     )
+#     v_circ_res = v_circ - v_circ_pred
 
-    # Transform galactocentric cylindrical residual velocities
-    # to galactocentric Cartesian residuals
-    x, y, z, vx_res, vy_res, vz_res = trans.gcen_cyl_to_gcen_cart(
-        radius, azimuth, height, v_radial=v_rad, v_tangent=v_circ_res, v_vertical=v_vert
-    )
+#     # Transform galactocentric cylindrical residual velocities
+#     # to galactocentric Cartesian residuals
+#     x, y, z, vx_res, vy_res, vz_res = trans.gcen_cyl_to_gcen_cart(
+#         radius, azimuth, height, v_radial=v_rad, v_tangent=v_circ_res, v_vertical=v_vert
+#     )
 
-    # Change galactocentric coordinates to Reid's convention (rotate 90 deg CW)
-    # (our convention is detailed in the docstring of trans.gcen_cyl_to_gcen_cart)
-    x, y = y, -x
-    vx_res, vy_res = vy_res, -vx_res
+#     # Change galactocentric coordinates to Reid's convention (rotate 90 deg CW)
+#     # (our convention is detailed in the docstring of trans.gcen_cyl_to_gcen_cart)
+#     x, y = y, -x
+#     vx_res, vy_res = vy_res, -vx_res
 
-    # Ratio of radial velocity to circular rotation speed
-    vrad_vcirc = v_rad / v_circ
-    print()
-    print("Mean v_rad/v_circ:", np.mean(vrad_vcirc))
-    print("Min & Max v_rad/v_circ:", np.min(vrad_vcirc), np.max(vrad_vcirc))
-    print("# v_rad/v_circ > 0:", np.sum(vrad_vcirc > 0))
-    print("# v_rad/v_circ < 0:", np.sum(vrad_vcirc < 0))
-    print("# v_rad < 0:", np.sum(v_rad < 0))
-    print("# v_circ < 0:", np.sum(v_circ < 0))
-    # Residual motions
-    print()
-    print("Mean residual x-velocity:", np.mean(vx_res))
-    print("Mean residual y-velocity:", np.mean(vy_res))
-    print("Min & Max residual x-velocity:", np.min(vx_res), np.max(vx_res))
-    print("Min & Max residual y-velocity:", np.min(vy_res), np.max(vy_res))
-    print()
-    v_tot = np.sqrt(vx_res * vx_res + vy_res * vy_res)
-    print("Mean magnitude of peculiar velocity:", np.mean(v_tot))
-    print("Min & Max magnitudes of peculiar velocity:", np.min(v_tot), np.max(v_tot))
-    print("=" * 6)
+#     # Ratio of radial velocity to circular rotation speed
+#     vrad_vcirc = v_rad / v_circ
+#     print()
+#     print("Mean v_rad/v_circ:", np.mean(vrad_vcirc))
+#     print("Min & Max v_rad/v_circ:", np.min(vrad_vcirc), np.max(vrad_vcirc))
+#     print("# v_rad/v_circ > 0:", np.sum(vrad_vcirc > 0))
+#     print("# v_rad/v_circ < 0:", np.sum(vrad_vcirc < 0))
+#     print("# v_rad < 0:", np.sum(v_rad < 0))
+#     print("# v_circ < 0:", np.sum(v_circ < 0))
+#     # Residual motions
+#     print()
+#     print("Mean residual x-velocity:", np.mean(vx_res))
+#     print("Mean residual y-velocity:", np.mean(vy_res))
+#     print("Min & Max residual x-velocity:", np.min(vx_res), np.max(vx_res))
+#     print("Min & Max residual y-velocity:", np.min(vy_res), np.max(vy_res))
+#     print()
+#     v_tot = np.sqrt(vx_res * vx_res + vy_res * vy_res)
+#     print("Mean magnitude of peculiar velocity:", np.mean(v_tot))
+#     print("Min & Max magnitudes of peculiar velocity:", np.min(v_tot), np.max(v_tot))
+#     print("=" * 6)
 
-    return x, y, z, vx_res, vy_res, vz_res, vrad_vcirc
+#     return x, y, z, vx_res, vy_res, vz_res, vrad_vcirc
 
 
 import sqlite3
@@ -480,114 +480,114 @@ def get_cart_pos_and_cyl_residuals(data, trace, free_Zsun=False, free_roll=False
     return x, y, z, v_rad, v_circ_res, v_vert
 
 
-# infile = Path(
-#     "/mnt/c/Users/ichen/OneDrive/Documents/Jobs/WaterlooWorks/2A Job Search/ACCEPTED__NRC_EXT-10708-JuniorResearcher/Work Documents/coop2021/bayesian_mcmc_rot_curve/mcmc_outfile_A5_102dist_6.pkl"
-# )
-# with open(infile, "rb") as f:
-#     file = dill.load(f)
-#     data = file["data"]
-#     trace = file["trace"]
-# get_cart_pos_and_cyl_residuals(data, trace, True, True)
+infile = Path(
+    "/mnt/c/Users/ichen/OneDrive/Documents/Jobs/WaterlooWorks/2A Job Search/ACCEPTED__NRC_EXT-10708-JuniorResearcher/Work Documents/coop2021/bayesian_mcmc_rot_curve/mcmc_outfile_A5_102dist_6.pkl"
+)
+with open(infile, "rb") as f:
+    file = dill.load(f)
+    data = file["data"]
+    trace = file["trace"]
+get_cart_pos_and_cyl_residuals(data, trace, True, True)
 
 
-def main(prior_set, num_samples, num_rounds):
-    # Binary file to read
-    # infile = Path(__file__).parent / "reid_MCMC_outfile.pkl"
-    infile = Path(
-        "/home/chengi/Documents/coop2021/bayesian_mcmc_rot_curve/"
-        f"mcmc_outfile_{prior_set}_{num_samples}dist_{num_rounds}.pkl"
-    )
+# def main(prior_set, num_samples, num_rounds):
+#     # Binary file to read
+#     # infile = Path(__file__).parent / "reid_MCMC_outfile.pkl"
+#     infile = Path(
+#         "/home/chengi/Documents/coop2021/bayesian_mcmc_rot_curve/"
+#         f"mcmc_outfile_{prior_set}_{num_samples}dist_{num_rounds}.pkl"
+#     )
 
-    with open(infile, "rb") as f:
-        file = dill.load(f)
-        data = file["data"]
-        trace = file["trace"]
-        like_type = file["like_type"]  # "gauss", "cauchy", or "sivia"
-        num_sources = file["num_sources"]
-        # reject_method = file["reject_method"] if num_rounds != 1 else None
-        free_Zsun = file["free_Zsun"]
-        free_roll = file["free_roll"]
+#     with open(infile, "rb") as f:
+#         file = dill.load(f)
+#         data = file["data"]
+#         trace = file["trace"]
+#         like_type = file["like_type"]  # "gauss", "cauchy", or "sivia"
+#         num_sources = file["num_sources"]
+#         # reject_method = file["reject_method"] if num_rounds != 1 else None
+#         free_Zsun = file["free_Zsun"]
+#         free_roll = file["free_roll"]
 
-    print(
-        "=== Plotting peculiar motions & v_rad/v_tan ratio for "
-        f"({prior_set} priors & {num_rounds} MCMC rounds) ==="
-    )
-    print("Number of sources:", num_sources)
-    print("Likelihood function:", like_type)
+#     print(
+#         "=== Plotting peculiar motions & v_rad/v_tan ratio for "
+#         f"({prior_set} priors & {num_rounds} MCMC rounds) ==="
+#     )
+#     print("Number of sources:", num_sources)
+#     print("Likelihood function:", like_type)
 
-    # Get residual motions & ratio of radial to circular velocity
-    x, y, z, vx_res, vy_res, vz_res, vrad_vcirc = get_pos_and_residuals_and_vrad_vtan(
-        data, trace, free_Zsun=free_Zsun, free_roll=free_roll
-    )
+#     # Get residual motions & ratio of radial to circular velocity
+#     x, y, z, vx_res, vy_res, vz_res, vrad_vcirc = get_pos_and_residuals_and_vrad_vtan(
+#         data, trace, free_Zsun=free_Zsun, free_roll=free_roll
+#     )
 
-    # Define plotting parameters
-    fig, ax = plt.subplots()
-    cmap = "viridis"  # "coolwarm" is another option
-    cmap_min = np.floor(100 * np.min(vrad_vcirc)) / 100
-    cmap_max = np.ceil(100 * np.max(vrad_vcirc)) / 100
-    norm = mpl.colors.Normalize(vmin=cmap_min, vmax=cmap_max)
-    ticks = np.linspace(cmap_min, cmap_max, 8)
+#     # Define plotting parameters
+#     fig, ax = plt.subplots()
+#     cmap = "viridis"  # "coolwarm" is another option
+#     cmap_min = np.floor(100 * np.min(vrad_vcirc)) / 100
+#     cmap_max = np.ceil(100 * np.max(vrad_vcirc)) / 100
+#     norm = mpl.colors.Normalize(vmin=cmap_min, vmax=cmap_max)
+#     ticks = np.linspace(cmap_min, cmap_max, 8)
 
-    # Plot v_rad / v_circ
-    ax.scatter(x, y, c=vrad_vcirc, cmap=cmap, s=2)
-    cbar = fig.colorbar(
-        mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax, ticks=ticks, format="%.2f"
-    )
-    cbar.ax.set_ylabel(r"$v_{rad}/v_{circ}$", rotation=270)
-    cbar.ax.get_yaxis().labelpad = 20
+#     # Plot v_rad / v_circ
+#     ax.scatter(x, y, c=vrad_vcirc, cmap=cmap, s=2)
+#     cbar = fig.colorbar(
+#         mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax, ticks=ticks, format="%.2f"
+#     )
+#     cbar.ax.set_ylabel(r"$v_{rad}/v_{circ}$", rotation=270)
+#     cbar.ax.get_yaxis().labelpad = 20
 
-    # Plot residual motions
-    vectors = ax.quiver(
-        x, y, vx_res, vy_res, vrad_vcirc, cmap=cmap, minlength=3, width=0.002
-    )
-    ax.quiverkey(
-        vectors,
-        X=0.25,
-        Y=0.1,
-        U=-50,
-        label="50 km/s",
-        labelpos="N",
-        fontproperties={"size": 10},
-    )
+#     # Plot residual motions
+#     vectors = ax.quiver(
+#         x, y, vx_res, vy_res, vrad_vcirc, cmap=cmap, minlength=3, width=0.002
+#     )
+#     ax.quiverkey(
+#         vectors,
+#         X=0.25,
+#         Y=0.1,
+#         U=-50,
+#         label="50 km/s",
+#         labelpos="N",
+#         fontproperties={"size": 10},
+#     )
 
-    # Set other figure parameters
-    ax.axhline(y=0, linewidth=0.5, linestyle="--", color="k")  # horizontal line
-    ax.axvline(x=0, linewidth=0.5, linestyle="--", color="k")  # vertical line
-    ax.set_xlim(-8, 12)
-    ax.set_xticks([-5, 0, 5, 10])
-    ax.set_ylim(-5, 15)
-    ax.set_yticks([-5, 0, 5, 10, 15])
-    # # Using our coordinate convention
-    # # (remember to remove the swapping of coordinates & velocities in above function)
-    # ax.set_xlim(-15, 5)
-    # ax.set_xticks([-15, -10, -5, 0, 5])
-    # ax.set_ylim(-8, 12)
-    # ax.set_yticks([-5, 0, 5, 10])
+#     # Set other figure parameters
+#     ax.axhline(y=0, linewidth=0.5, linestyle="--", color="k")  # horizontal line
+#     ax.axvline(x=0, linewidth=0.5, linestyle="--", color="k")  # vertical line
+#     ax.set_xlim(-8, 12)
+#     ax.set_xticks([-5, 0, 5, 10])
+#     ax.set_ylim(-5, 15)
+#     ax.set_yticks([-5, 0, 5, 10, 15])
+#     # # Using our coordinate convention
+#     # # (remember to remove the swapping of coordinates & velocities in above function)
+#     # ax.set_xlim(-15, 5)
+#     # ax.set_xticks([-15, -10, -5, 0, 5])
+#     # ax.set_ylim(-8, 12)
+#     # ax.set_yticks([-5, 0, 5, 10])
 
-    # Set title and labels. Then save figure
-    fig.suptitle(
-        f"Face-on View of {num_sources} Masers \& Their Peculiar Motions", x=0.55, y=0.94
-    )
-    ax.set_title(
-        r"Colour-coded by their ratio of $v_{rad}$ to $v_{circ}$"
-        f"\nUsed best-fit parameters from {prior_set} priors",
-        fontsize=12,
-    )
-    ax.set_xlabel("x (kpc)")
-    ax.set_ylabel("y (kpc)")
-    ax.set_aspect("equal")
-    ax.grid(False)
-    fig.tight_layout()
-    filename = f"vrad_vtan_{prior_set}_{num_samples}dist_{num_rounds}.jpg"
-    fig.savefig(
-        Path(__file__).parent / filename, format="jpg", dpi=300, bbox_inches="tight",
-    )
-    plt.show()
+#     # Set title and labels. Then save figure
+#     fig.suptitle(
+#         f"Face-on View of {num_sources} Masers \& Their Peculiar Motions", x=0.55, y=0.94
+#     )
+#     ax.set_title(
+#         r"Colour-coded by their ratio of $v_{rad}$ to $v_{circ}$"
+#         f"\nUsed best-fit parameters from {prior_set} priors",
+#         fontsize=12,
+#     )
+#     ax.set_xlabel("x (kpc)")
+#     ax.set_ylabel("y (kpc)")
+#     ax.set_aspect("equal")
+#     ax.grid(False)
+#     fig.tight_layout()
+#     filename = f"vrad_vtan_{prior_set}_{num_samples}dist_{num_rounds}.jpg"
+#     fig.savefig(
+#         Path(__file__).parent / filename, format="jpg", dpi=300, bbox_inches="tight",
+#     )
+#     plt.show()
 
 
-if __name__ == "__main__":
-    prior_set_file = input("prior_set of file (A1, A5, B, C, D): ")
-    num_samples_file = int(input("Number of distance samples per source in file (int): "))
-    num_rounds_file = int(input("round number of file for best-fit parameters (int): "))
+# if __name__ == "__main__":
+#     prior_set_file = input("prior_set of file (A1, A5, B, C, D): ")
+#     num_samples_file = int(input("Number of distance samples per source in file (int): "))
+#     num_rounds_file = int(input("round number of file for best-fit parameters (int): "))
 
-    main(prior_set_file, num_samples_file, num_rounds_file)
+#     main(prior_set_file, num_samples_file, num_rounds_file)

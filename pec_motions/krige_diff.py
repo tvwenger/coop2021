@@ -240,7 +240,7 @@ def main(use_bary=True):
     Upec_interp_var = Upec_interp_var.reshape(gridx.shape)
     Upec_interp_sd = np.sqrt(Upec_interp_var)
     Vpec_interp = Vpec_interp.reshape(gridx.shape)
-    Vpec_interp_var = Upec_interp_var.reshape(gridx.shape)
+    Vpec_interp_var = Vpec_interp_var.reshape(gridx.shape)
     Vpec_interp_sd = np.sqrt(Vpec_interp_var)
     print("Min & Max of interpolated Upec:", np.min(Upec_interp), np.max(Upec_interp))
     print("Min & Max of interpolated Vpec:", np.min(Vpec_interp), np.max(Vpec_interp))
@@ -336,6 +336,14 @@ def main(use_bary=True):
         marker="o",
         label="Good Masers",
     )
+    print("MEDIAN KRIGING UPEC DIFF:", np.median(Upec_interp[Upec_interp_sd < 11]))  # 1.2016203500712772
+    print("MEDIAN ACTUAL UPEC DIFF:", np.median(Upec[is_good] - _UPEC_MODE))  # 0.4106261106620406
+    print("MEDIAN KRIGING VPEC DIFF:", np.median(Vpec_interp[Vpec_interp_sd < 11]))  # -0.6205605374601924
+    print("MEDIAN ACTUAL VPEC DIFF:", np.median(Vpec[is_good] - _VPEC_MODE))  # -0.3665195004455408
+    print("MEAN KRIGING UPEC DIFF:", np.mean(Upec_interp[Upec_interp_sd < 11]))  # 0.3313059544389846
+    print("MEAN ACTUAL UPEC DIFF:", np.mean(Upec[is_good] - _UPEC_MODE))  # 0.8318970565337588
+    print("MEAN KRIGING VPEC DIFF:", np.mean(Vpec_interp[Vpec_interp_sd < 11]))  # -0.9062925320201711
+    print("MEAN ACTUAL VPEC DIFF:", np.mean(Vpec[is_good] - _VPEC_MODE))  # -0.36197270311504404
     ax[0].scatter(
         x[~is_good],
         y[~is_good],
@@ -390,7 +398,9 @@ def main(use_bary=True):
         Path(__file__).parent / filename, format="pdf", dpi=300, bbox_inches="tight",
     )
     plt.show()
-
+    #
+    #
+    #
     fig, ax = plt.subplots(1, 2, figsize=plt.figaspect(0.5))
     # Plot interpolated Upec's standard deviation
     norm_Upec = mpl.colors.Normalize(

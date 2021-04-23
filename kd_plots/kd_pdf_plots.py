@@ -163,11 +163,11 @@ def run_kd(source_to_plot, rotcurve="cw21_rotcurve", num_samples=100,
 #     empty_condition=False)
 # if use_kriging_input:
 #     norm_input = float(input("(float) normalization factor for kriging: "))
-source_to_plot_input = 32
-rotcurve_input = "cw21_rotcurve"
+source_to_plot_input = 147
+rotcurve_input = "wc21_rotcurve"
 num_samples_input = 10000
 use_pec_input = True
-use_kriging_input = True
+use_kriging_input = False
 norm_input = 20
 run_kd(
     source_to_plot_input,

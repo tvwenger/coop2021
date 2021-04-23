@@ -1,5 +1,5 @@
 """
-plt_pec_mot_no_colour.py
+plt_pec_mot_forTalk.py
 
 Plots the peculiar (non-circular) motions of the sources
 without distinguishing points (i.e., for Isaac's end-of-term presentation)
@@ -33,7 +33,7 @@ _ZSUN = 5.5  # pc
 
 def main(csvfile, tracefile, plot_tooclose=False, plot_large_uncer=True):
     data = pd.read_csv(csvfile)
-    figname_append = "_noColours"
+    figname_append = "_forTalk"
 
     if not plot_large_uncer:
         # Only plot sources with vector uncertainties < 20 km/s
@@ -137,33 +137,42 @@ def main(csvfile, tracefile, plot_tooclose=False, plot_large_uncer=True):
     #
     # Plot
     #
+    white_params = {
+        "ytick.color" : "w",
+        "xtick.color" : "w",
+        "axes.labelcolor" : "w",
+        "axes.edgecolor" : "w",
+    }
+    plt.rcParams.update(white_params)
     scattersize = 1
     fig, ax = plt.subplots()
     # Plot sources
-    ax.scatter(x, y, marker="o", c="k", s=scattersize)
+    ax.scatter(x, y, marker="o", c="#66c2a5", s=scattersize)
     if plot_tooclose:
-        ax.scatter(x_tooclose, y_tooclose, marker="o", c="k", s=scattersize)
+        ax.scatter(x_tooclose, y_tooclose, marker="o", c="#66c2a5", s=scattersize)
     # Plot Sun
     ax.scatter(0, 8.181, marker="*", c="gold", s=30, zorder=100)
     # Plot residual motions
-    vectors = ax.quiver(x, y, vx, vy, color="k",scale=600, width=0.002)
+    vectors = ax.quiver(x, y, vx, vy, color="#66c2a5",scale=600, width=0.002)
     if plot_tooclose:
         ax.quiver(x_tooclose, y_tooclose, vx_tooclose, vy_tooclose,
-                  color="k", scale=600, width=0.002)
+                  color="#66c2a5", scale=600, width=0.002)
     ax.quiverkey(
         vectors,
-        X=0.25,
+        X=0.75,
         Y=0.1,
         U=-50,
+        color="#fc8d62",
         label="50 km s$^{-1}$",
         labelpos="N",
-        fontproperties={"size": 10},
+        labelcolor="white",
+        fontproperties={"size": 8},
     )
     # Other plot parameters
     ax.set_xlabel("$x$ (kpc)")
     ax.set_ylabel("$y$ (kpc)")
-    ax.axhline(y=0, linewidth=0.5, linestyle="--", color="k", zorder=0)  # horizontal line
-    ax.axvline(x=0, linewidth=0.5, linestyle="--", color="k", zorder=0)  # vertical line
+    ax.axhline(y=0, linewidth=0.5, linestyle="--", color="white", zorder=0)  # horizontal line
+    ax.axvline(x=0, linewidth=0.5, linestyle="--", color="white", zorder=0)  # vertical line
     ax.set_xlim(-8, 12)
     ax.set_xticks([-5, 0, 5, 10])
     ax.set_ylim(-5, 15)
@@ -172,11 +181,11 @@ def main(csvfile, tracefile, plot_tooclose=False, plot_large_uncer=True):
     ax.set_aspect("equal")
     # Change legend properties
     figname = "pec_motions_all" if plot_tooclose else "pec_motions"
-    figname += figname_append + ".pdf"
+    figname += figname_append + ".png"
     fig.savefig(
         Path(__file__).parent / figname,
-        format="pdf",
-        # dpi=300,
+        dpi=300,
+        transparent=True,
         bbox_inches="tight",
     )
     print("--- Showing plot ---")

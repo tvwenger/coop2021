@@ -2,7 +2,9 @@
 krige_xy.py
 
 Universal kriging of x- and y- velocity components
-from data in .csv file
+from data in .csv file.
+
+!DO NOT USE!
 
 Isaac Cheng - March 2021
 """
@@ -23,6 +25,7 @@ _SCRIPT_DIR = str(Path.cwd() / Path(__file__).parent.parent)
 sys.path.append(_SCRIPT_DIR)
 
 import mytransforms as trans
+from universal_rotcurve import urc
 
 def get_coords(data):
     # # Mean values from 100 distance, mean Upec/Vpec trace, peak everything file
@@ -169,6 +172,7 @@ def main():
     # )
     #
     condition = "no-mcmc-outlier"
+    # condition = "no-mcmc-outlier_0.5lc_subtractRotCurve"
     is_good = data["is_outlier"].values == 0
 
     print("--- MC GOOD DATA STATS ---")
@@ -202,12 +206,12 @@ def main():
     #
     # Fit semivariogram model
     #
-    variogram_model = "wave"
+    variogram_model = "gaussian"
     nbins = 10
     bin_number = False
     if bin_number:
         condition += "-binnumberTrue"
-    lag_cutoff = 1.0
+    lag_cutoff = 0.5
     print("Semivariogram Model:", variogram_model)
     vx_semivar, vx_corner = vx_krige.fit(
         model=variogram_model,
@@ -239,6 +243,23 @@ def main():
     vx_interp_sd = np.sqrt(vx_interp_var).reshape(gridx.shape)
     vy_interp = vy_interp.reshape(gridx.shape)
     vy_interp_sd = np.sqrt(vy_interp_var).reshape(gridx.shape)
+    # #
+    # # Subtract rotation curve velocity
+    # #
+    # R0_mode = 8.174602364395952
+    # a2_mode = 0.9768982857793898
+    # a3_mode = 1.626400628724733
+    # Rgals = np.sqrt(gridx.T * gridx.T + gridy.T * gridy.T)
+    # Thetas = urc(Rgals, a2=a2_mode, a3=a3_mode, R0=R0_mode)
+    # az = np.arctan2(gridy.T, -gridx.T)
+    # vx_pred = Thetas * np.sin(az)
+    # vy_pred = Thetas * np.cos(az)
+    # # Rotate 90 deg CW
+    # vx_pred, vy_pred = vy_pred, -vx_pred
+    # # Subtract
+    # vx_interp -= vx_pred
+    # vy_interp -= vy_pred
+    #
     print("Min & Max of interpolated vx:", np.min(vx_interp), np.max(vx_interp))
     print("Min & Max of interpolated vy:", np.min(vy_interp), np.max(vy_interp))
     print("Mean interpolated vx & vy:", np.mean(vx_interp), np.mean(vy_interp))
@@ -334,6 +355,9 @@ def main():
     ax[1].grid(False)
 
     # Plot actual vx & vy
+    # # (Plot residuals)
+    # vx = data["vx_res_mode"].values
+    # vy = data["vy_res_mode"].values
     ax[0].scatter(
         x[is_good],
         y[is_good],

@@ -15,7 +15,7 @@ import matplotlib as mpl
 # from kriging import kriging
 
 #
-# CW21 A6 rotation model parameters
+# WC21 A6 rotation model parameters
 #
 __R0 = 8.1746
 __Usun = 10.879
